@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      invites: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       social_links: {
         Row: {
           created_at: string
@@ -23,6 +80,7 @@ export type Database = {
           platform: string
           updated_at: string
           url: string
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -32,6 +90,7 @@ export type Database = {
           platform: string
           updated_at?: string
           url?: string
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -41,6 +100,7 @@ export type Database = {
           platform?: string
           updated_at?: string
           url?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -74,6 +134,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      invite_is_valid: { Args: { _code: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user"
