@@ -178,23 +178,34 @@ function AdminPage() {
           </Button>
         </div>
 
-        <h1 className="text-3xl font-bold">Your page</h1>
         {profile && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <code className="rounded-md bg-muted px-2 py-1 text-sm">{`${typeof window !== "undefined" ? window.location.origin : ""}/${profile.username}`}</code>
-            <Button size="sm" variant="outline" onClick={copyShareLink}>
-              <Copy className="mr-1 h-3 w-3" /> Copy
-            </Button>
-            <a
-              href={`/${profile.username}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-            >
-              View <ExternalLink className="h-3 w-3" />
-            </a>
+          <div
+            className="rounded-2xl border border-primary/30 p-6"
+            style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
+          >
+            <div className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+              Your shareable link
+            </div>
+            <div className="mt-2 break-all text-2xl font-bold text-primary-foreground sm:text-3xl">
+              {`${typeof window !== "undefined" ? window.location.origin : ""}/${profile.username}`}
+            </div>
+            <p className="mt-2 text-sm text-primary-foreground/80">
+              Share this link anywhere — anyone who opens it sees all your social links.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Button size="sm" variant="secondary" onClick={copyShareLink}>
+                <Copy className="mr-2 h-4 w-4" /> Copy link
+              </Button>
+              <Button size="sm" variant="secondary" asChild>
+                <a href={`/${profile.username}`} target="_blank" rel="noreferrer">
+                  <ExternalLink className="mr-2 h-4 w-4" /> Open my page
+                </a>
+              </Button>
+            </div>
           </div>
         )}
+
+        <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
 
         {/* Profile */}
         {profile && (
