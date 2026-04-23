@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — Manage your links" }] }),
+  head: () => ({ meta: [{ title: "Sign in — LinkHub" }] }),
 });
 
 function AuthPage() {
@@ -17,6 +17,9 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -30,10 +33,21 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "signup") {
+        const cleanUsername = username.trim().toLowerCase();
+        if (!/^[a-z0-9_-]{2,30}$/.test(cleanUsername)) {
+          throw new Error("Username must be 2–30 chars: a-z, 0-9, _ or -");
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/admin` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/admin`,
+            data: {
+              username: cleanUsername,
+              display_name: displayName.trim() || cleanUsername,
+              invite_code: inviteCode.trim(),
+            },
+          },
         });
         if (error) throw error;
         toast.success("Account created. You can sign in now.");
@@ -51,14 +65,41 @@ function AuthPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <Toaster />
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-card)" }}>
-        <h1 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create account"}</h1>
+        <h1 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your page"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin" ? "Sign in to manage your links." : "The first account becomes the admin."}
+          {mode === "signin" ? "Sign in to manage your links." : "Invite-only. The first account becomes admin."}
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          {mode === "signup" && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <div className="flex items-center rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+                  <span className="px-3 text-sm text-muted-foreground">/</span>
+                  <Input
+                    id="username"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="yourname"
+                    className="border-0 focus-visible:ring-0"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">2–30 chars: a-z, 0-9, _ or -</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="display">Display name (optional)</Label>
+                <Input id="display" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your Name" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invite">Invite code</Label>
+                <Input id="invite" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Required (skip only for first admin)" />
+              </div>
+            </>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
