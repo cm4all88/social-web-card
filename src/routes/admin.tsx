@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { getPlatform, PLATFORMS, PLATFORM_KEYS } from "@/lib/platforms";
+import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
@@ -296,8 +296,24 @@ function AdminPage() {
             <Select value={newPlatform} onValueChange={setNewPlatform}>
               <SelectTrigger className="sm:w-64"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {PLATFORM_KEYS.map((k) => (
-                  <SelectItem key={k} value={k}>{PLATFORMS[k].label}</SelectItem>
+                {PLATFORM_CATEGORIES.map((cat, i) => (
+                  <div key={cat.label}>
+                    {i > 0 && <SelectSeparator />}
+                    <SelectGroup>
+                      <SelectLabel>{cat.label}</SelectLabel>
+                      {cat.keys.filter((k) => PLATFORMS[k]).map((k) => {
+                        const Icon = PLATFORMS[k].icon;
+                        return (
+                          <SelectItem key={k} value={k}>
+                            <span className="flex items-center gap-2">
+                              <Icon className="h-4 w-4" />
+                              {PLATFORMS[k].label}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectGroup>
+                  </div>
                 ))}
               </SelectContent>
             </Select>
