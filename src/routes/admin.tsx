@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink } from "lucide-react";
+import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -26,7 +27,15 @@ type SocialLink = {
   user_id: string;
 };
 
-type Profile = { id: string; user_id: string; username: string; display_name: string | null; bio: string | null };
+type Profile = {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  theme: string | null;
+  custom_theme: Partial<ThemeTokens> | null;
+};
 type Invite = { id: string; code: string; used_by: string | null; used_at: string | null; created_at: string };
 
 function AdminPage() {
