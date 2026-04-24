@@ -6,7 +6,7 @@ export const Route = createFileRoute("/")({
   component: Home,
   head: () => ({
     meta: [
-      { title: "LinkHub — All your socials, one shareable link" },
+      { title: "Yooits — All your socials, one shareable link" },
       { name: "description", content: "Create your personal link page. Share every social account in one place." },
     ],
   }),

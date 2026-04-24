@@ -9,7 +9,7 @@ export const Route = createFileRoute("/$username")({
   component: ProfilePage,
   head: ({ params }) => ({
     meta: [
-      { title: `@${params.username} — LinkHub` },
+      { title: `@${params.username} — Yooits` },
       { name: "description", content: `Connect with @${params.username} across all their social platforms.` },
       { property: "og:title", content: `@${params.username}` },
       { property: "og:description", content: `Find @${params.username} on every platform.` },
@@ -159,7 +159,7 @@ function ProfilePage() {
         </section>
 
         <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
-          <UserPlus className="h-3 w-3" /> Get your own LinkHub
+          <UserPlus className="h-3 w-3" /> Get your own Yooits
         </Link>
       </main>
     </div>
