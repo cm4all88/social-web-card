@@ -92,7 +92,7 @@ function AdminPage() {
       .update({
         display_name: profile.display_name,
         bio: profile.bio,
-        theme: profile.theme,
+        theme: profile.theme ?? "midnight",
         custom_theme: profile.custom_theme,
       })
       .eq("user_id", profile.user_id);
