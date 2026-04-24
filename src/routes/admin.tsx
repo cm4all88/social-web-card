@@ -89,11 +89,46 @@ function AdminPage() {
     setSavingProfile(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ display_name: profile.display_name, bio: profile.bio })
+      .update({
+        display_name: profile.display_name,
+        bio: profile.bio,
+        theme: profile.theme,
+        custom_theme: profile.custom_theme,
+      })
       .eq("user_id", profile.user_id);
     setSavingProfile(false);
     if (error) toast.error(error.message);
     else toast.success("Profile saved");
+  };
+
+  const setTheme = async (themeKey: string) => {
+    if (!profile) return;
+    setProfile({ ...profile, theme: themeKey });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ theme: themeKey })
+      .eq("user_id", profile.user_id);
+    if (error) toast.error(error.message);
+    else toast.success(`Theme set to ${themeKey}`);
+  };
+
+  const updateCustomTheme = (patch: Partial<ThemeTokens>) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      theme: "custom",
+      custom_theme: { ...(profile.custom_theme ?? {}), ...patch },
+    });
+  };
+
+  const saveCustomTheme = async () => {
+    if (!profile) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ theme: "custom", custom_theme: profile.custom_theme })
+      .eq("user_id", profile.user_id);
+    if (error) toast.error(error.message);
+    else toast.success("Custom theme saved");
   };
 
   const updateLink = (id: string, patch: Partial<SocialLink>) => {
