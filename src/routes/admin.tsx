@@ -288,6 +288,125 @@ function AdminPage() {
           </div>
         )}
 
+        {/* Theme picker */}
+        {profile && (
+          <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="mb-1 font-semibold">Theme</div>
+            <p className="mb-4 text-sm text-muted-foreground">Pick a vibe for your public page. Click to apply instantly.</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {THEME_PRESETS.map((t) => {
+                const active = profile.theme === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTheme(t.key)}
+                    className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
+                      active ? "border-primary ring-2 ring-primary" : "border-border"
+                    }`}
+                  >
+                    <div className="h-20 rounded-lg" style={{ background: t.preview }} />
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-sm font-medium">{t.label}</span>
+                      {active && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setTheme("custom")}
+                className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
+                  profile.theme === "custom" ? "border-primary ring-2 ring-primary" : "border-dashed border-border"
+                }`}
+              >
+                <div className="flex h-20 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+                  Your colors
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm font-medium">Custom</span>
+                  {profile.theme === "custom" && <Check className="h-4 w-4 text-primary" />}
+                </div>
+              </button>
+            </div>
+
+            {profile.theme === "custom" && (
+              <div className="mt-6 grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Background color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.background as string) || "#1a1a2e"}
+                    onChange={(e) => updateCustomTheme({ background: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Text color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.foreground as string) || "#ffffff"}
+                    onChange={(e) => updateCustomTheme({ foreground: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Card color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.card as string) || "#2a2a3e"}
+                    onChange={(e) => updateCustomTheme({ card: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Accent color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.accent as string) || "#a855f7"}
+                    onChange={(e) => updateCustomTheme({ accent: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Button style</Label>
+                  <Select
+                    value={profile.custom_theme?.buttonStyle ?? "rounded"}
+                    onValueChange={(v) => updateCustomTheme({ buttonStyle: v as ThemeTokens["buttonStyle"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rounded">Rounded</SelectItem>
+                      <SelectItem value="pill">Pill</SelectItem>
+                      <SelectItem value="square">Square</SelectItem>
+                      <SelectItem value="soft">Soft</SelectItem>
+                      <SelectItem value="outline">Outline</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Font</Label>
+                  <Select
+                    value={profile.custom_theme?.font ?? "sans"}
+                    onValueChange={(v) => updateCustomTheme({ font: v as ThemeTokens["font"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sans">Sans</SelectItem>
+                      <SelectItem value="serif">Serif</SelectItem>
+                      <SelectItem value="mono">Mono</SelectItem>
+                      <SelectItem value="display">Display</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Button onClick={saveCustomTheme}>
+                    <Save className="mr-2 h-4 w-4" /> Save custom theme
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Links */}
         <h2 className="mt-10 text-xl font-bold">Your links</h2>
         <p className="mt-1 text-sm text-muted-foreground">Empty links are hidden from your public page.</p>
