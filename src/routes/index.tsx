@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Sparkles, UserPlus, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight } from "lucide-react";
+import logo from "@/assets/yooits-logo.png";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -32,14 +33,12 @@ function Home() {
           <Sparkles className="h-3 w-3 text-accent" />
           One link. All your socials.
         </div>
-        <div
-          className="mb-6 h-28 w-28 rounded-full p-1"
-          style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
-        >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-background">
-            <UserPlus className="h-10 w-10 text-foreground" />
-          </div>
-        </div>
+        <img
+          src={logo}
+          alt="yooits.me"
+          className="mb-6 w-72 max-w-full sm:w-96"
+          style={{ filter: "drop-shadow(0 10px 40px oklch(0.6 0.25 310 / 0.45))" }}
+        />
         <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
           Your socials, beautifully linked
         </h1>
