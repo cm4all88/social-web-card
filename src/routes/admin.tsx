@@ -327,8 +327,8 @@ function AdminPage() {
             <div className="mb-4 font-semibold">Profile</div>
 
             <div className="mb-6 flex items-center gap-4">
-              <Avatar className="h-20 w-20 border-2 border-border">
-                <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} />
+              <Avatar className="h-20 w-20 shrink-0 border-2 border-border">
+                <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} className="object-cover" />
                 <AvatarFallback className="text-2xl font-semibold">
                   {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
                 </AvatarFallback>
