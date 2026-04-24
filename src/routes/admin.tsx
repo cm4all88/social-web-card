@@ -89,10 +89,19 @@ function AdminPage() {
 
   const saveProfile = async () => {
     if (!profile) return;
+    const username = (profile.username ?? "").trim().toLowerCase();
+    // Instagram-style rules: 1-30 chars, lowercase letters, numbers, periods, underscores
+    // Cannot start/end with a period, no consecutive periods
+    const usernameRe = /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9._]{1,30}$/;
+    if (!usernameRe.test(username)) {
+      toast.error("Username: 1–30 chars, lowercase letters, numbers, '.' or '_'. No leading/trailing or consecutive periods.");
+      return;
+    }
     setSavingProfile(true);
     const { error } = await supabase
       .from("profiles")
       .update({
+        username,
         display_name: profile.display_name,
         bio: profile.bio,
         theme: profile.theme ?? "midnight",
@@ -100,8 +109,16 @@ function AdminPage() {
       })
       .eq("user_id", profile.user_id);
     setSavingProfile(false);
-    if (error) toast.error(error.message);
-    else toast.success("Profile saved");
+    if (error) {
+      if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+        toast.error("That username is already taken");
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
+    setProfile({ ...profile, username });
+    toast.success("Profile saved");
   };
 
   const uploadAvatar = async (file: File) => {
@@ -343,8 +360,22 @@ function AdminPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Username</Label>
-                <Input value={profile.username} disabled />
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={profile.username}
+                  onChange={(e) =>
+                    setProfile({
+                      ...profile,
+                      username: e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30),
+                    })
+                  }
+                  placeholder="yourname"
+                  maxLength={30}
+                />
+                <p className="text-xs text-muted-foreground">
+                  yooits.me/<span className="font-medium text-foreground">{profile.username || "yourname"}</span>
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="display">Display name</Label>
@@ -352,6 +383,8 @@ function AdminPage() {
                   id="display"
                   value={profile.display_name ?? ""}
                   onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+                  maxLength={50}
+                  placeholder="Your name"
                 />
               </div>
             </div>
