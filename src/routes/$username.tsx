@@ -144,10 +144,9 @@ function ProfilePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{meta.label}</div>
-                    <div className="truncate text-sm opacity-70">{link.url}</div>
                   </div>
                   <div
-                    className="rounded-full px-3 py-1 text-xs font-medium opacity-0 transition group-hover:opacity-100"
+                    className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"
                     style={{ background: `${theme.accent}22`, color: theme.accent }}
                   >
                     Connect →
