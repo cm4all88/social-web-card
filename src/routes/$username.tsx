@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlatform } from "@/lib/platforms";
+import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/$username")({
@@ -23,7 +24,15 @@ export const Route = createFileRoute("/$username")({
   ),
 });
 
-type Profile = { id: string; user_id: string; username: string; display_name: string | null; bio: string | null };
+type Profile = {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  theme: string | null;
+  custom_theme: Partial<ThemeTokens> | null;
+};
 type SocialLink = { id: string; platform: string; url: string; display_order: number; enabled: boolean };
 
 function ProfilePage() {
@@ -64,62 +73,78 @@ function ProfilePage() {
 
   const visible = links.filter((l) => l.url.trim().length > 0);
   const name = profile?.display_name || profile?.username || username;
+  const theme = getTheme(profile?.theme, profile?.custom_theme);
+  const radius = buttonRadiusFor(theme.buttonStyle);
+  const font = fontFamilyFor(theme.font);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/30 blur-3xl animate-pulse" />
-        <div className="absolute top-1/3 -right-40 h-[28rem] w-[28rem] rounded-full bg-accent/30 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-        <div className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-fuchsia-500/20 blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
-      </div>
-
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{ background: theme.background, color: theme.foreground, fontFamily: font }}
+    >
       <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center px-6 py-16">
         <div
           className="mb-5 h-28 w-28 rounded-full p-1"
-          style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
+          style={{ background: theme.accent, boxShadow: `0 10px 40px -10px ${theme.accent}` }}
         >
-          <div className="flex h-full w-full items-center justify-center rounded-full bg-background text-3xl font-bold">
+          <div
+            className="flex h-full w-full items-center justify-center rounded-full text-3xl font-bold"
+            style={{ background: theme.card, color: theme.cardForeground }}
+          >
             {name.slice(0, 1).toUpperCase()}
           </div>
         </div>
         <h1 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">@{profile?.username ?? username}</p>
+        <p className="mt-1 text-sm opacity-70">@{profile?.username ?? username}</p>
         {profile?.bio && (
-          <p className="mt-4 max-w-md text-center text-muted-foreground">{profile.bio}</p>
+          <p className="mt-4 max-w-md text-center opacity-80">{profile.bio}</p>
         )}
 
-        <section className="mt-10 w-full space-y-4">
+        <section className="mt-10 w-full space-y-3">
           {loading ? (
             <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-2xl bg-card/50" />
+                <div key={i} className="h-16 animate-pulse rounded-2xl opacity-30" style={{ background: theme.card }} />
               ))}
             </div>
           ) : visible.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border p-8 text-center text-muted-foreground">
+            <div
+              className="rounded-2xl border border-dashed p-8 text-center opacity-70"
+              style={{ borderColor: theme.border }}
+            >
               No links added yet.
             </div>
           ) : (
             visible.map((link) => {
               const meta = getPlatform(link.platform);
               const Icon = meta.icon;
+              const isOutline = theme.buttonStyle === "outline";
               return (
                 <a
                   key={link.id}
                   href={link.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-border bg-card p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50"
-                  style={{ boxShadow: "var(--shadow-card)" }}
+                  className="group relative flex items-center gap-4 overflow-hidden border p-4 transition-all hover:-translate-y-0.5"
+                  style={{
+                    background: isOutline ? "transparent" : theme.card,
+                    color: theme.cardForeground,
+                    borderColor: theme.border,
+                    borderRadius: radius,
+                    boxShadow: isOutline ? "none" : "0 8px 24px -12px rgba(0,0,0,0.3)",
+                  }}
                 >
                   <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg`}>
                     <Icon className="h-6 w-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{meta.label}</div>
-                    <div className="truncate text-sm text-muted-foreground">{link.url}</div>
+                    <div className="truncate text-sm opacity-70">{link.url}</div>
                   </div>
-                  <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary opacity-0 transition group-hover:opacity-100">
+                  <div
+                    className="rounded-full px-3 py-1 text-xs font-medium opacity-0 transition group-hover:opacity-100"
+                    style={{ background: `${theme.accent}22`, color: theme.accent }}
+                  >
                     Connect →
                   </div>
                 </a>
@@ -128,10 +153,11 @@ function ProfilePage() {
           )}
         </section>
 
-        <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground">
+        <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
           <UserPlus className="h-3 w-3" /> Get your own LinkHub
         </Link>
       </main>
     </div>
   );
 }
+

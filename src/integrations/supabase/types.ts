@@ -45,8 +45,10 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string
+          custom_theme: Json | null
           display_name: string | null
           id: string
+          theme: string
           updated_at: string
           user_id: string
           username: string
@@ -54,8 +56,10 @@ export type Database = {
         Insert: {
           bio?: string | null
           created_at?: string
+          custom_theme?: Json | null
           display_name?: string | null
           id?: string
+          theme?: string
           updated_at?: string
           user_id: string
           username: string
@@ -63,8 +67,10 @@ export type Database = {
         Update: {
           bio?: string | null
           created_at?: string
+          custom_theme?: Json | null
           display_name?: string | null
           id?: string
+          theme?: string
           updated_at?: string
           user_id?: string
           username?: string

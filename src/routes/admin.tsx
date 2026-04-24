@@ -10,7 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink } from "lucide-react";
+import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -26,7 +27,15 @@ type SocialLink = {
   user_id: string;
 };
 
-type Profile = { id: string; user_id: string; username: string; display_name: string | null; bio: string | null };
+type Profile = {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  theme: string | null;
+  custom_theme: Partial<ThemeTokens> | null;
+};
 type Invite = { id: string; code: string; used_by: string | null; used_at: string | null; created_at: string };
 
 function AdminPage() {
@@ -80,11 +89,46 @@ function AdminPage() {
     setSavingProfile(true);
     const { error } = await supabase
       .from("profiles")
-      .update({ display_name: profile.display_name, bio: profile.bio })
+      .update({
+        display_name: profile.display_name,
+        bio: profile.bio,
+        theme: profile.theme ?? "midnight",
+        custom_theme: profile.custom_theme,
+      })
       .eq("user_id", profile.user_id);
     setSavingProfile(false);
     if (error) toast.error(error.message);
     else toast.success("Profile saved");
+  };
+
+  const setTheme = async (themeKey: string) => {
+    if (!profile) return;
+    setProfile({ ...profile, theme: themeKey });
+    const { error } = await supabase
+      .from("profiles")
+      .update({ theme: themeKey })
+      .eq("user_id", profile.user_id);
+    if (error) toast.error(error.message);
+    else toast.success(`Theme set to ${themeKey}`);
+  };
+
+  const updateCustomTheme = (patch: Partial<ThemeTokens>) => {
+    if (!profile) return;
+    setProfile({
+      ...profile,
+      theme: "custom",
+      custom_theme: { ...(profile.custom_theme ?? {}), ...patch },
+    });
+  };
+
+  const saveCustomTheme = async () => {
+    if (!profile) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ theme: "custom", custom_theme: profile.custom_theme })
+      .eq("user_id", profile.user_id);
+    if (error) toast.error(error.message);
+    else toast.success("Custom theme saved");
   };
 
   const updateLink = (id: string, patch: Partial<SocialLink>) => {
@@ -241,6 +285,125 @@ function AdminPage() {
                 {savingProfile ? "Saving" : "Save profile"}
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Theme picker */}
+        {profile && (
+          <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div className="mb-1 font-semibold">Theme</div>
+            <p className="mb-4 text-sm text-muted-foreground">Pick a vibe for your public page. Click to apply instantly.</p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+              {THEME_PRESETS.map((t) => {
+                const active = profile.theme === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTheme(t.key)}
+                    className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
+                      active ? "border-primary ring-2 ring-primary" : "border-border"
+                    }`}
+                  >
+                    <div className="h-20 rounded-lg" style={{ background: t.preview }} />
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-sm font-medium">{t.label}</span>
+                      {active && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setTheme("custom")}
+                className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
+                  profile.theme === "custom" ? "border-primary ring-2 ring-primary" : "border-dashed border-border"
+                }`}
+              >
+                <div className="flex h-20 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
+                  Your colors
+                </div>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-sm font-medium">Custom</span>
+                  {profile.theme === "custom" && <Check className="h-4 w-4 text-primary" />}
+                </div>
+              </button>
+            </div>
+
+            {profile.theme === "custom" && (
+              <div className="mt-6 grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Background color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.background as string) || "#1a1a2e"}
+                    onChange={(e) => updateCustomTheme({ background: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Text color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.foreground as string) || "#ffffff"}
+                    onChange={(e) => updateCustomTheme({ foreground: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Card color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.card as string) || "#2a2a3e"}
+                    onChange={(e) => updateCustomTheme({ card: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Accent color</Label>
+                  <Input
+                    type="color"
+                    value={(profile.custom_theme?.accent as string) || "#a855f7"}
+                    onChange={(e) => updateCustomTheme({ accent: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Button style</Label>
+                  <Select
+                    value={profile.custom_theme?.buttonStyle ?? "rounded"}
+                    onValueChange={(v) => updateCustomTheme({ buttonStyle: v as ThemeTokens["buttonStyle"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rounded">Rounded</SelectItem>
+                      <SelectItem value="pill">Pill</SelectItem>
+                      <SelectItem value="square">Square</SelectItem>
+                      <SelectItem value="soft">Soft</SelectItem>
+                      <SelectItem value="outline">Outline</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Font</Label>
+                  <Select
+                    value={profile.custom_theme?.font ?? "sans"}
+                    onValueChange={(v) => updateCustomTheme({ font: v as ThemeTokens["font"] })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sans">Sans</SelectItem>
+                      <SelectItem value="serif">Serif</SelectItem>
+                      <SelectItem value="mono">Mono</SelectItem>
+                      <SelectItem value="display">Display</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2">
+                  <Button onClick={saveCustomTheme}>
+                    <Save className="mr-2 h-4 w-4" /> Save custom theme
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
