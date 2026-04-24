@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check } from "lucide-react";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -33,6 +34,7 @@ type Profile = {
   username: string;
   display_name: string | null;
   bio: string | null;
+  avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
 };
@@ -45,6 +47,7 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
@@ -99,6 +102,55 @@ function AdminPage() {
     setSavingProfile(false);
     if (error) toast.error(error.message);
     else toast.success("Profile saved");
+  };
+
+  const uploadAvatar = async (file: File) => {
+    if (!profile || !userId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+    });
+    if (upErr) {
+      setUploadingAvatar(false);
+      toast.error(upErr.message);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const url = pub.publicUrl;
+    const { error: updErr } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("user_id", userId);
+    setUploadingAvatar(false);
+    if (updErr) toast.error(updErr.message);
+    else {
+      setProfile({ ...profile, avatar_url: url });
+      toast.success("Profile picture updated");
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!profile || !userId) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else {
+      setProfile({ ...profile, avatar_url: null });
+      toast.success("Profile picture removed");
+    }
   };
 
   const setTheme = async (themeKey: string) => {
@@ -255,6 +307,39 @@ function AdminPage() {
         {profile && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="mb-4 font-semibold">Profile</div>
+
+            <div className="mb-6 flex items-center gap-4">
+              <Avatar className="h-20 w-20 border-2 border-border">
+                <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} />
+                <AvatarFallback className="text-2xl font-semibold">
+                  {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="secondary" disabled={uploadingAvatar}>
+                  <label className="cursor-pointer">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {uploadingAvatar ? "Uploading…" : profile.avatar_url ? "Change photo" : "Upload photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadAvatar(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </Button>
+                {profile.avatar_url && (
+                  <Button size="sm" variant="ghost" onClick={removeAvatar}>
+                    <X className="mr-2 h-4 w-4" /> Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Username</Label>

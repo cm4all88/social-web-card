@@ -30,6 +30,7 @@ type Profile = {
   username: string;
   display_name: string | null;
   bio: string | null;
+  avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
 };
@@ -88,10 +89,14 @@ function ProfilePage() {
           style={{ background: theme.accent, boxShadow: `0 10px 40px -10px ${theme.accent}` }}
         >
           <div
-            className="flex h-full w-full items-center justify-center rounded-full text-3xl font-bold"
+            className="flex h-full w-full items-center justify-center overflow-hidden rounded-full text-3xl font-bold"
             style={{ background: theme.card, color: theme.cardForeground }}
           >
-            {name.slice(0, 1).toUpperCase()}
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt={name} className="h-full w-full object-cover" />
+            ) : (
+              name.slice(0, 1).toUpperCase()
+            )}
           </div>
         </div>
         <h1 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>
