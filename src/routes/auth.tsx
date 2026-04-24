@@ -9,7 +9,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — LinkHub" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Yooits" }] }),
 });
 
 function AuthPage() {

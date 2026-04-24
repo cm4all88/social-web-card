@@ -16,7 +16,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
-  head: () => ({ meta: [{ title: "Manage your links — LinkHub" }] }),
+  head: () => ({ meta: [{ title: "Manage your links — Yooits" }] }),
 });
 
 type SocialLink = {
