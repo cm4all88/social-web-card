@@ -104,6 +104,55 @@ function AdminPage() {
     else toast.success("Profile saved");
   };
 
+  const uploadAvatar = async (file: File) => {
+    if (!profile || !userId) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be under 5MB");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${userId}/avatar-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+      cacheControl: "3600",
+      upsert: true,
+    });
+    if (upErr) {
+      setUploadingAvatar(false);
+      toast.error(upErr.message);
+      return;
+    }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const url = pub.publicUrl;
+    const { error: updErr } = await supabase
+      .from("profiles")
+      .update({ avatar_url: url })
+      .eq("user_id", userId);
+    setUploadingAvatar(false);
+    if (updErr) toast.error(updErr.message);
+    else {
+      setProfile({ ...profile, avatar_url: url });
+      toast.success("Profile picture updated");
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!profile || !userId) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: null })
+      .eq("user_id", userId);
+    if (error) toast.error(error.message);
+    else {
+      setProfile({ ...profile, avatar_url: null });
+      toast.success("Profile picture removed");
+    }
+  };
+
   const setTheme = async (themeKey: string) => {
     if (!profile) return;
     setProfile({ ...profile, theme: themeKey });
