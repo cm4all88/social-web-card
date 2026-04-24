@@ -19,7 +19,6 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,7 +44,6 @@ function AuthPage() {
             data: {
               username: cleanUsername,
               display_name: displayName.trim() || cleanUsername,
-              invite_code: inviteCode.trim(),
             },
           },
         });
@@ -70,7 +68,7 @@ function AuthPage() {
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-card)" }}>
         <h1 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your page"}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin" ? "Sign in to manage your links." : "Invite-only. The first account becomes admin."}
+          {mode === "signin" ? "Sign in to manage your links." : "Claim your username and start sharing."}
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           {mode === "signup" && (
@@ -93,10 +91,6 @@ function AuthPage() {
               <div className="space-y-2">
                 <Label htmlFor="display">Display name (optional)</Label>
                 <Input id="display" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your Name" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="invite">Invite code</Label>
-                <Input id="invite" value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder="Required (skip only for first admin)" />
               </div>
             </>
           )}
