@@ -56,7 +56,7 @@ function Home() {
           </Link>
         </div>
         <p className="mt-4 text-xs text-muted-foreground">
-          Invite-only. Need a code? Ask the admin.
+          Free to join. Pick your username and go.
         </p>
       </main>
     </div>
