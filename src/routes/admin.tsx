@@ -307,6 +307,39 @@ function AdminPage() {
         {profile && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="mb-4 font-semibold">Profile</div>
+
+            <div className="mb-6 flex items-center gap-4">
+              <Avatar className="h-20 w-20 border-2 border-border">
+                <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} />
+                <AvatarFallback className="text-2xl font-semibold">
+                  {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild size="sm" variant="secondary" disabled={uploadingAvatar}>
+                  <label className="cursor-pointer">
+                    <Upload className="mr-2 h-4 w-4" />
+                    {uploadingAvatar ? "Uploading…" : profile.avatar_url ? "Change photo" : "Upload photo"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadAvatar(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </Button>
+                {profile.avatar_url && (
+                  <Button size="sm" variant="ghost" onClick={removeAvatar}>
+                    <X className="mr-2 h-4 w-4" /> Remove
+                  </Button>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Username</Label>
