@@ -11,7 +11,8 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check } from "lucide-react";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
