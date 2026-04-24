@@ -34,6 +34,7 @@ type Profile = {
   username: string;
   display_name: string | null;
   bio: string | null;
+  avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
 };
