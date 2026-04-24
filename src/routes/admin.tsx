@@ -47,6 +47,7 @@ function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
