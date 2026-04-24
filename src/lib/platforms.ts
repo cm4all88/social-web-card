@@ -76,3 +76,12 @@ export function getPlatform(key: string): PlatformMeta {
 }
 
 export const PLATFORM_KEYS = Object.keys(PLATFORMS);
+
+export const PLATFORM_CATEGORIES: { label: string; keys: string[] }[] = [
+  { label: "Social", keys: ["instagram", "tiktok", "snapchat", "facebook", "twitter", "youtube", "twitch", "linkedin", "pinterest"] },
+  { label: "Messaging", keys: ["whatsapp", "telegram", "discord", "gmail", "phone"] },
+  { label: "Payments", keys: ["cashapp", "paypal", "venmo", "zelle", "applepay", "googlepay", "stripe"] },
+  { label: "Shopping & Support", keys: ["amazon", "buymeacoffee", "patreon", "onlyfans"] },
+  { label: "Music", keys: ["spotify", "applemusic", "soundcloud"] },
+  { label: "Other", keys: ["github", "website"] },
+];
