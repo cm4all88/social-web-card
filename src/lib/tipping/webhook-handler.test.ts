@@ -12,19 +12,29 @@ import {
 const ACCT = "acct_creator";
 const TIP_ID = "11111111-1111-4111-8111-111111111111";
 
+/**
+ * In-memory store. claimEvent checks and sets in one synchronous step, the way
+ * the database function does in one statement, so it is atomic here too.
+ */
 class MemoryStore implements TippingStore {
-  events = new Map<string, { processed: boolean }>();
+  events = new Map<string, "claimed" | "processed">();
   tips = new Map<string, TipRow & { paid_at?: string; dispute_amount_cents?: number | null }>();
   accounts = new Map<string, Record<string, unknown>>();
+  tipWrites = 0;
+  writeDelayMs = 0;
 
   async claimEvent(e: { id: string }) {
-    const existing = this.events.get(e.id);
-    if (existing?.processed) return "duplicate" as const;
-    if (!existing) this.events.set(e.id, { processed: false });
-    return "new" as const;
+    const state = this.events.get(e.id);
+    if (state === "processed") return "duplicate" as const;
+    if (state === "claimed") return "in_progress" as const;
+    this.events.set(e.id, "claimed");
+    return "claimed" as const;
   }
   async markEventProcessed(id: string) {
-    this.events.set(id, { processed: true });
+    this.events.set(id, "processed");
+  }
+  async releaseEvent(id: string) {
+    if (this.events.get(id) === "claimed") this.events.delete(id);
   }
   async getTipById(id: string) {
     return this.tips.get(id) ?? null;
@@ -35,7 +45,12 @@ class MemoryStore implements TippingStore {
   async getTipByChargeId(ch: string) {
     return [...this.tips.values()].find((t) => t.charge_id === ch) ?? null;
   }
+  async getTipByApplicationFee(fee: string) {
+    return [...this.tips.values()].find((t) => t.application_fee_id === fee) ?? null;
+  }
   async updateTip(id: string, patch: TipPatch) {
+    if (this.writeDelayMs) await new Promise((r) => setTimeout(r, this.writeDelayMs));
+    this.tipWrites++;
     const t = this.tips.get(id);
     if (t) this.tips.set(id, { ...t, ...patch } as TipRow);
   }
@@ -87,6 +102,8 @@ beforeEach(() => {
     checkout_session_id: "cs_test_1",
     payment_intent_id: null,
     charge_id: null,
+    application_fee_id: null,
+    application_fee_cents: null,
     tip_amount_cents: 1000,
     platform_fee_cents: 50,
     total_cents: 1050,
@@ -96,7 +113,15 @@ beforeEach(() => {
     dispute_status: null,
     livemode: false,
   });
-  deps = { store, liveModeAllowed: false, fetchLatestChargeId: async () => "ch_1" };
+  deps = {
+    store,
+    liveModeAllowed: false,
+    fetchLatestCharge: async () => ({
+      chargeId: "ch_1",
+      applicationFeeId: "fee_1",
+      applicationFeeCents: 50,
+    }),
+  };
 });
 
 const tip = () => store.tips.get(TIP_ID)!;
@@ -108,6 +133,8 @@ describe("checkout completion", () => {
     expect(tip().status).toBe("succeeded");
     expect(tip().payment_intent_id).toBe("pi_1");
     expect(tip().charge_id).toBe("ch_1");
+    expect(tip().application_fee_id).toBe("fee_1");
+    expect(tip().application_fee_cents).toBe(50);
   });
 
   it("ignores duplicate deliveries of the same event", async () => {
@@ -177,7 +204,7 @@ describe("checkout completion", () => {
   });
 
   it("still succeeds if looking up the charge id fails", async () => {
-    deps.fetchLatestChargeId = async () => {
+    deps.fetchLatestCharge = async () => {
       throw new Error("network");
     };
     await handleStripeEvent(ev("checkout.session.completed", session()), deps);
@@ -271,7 +298,7 @@ describe("out-of-order delivery", () => {
       application_fee: "fee_1",
     });
     await expect(handleStripeEvent(refund, deps)).rejects.toBeInstanceOf(RetryLaterError);
-    expect(store.events.get(refund.id)?.processed).toBe(false);
+    expect(store.events.get(refund.id)).not.toBe("processed");
 
     await handleStripeEvent(ev("checkout.session.completed", session()), deps);
     const retried = await handleStripeEvent(refund, deps); // Stripe redelivers the same event
@@ -342,5 +369,201 @@ describe("safety rails", () => {
   it("ignores event types it doesn't handle", async () => {
     const r = await handleStripeEvent(ev("customer.created", { id: "cus_1" }), deps);
     expect(r.outcome).toBe("ignored");
+  });
+});
+
+/** A Stripe ApplicationFee object as sent in application_fee.* events (platform events). */
+const appFee = (over: Record<string, unknown> = {}) => ({
+  id: "fee_1",
+  object: "application_fee",
+  account: ACCT,
+  amount: 50,
+  amount_refunded: 0,
+  application: "ca_yooits",
+  charge: "ch_1",
+  currency: "usd",
+  livemode: false,
+  originating_transaction: null,
+  refunded: false,
+  refunds: { object: "list", data: [], has_more: false },
+  ...over,
+});
+const feeEvent = (type: string, over: Record<string, unknown> = {}) =>
+  ev(type, appFee(over), { account: null });
+
+describe("concurrent deliveries of the same event", () => {
+  it("processes an event once even when Stripe delivers it several times at once", async () => {
+    store.writeDelayMs = 20; // keep the first delivery busy while the others arrive
+    const e = ev("checkout.session.completed", session());
+    const results = await Promise.allSettled(
+      Array.from({ length: 5 }, () => handleStripeEvent(e, deps)),
+    );
+    const processed = results.filter(
+      (r) => r.status === "fulfilled" && r.value.outcome === "processed",
+    );
+    const retried = results.filter(
+      (r) => r.status === "rejected" && r.reason instanceof RetryLaterError,
+    );
+    expect(processed).toHaveLength(1);
+    expect(retried).toHaveLength(4);
+    expect(store.tipWrites).toBe(1);
+    expect(tip().status).toBe("succeeded");
+
+    // Stripe's later retries of the same event are then recognised as duplicates.
+    expect((await handleStripeEvent(e, deps)).outcome).toBe("duplicate");
+  });
+
+  it("releases the claim when handling fails, so Stripe's retry can process it", async () => {
+    const e = ev("checkout.session.completed", session());
+    store.updateTip = async () => {
+      throw new Error("database down");
+    };
+    await expect(handleStripeEvent(e, deps)).rejects.toThrow("database down");
+    expect(store.events.has(e.id)).toBe(false);
+
+    store.updateTip = MemoryStore.prototype.updateTip.bind(store);
+    expect((await handleStripeEvent(e, deps)).outcome).toBe("processed");
+  });
+});
+
+describe("Yooits fee accounting", () => {
+  beforeEach(async () => {
+    deps.fetchLatestCharge = async () => ({
+      chargeId: "ch_1",
+      applicationFeeId: null,
+      applicationFeeCents: null,
+    });
+    await handleStripeEvent(ev("checkout.session.completed", session()), deps);
+  });
+
+  it("confirms the fee Stripe collected from application_fee.created", async () => {
+    expect(tip().application_fee_cents).toBeNull();
+    await handleStripeEvent(feeEvent("application_fee.created"), deps);
+    expect(tip().application_fee_id).toBe("fee_1");
+    expect(tip().application_fee_cents).toBe(50);
+    expect(tip().platform_fee_refunded_cents).toBe(0);
+  });
+
+  it("also confirms the fee from the charge's application_fee_amount", async () => {
+    await handleStripeEvent(
+      ev("charge.succeeded", {
+        id: "ch_1",
+        payment_intent: "pi_1",
+        application_fee: "fee_1",
+        application_fee_amount: 50,
+      }),
+      deps,
+    );
+    expect(tip().application_fee_cents).toBe(50);
+    expect(tip().application_fee_id).toBe("fee_1");
+  });
+
+  it("full refund through Yooits: the whole tip and the whole fee are refunded", async () => {
+    await handleStripeEvent(
+      ev("charge.refunded", {
+        id: "ch_1",
+        payment_intent: "pi_1",
+        amount_refunded: 1050,
+        application_fee: "fee_1",
+        application_fee_amount: 50,
+      }),
+      deps,
+    );
+    await handleStripeEvent(
+      feeEvent("application_fee.refunded", { amount_refunded: 50, refunded: true }),
+      deps,
+    );
+    expect(tip().amount_refunded_cents).toBe(1050);
+    expect(tip().application_fee_cents).toBe(50);
+    expect(tip().platform_fee_refunded_cents).toBe(50);
+  });
+
+  it("partial refunds add up, and the fee refund is never more than the fee", async () => {
+    // Stripe refunds the fee proportionally on a partial refund with refund_application_fee.
+    await handleStripeEvent(
+      ev("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 525 }),
+      deps,
+    );
+    await handleStripeEvent(feeEvent("application_fee.refunded", { amount_refunded: 25 }), deps);
+    expect(tip().amount_refunded_cents).toBe(525);
+    expect(tip().platform_fee_refunded_cents).toBe(25);
+
+    await handleStripeEvent(
+      ev("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 1050 }),
+      deps,
+    );
+    await handleStripeEvent(
+      feeEvent("application_fee.refunded", { amount_refunded: 50, refunded: true }),
+      deps,
+    );
+    expect(tip().amount_refunded_cents).toBe(1050);
+    expect(tip().platform_fee_refunded_cents).toBe(50);
+
+    await handleStripeEvent(feeEvent("application_fee.refunded", { amount_refunded: 999 }), deps);
+    expect(tip().platform_fee_refunded_cents).toBe(50);
+  });
+
+  it("a partial refund the creator makes without refunding the fee leaves the fee kept", async () => {
+    await handleStripeEvent(
+      ev("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 500 }),
+      deps,
+    );
+    await handleStripeEvent(feeEvent("application_fee.created"), deps);
+    expect(tip().amount_refunded_cents).toBe(500);
+    expect(tip().platform_fee_refunded_cents).toBe(0);
+    expect(tip().application_fee_cents).toBe(50);
+  });
+
+  it("partial refund events arriving out of order never move the totals backwards", async () => {
+    await handleStripeEvent(feeEvent("application_fee.refunded", { amount_refunded: 50 }), deps);
+    await handleStripeEvent(feeEvent("application_fee.refunded", { amount_refunded: 25 }), deps);
+    expect(tip().platform_fee_refunded_cents).toBe(50);
+    await handleStripeEvent(
+      ev("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 1050 }),
+      deps,
+    );
+    await handleStripeEvent(
+      ev("charge.refunded", { id: "ch_1", payment_intent: "pi_1", amount_refunded: 525 }),
+      deps,
+    );
+    expect(tip().amount_refunded_cents).toBe(1050);
+  });
+
+  it("ignores a fee event whose account doesn't match the tip", async () => {
+    const r = await handleStripeEvent(
+      feeEvent("application_fee.refunded", { account: "acct_other", amount_refunded: 50 }),
+      deps,
+    );
+    expect(r.detail).toBe("fee is for another account");
+    expect(tip().platform_fee_refunded_cents).toBe(0);
+  });
+});
+
+describe("fee events that arrive before the payment is linked", () => {
+  it("retries a fee refund that arrives before checkout completion, then applies it", async () => {
+    deps.fetchLatestCharge = async () => ({
+      chargeId: "ch_1",
+      applicationFeeId: null,
+      applicationFeeCents: null,
+    });
+    const created = feeEvent("application_fee.created");
+    const refunded = feeEvent("application_fee.refunded", { amount_refunded: 50, refunded: true });
+    await expect(handleStripeEvent(created, deps)).rejects.toBeInstanceOf(RetryLaterError);
+    await expect(handleStripeEvent(refunded, deps)).rejects.toBeInstanceOf(RetryLaterError);
+
+    await handleStripeEvent(ev("checkout.session.completed", session()), deps);
+    // Stripe redelivers both; order doesn't matter.
+    await handleStripeEvent(refunded, deps);
+    await handleStripeEvent(created, deps);
+    expect(tip().application_fee_cents).toBe(50);
+    expect(tip().platform_fee_refunded_cents).toBe(50);
+  });
+
+  it("does not retry fees from accounts that aren't Yooits creators", async () => {
+    const r = await handleStripeEvent(
+      feeEvent("application_fee.refunded", { account: "acct_unknown", charge: "ch_x" }),
+      deps,
+    );
+    expect(r.detail).toBe("not a Yooits tip");
   });
 });

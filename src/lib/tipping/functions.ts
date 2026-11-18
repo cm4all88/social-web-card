@@ -18,6 +18,7 @@ import {
 } from "./config.server";
 import { MAX_TIP_CENTS, MIN_TIP_CENTS, PLATFORM_FEE_CENTS, quoteTip, TIP_CURRENCY } from "./money";
 import { buildTipCheckoutParams } from "./checkout-params";
+import { isCreatorType, stripeProductDescription, tipEligibility } from "./eligibility";
 import { checkAndRecordAttempt, hashIp } from "./rate-limit.server";
 import { getStripe } from "./stripe.server";
 
@@ -45,6 +46,18 @@ function publicError(e: unknown): never {
 
 class UserFacingError extends Error {}
 
+/** Enabled links with a URL on the profile: where the creator's work can be seen. */
+async function countPublicLinks(userId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from("social_links")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("enabled", true)
+    .neq("url", "");
+  if (error) throw error;
+  return count ?? 0;
+}
+
 async function loadCreatorByUsername(username: string) {
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")
@@ -53,19 +66,27 @@ async function loadCreatorByUsername(username: string) {
     .maybeSingle();
   if (error) throw error;
   if (!profile) return null;
-  const [{ data: settings }, { data: account }] = await Promise.all([
+  const [{ data: settings }, { data: account }, publicLinkCount] = await Promise.all([
     supabaseAdmin
       .from("tip_settings")
-      .select("enabled, show_on_profile, button_text")
+      .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
       .eq("user_id", profile.user_id)
       .maybeSingle(),
     supabaseAdmin
       .from("creator_payment_accounts")
-      .select("stripe_account_id, status, charges_enabled, livemode")
+      .select("stripe_account_id, status, charges_enabled, livemode, tipping_suspended_at")
       .eq("user_id", profile.user_id)
       .maybeSingle(),
+    countPublicLinks(profile.user_id),
   ]);
-  return { profile, settings, account };
+  const eligible = tipEligibility({
+    creatorType: settings?.creator_type,
+    offering: settings?.offering,
+    attestedAt: settings?.attested_at,
+    publicLinkCount,
+    suspended: !!account?.tipping_suspended_at,
+  }).ok;
+  return { profile, settings, account, eligible };
 }
 
 // ---------------------------------------------------------------------------
@@ -79,7 +100,13 @@ export const getPublicTipConfig = createServerFn({ method: "GET" })
     try {
       getTippingConfig();
       const creator = await loadCreatorByUsername(data.username);
-      if (!creator || !creator.settings?.enabled || !canAcceptTips(creator.account)) return off;
+      if (
+        !creator ||
+        !creator.eligible ||
+        !creator.settings?.enabled ||
+        !canAcceptTips(creator.account)
+      )
+        return off;
       return {
         available: true as const,
         showOnProfile: creator.settings.show_on_profile,
@@ -118,6 +145,7 @@ export const createTipCheckout = createServerFn({ method: "POST" })
       const creator = await loadCreatorByUsername(data.username);
       if (
         !creator ||
+        !creator.eligible ||
         !creator.settings?.enabled ||
         !canAcceptTips(creator.account) ||
         !creator.account
@@ -260,6 +288,37 @@ export const startStripeOnboarding = createServerFn({ method: "POST" })
         throw new UserFacingError("Your payment account was set up in a different Stripe mode.");
       }
 
+      // Only creators and service providers can set up tips (not personal transfers).
+      const [{ data: profile }, { data: settings }, { data: acct }, publicLinkCount] =
+        await Promise.all([
+          supabaseAdmin.from("profiles").select("username").eq("user_id", userId).maybeSingle(),
+          supabaseAdmin
+            .from("tip_settings")
+            .select("creator_type, offering, attested_at")
+            .eq("user_id", userId)
+            .maybeSingle(),
+          supabaseAdmin
+            .from("creator_payment_accounts")
+            .select("tipping_suspended_at")
+            .eq("user_id", userId)
+            .maybeSingle(),
+          countPublicLinks(userId),
+        ]);
+      const eligibility = tipEligibility({
+        creatorType: settings?.creator_type,
+        offering: settings?.offering,
+        attestedAt: settings?.attested_at,
+        publicLinkCount,
+        suspended: !!acct?.tipping_suspended_at,
+      });
+      if (!eligibility.ok) {
+        throw new UserFacingError(
+          eligibility.problems.includes("suspended")
+            ? "Tipping has been turned off for this account."
+            : "Tell us what supporters are tipping you for, and add a link to your work, before connecting Stripe.",
+        );
+      }
+
       if (!accountId) {
         const email = typeof context.claims.email === "string" ? context.claims.email : undefined;
         const account = await stripe.accounts.create(
@@ -271,6 +330,13 @@ export const startStripeOnboarding = createServerFn({ method: "POST" })
               losses: { payments: "stripe" },
               requirement_collection: "stripe",
               stripe_dashboard: { type: "full" },
+            },
+            business_profile: {
+              url: profile?.username ? `${siteUrl()}/${profile.username}` : undefined,
+              product_description:
+                settings && isCreatorType(settings.creator_type) && settings.offering
+                  ? stripeProductDescription(settings.creator_type, settings.offering)
+                  : undefined,
             },
             metadata: { yooits_user_id: userId },
           },

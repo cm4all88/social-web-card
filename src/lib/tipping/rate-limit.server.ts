@@ -18,36 +18,24 @@ export async function hashIp(ip: string, salt: string): Promise<string> {
   return Array.from(new Uint8Array(sig), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/** Returns true when the caller is over a limit; otherwise records the attempt. */
+/**
+ * Returns true when the caller is over a limit; otherwise records the attempt.
+ * The check and the insert happen in one database call that holds per-creator
+ * and per-IP locks (see record_checkout_attempt), so concurrent requests can't
+ * slip past the limit.
+ */
 export async function checkAndRecordAttempt(opts: {
   ipHash: string;
   creatorUserId: string;
 }): Promise<boolean> {
-  const tenMinAgo = new Date(Date.now() - 10 * 60_000).toISOString();
-  const hourAgo = new Date(Date.now() - 60 * 60_000).toISOString();
-
-  const [byIp, byCreator] = await Promise.all([
-    supabaseAdmin
-      .from("checkout_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("ip_hash", opts.ipHash)
-      .gte("created_at", tenMinAgo),
-    supabaseAdmin
-      .from("checkout_attempts")
-      .select("id", { count: "exact", head: true })
-      .eq("creator_user_id", opts.creatorUserId)
-      .gte("created_at", hourAgo),
-  ]);
-  if (byIp.error || byCreator.error) throw byIp.error ?? byCreator.error;
-  if (
-    (byIp.count ?? 0) >= IP_LIMIT_PER_10_MIN ||
-    (byCreator.count ?? 0) >= CREATOR_LIMIT_PER_HOUR
-  ) {
-    return true;
-  }
-  const { error } = await supabaseAdmin
-    .from("checkout_attempts")
-    .insert({ ip_hash: opts.ipHash, creator_user_id: opts.creatorUserId });
+  const { data, error } = await supabaseAdmin.rpc("record_checkout_attempt", {
+    _ip_hash: opts.ipHash,
+    _creator_user_id: opts.creatorUserId,
+    _ip_limit: IP_LIMIT_PER_10_MIN,
+    _ip_window_seconds: 10 * 60,
+    _creator_limit: CREATOR_LIMIT_PER_HOUR,
+    _creator_window_seconds: 60 * 60,
+  });
   if (error) throw error;
-  return false;
+  return data !== true;
 }

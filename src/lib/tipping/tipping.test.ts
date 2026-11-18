@@ -4,6 +4,13 @@ import { canAcceptTips, snapshotAccount } from "./account-status";
 import { buildTipCheckoutParams } from "./checkout-params";
 import { isLiveKey, isTestKey } from "./config.server";
 import {
+  CREATOR_TYPES,
+  OFFERING_MAX,
+  stripeProductDescription,
+  type EligibilityInput,
+  tipEligibility,
+} from "./eligibility";
+import {
   formatUsd,
   MAX_TIP_CENTS,
   parseDollarsToCents,
@@ -188,5 +195,60 @@ describe("webhook signature verification", () => {
       timestamp: Math.floor(Date.now() / 1000) - 60 * 60,
     });
     expect(await verifyStripeWebhook(stripe, payload, old, [platformSecret])).toBeNull();
+  });
+});
+
+describe("who can receive tips", () => {
+  const ok: EligibilityInput = {
+    creatorType: "artist",
+    offering: "Original songs I post every week",
+    attestedAt: "2026-11-18T00:00:00Z",
+    publicLinkCount: 2,
+    suspended: false,
+  };
+
+  it("accepts a creator who says what they offer, confirms it and links their work", () => {
+    expect(tipEligibility(ok)).toEqual({ ok: true });
+  });
+
+  it("refuses everyday profiles that haven't described content or a service", () => {
+    expect(
+      tipEligibility({
+        creatorType: null,
+        offering: null,
+        attestedAt: null,
+        publicLinkCount: 0,
+        suspended: false,
+      }),
+    ).toEqual({
+      ok: false,
+      problems: ["creator_type", "offering", "attestation", "public_link"],
+    });
+  });
+
+  it("checks each requirement on its own", () => {
+    const problems = (over: Partial<EligibilityInput>) => {
+      const r = tipEligibility({ ...ok, ...over });
+      return r.ok ? [] : r.problems;
+    };
+    expect(problems({ creatorType: "friend" })).toEqual(["creator_type"]);
+    expect(problems({ offering: "  money  " })).toEqual(["offering"]);
+    expect(problems({ offering: "x".repeat(OFFERING_MAX + 1) })).toEqual(["offering"]);
+    expect(problems({ attestedAt: null })).toEqual(["attestation"]);
+    expect(problems({ publicLinkCount: 0 })).toEqual(["public_link"]);
+    expect(problems({ suspended: true })).toEqual(["suspended"]);
+  });
+
+  it("describes the business to Stripe from what the creator said", () => {
+    expect(stripeProductDescription("artist", " Original songs ")).toBe(
+      "Tips from supporters via Yooits. Artist or musician: Original songs",
+    );
+    expect(CREATOR_TYPES.map((t) => t.value)).toEqual([
+      "content_creator",
+      "artist",
+      "writer",
+      "educator",
+      "service_provider",
+    ]);
   });
 });

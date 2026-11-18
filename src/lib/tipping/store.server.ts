@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { TipPatch, TipRow, TippingStore } from "./webhook-handler";
 
 const TIP_COLUMNS =
-  "id, creator_user_id, stripe_account_id, checkout_session_id, payment_intent_id, charge_id, tip_amount_cents, platform_fee_cents, total_cents, status, amount_refunded_cents, platform_fee_refunded_cents, dispute_status, livemode";
+  "id, creator_user_id, stripe_account_id, checkout_session_id, payment_intent_id, charge_id, application_fee_id, application_fee_cents, tip_amount_cents, platform_fee_cents, total_cents, status, amount_refunded_cents, platform_fee_refunded_cents, dispute_status, livemode";
 
 function fail(what: string, error: { message: string } | null): never {
   // Keep messages generic; details go to the Worker log only.
@@ -16,20 +16,16 @@ function fail(what: string, error: { message: string } | null): never {
 
 export const supabaseTippingStore: TippingStore = {
   async claimEvent(e) {
-    const { error: insErr } = await supabaseAdmin
-      .from("stripe_events")
-      .upsert(
-        { id: e.id, type: e.type, account: e.account, livemode: e.livemode },
-        { onConflict: "id", ignoreDuplicates: true },
-      );
-    if (insErr) fail("record event", insErr);
-    const { data, error } = await supabaseAdmin
-      .from("stripe_events")
-      .select("processed_at")
-      .eq("id", e.id)
-      .maybeSingle();
-    if (error) fail("read event", error);
-    return data?.processed_at ? "duplicate" : "new";
+    // One atomic statement in the database (claim_stripe_event).
+    const { data, error } = await supabaseAdmin.rpc("claim_stripe_event", {
+      _id: e.id,
+      _type: e.type,
+      _account: e.account ?? undefined,
+      _livemode: e.livemode,
+    });
+    if (error) fail("claim event", error);
+    if (data === "claimed" || data === "duplicate" || data === "in_progress") return data;
+    fail("claim event", { message: `unexpected result ${String(data)}` });
   },
 
   async markEventProcessed(id) {
@@ -38,6 +34,15 @@ export const supabaseTippingStore: TippingStore = {
       .update({ processed_at: new Date().toISOString() })
       .eq("id", id);
     if (error) fail("mark event", error);
+  },
+
+  async releaseEvent(id) {
+    const { error } = await supabaseAdmin
+      .from("stripe_events")
+      .update({ claimed_at: null })
+      .eq("id", id)
+      .is("processed_at", null);
+    if (error) fail("release event", error);
   },
 
   async getTipById(id) {
@@ -65,6 +70,16 @@ export const supabaseTippingStore: TippingStore = {
       .from("tips")
       .select(TIP_COLUMNS)
       .eq("charge_id", chargeId)
+      .maybeSingle();
+    if (error) fail("load tip", error);
+    return (data as TipRow | null) ?? null;
+  },
+
+  async getTipByApplicationFee(feeId) {
+    const { data, error } = await supabaseAdmin
+      .from("tips")
+      .select(TIP_COLUMNS)
+      .eq("application_fee_id", feeId)
       .maybeSingle();
     if (error) fail("load tip", error);
     return (data as TipRow | null) ?? null;

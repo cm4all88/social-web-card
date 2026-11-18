@@ -5,37 +5,12 @@
  * features rely on. No network, no real Supabase project.
  */
 import { PGlite } from "@electric-sql/pglite";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { migrationSql, SUPABASE_GRANTS, SUPABASE_STUBS } from "./supabase-stubs";
 
-const MIGRATIONS = join(__dirname, "..", "migrations");
 const ADMIN = "00000000-0000-4000-8000-00000000000a";
 const ALICE = "00000000-0000-4000-8000-0000000000a1";
 const BOB = "00000000-0000-4000-8000-0000000000b0";
-
-const SUPABASE_STUBS = `
-  CREATE ROLE anon NOLOGIN;
-  CREATE ROLE authenticated NOLOGIN;
-  CREATE SCHEMA auth;
-  CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, raw_user_meta_data jsonb, created_at timestamptz DEFAULT now());
-  CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS
-    $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
-  GRANT USAGE ON SCHEMA auth TO anon, authenticated;
-  CREATE SCHEMA storage;
-  CREATE TABLE storage.buckets (id text PRIMARY KEY, name text, public boolean);
-  CREATE TABLE storage.objects (id uuid DEFAULT gen_random_uuid(), bucket_id text, name text);
-  ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
-  CREATE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE sql AS $$ SELECT string_to_array(name, '/') $$;
-`;
-
-// Supabase grants table privileges to these roles by default; RLS does the rest.
-const SUPABASE_GRANTS = `
-  GRANT USAGE ON SCHEMA public TO anon, authenticated;
-  GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
-  GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
-  GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO anon, authenticated;
-`;
 
 let db: PGlite;
 
@@ -65,11 +40,7 @@ const svc = (sql: string, params: unknown[] = []) => db.query(sql, params);
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(SUPABASE_STUBS);
-  for (const f of readdirSync(MIGRATIONS)
-    .filter((f) => f.endsWith(".sql"))
-    .sort()) {
-    await db.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
-  }
+  for (const sql of migrationSql()) await db.exec(sql);
   await db.exec(SUPABASE_GRANTS);
 
   // Three users via the real signup trigger (first one becomes admin).
@@ -92,9 +63,9 @@ beforeAll(async () => {
     [ALICE, BOB],
   );
   await svc(
-    `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at)
-     VALUES ($1, 'acct_alice', 1000, 50, 1050, 'succeeded', now()),
-            ($1, 'acct_alice', 2000, 50, 2050, 'succeeded', now())`,
+    `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at, application_fee_cents)
+     VALUES ($1, 'acct_alice', 1000, 50, 1050, 'succeeded', now(), 50),
+            ($1, 'acct_alice', 2000, 50, 2050, 'succeeded', now(), 50)`,
     [ALICE],
   );
   await svc(
@@ -253,6 +224,148 @@ describe("admin revenue report", () => {
     expect(r.creators_receiving_tips).toBe(1);
     expect(r.active_connected_creators).toBe(1);
     expect(r.pending_connected_creators).toBe(1);
+    expect(r.unconfirmed_fee_tips).toBe(0);
+    expect(r.fee_mismatch_tips).toBe(0);
+  });
+
+  it("counts a fee as collected only once Stripe confirms it, and nets partial fee refunds", async () => {
+    const report = async () =>
+      (
+        await as<{ admin_tip_report: Record<string, number> }>(
+          ADMIN,
+          `SELECT public.admin_tip_report()`,
+        )
+      )[0].admin_tip_report;
+    const {
+      rows: [{ id }],
+    } = await svc<{ id: string }>(
+      `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at)
+       VALUES ($1, 'acct_alice', 500, 50, 550, 'succeeded', now()) RETURNING id`,
+      [ALICE],
+    );
+    let r = await report();
+    expect(r.platform_fee_cents).toBe(100); // not counted yet
+    expect(r.unconfirmed_fee_tips).toBe(1);
+    expect(r.unconfirmed_fee_cents).toBe(50);
+    expect(r.net_platform_fee_cents).toBe(50);
+
+    // Stripe confirms the fee, then a partial refund returns half of it.
+    await svc(
+      `UPDATE tips SET application_fee_cents = 50, amount_refunded_cents = 275, platform_fee_refunded_cents = 25 WHERE id = $1`,
+      [id],
+    );
+    r = await report();
+    expect(r.platform_fee_cents).toBe(150);
+    expect(r.platform_fee_refunded_cents).toBe(75);
+    expect(r.net_platform_fee_cents).toBe(75);
+    expect(r.unconfirmed_fee_tips).toBe(0);
+    await svc(`DELETE FROM tips WHERE id = $1`, [id]);
+  });
+});
+
+describe("server-only database functions", () => {
+  it("browsers can't claim webhook events or write rate-limit rows", async () => {
+    for (const who of ["anon", ALICE]) {
+      await expect(
+        as(who, `SELECT public.claim_stripe_event('evt_x', 'x', NULL, false)`),
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        as(
+          who,
+          `SELECT public.record_checkout_attempt('h', '${BOB}'::uuid, 1000, 600, 1000, 3600)`,
+        ),
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  it("claims an event once, then reports it in progress, then a duplicate", async () => {
+    const claim = async () =>
+      (
+        await svc<{ r: string }>(
+          `SELECT public.claim_stripe_event('evt_once', 'checkout.session.completed', 'acct_alice', false) AS r`,
+        )
+      ).rows[0].r;
+    expect(await claim()).toBe("claimed");
+    expect(await claim()).toBe("in_progress");
+    await svc(`UPDATE stripe_events SET processed_at = now() WHERE id = 'evt_once'`);
+    expect(await claim()).toBe("duplicate");
+  });
+
+  it("lets a retry take over a claim whose delivery crashed (lease expired)", async () => {
+    await svc(`SELECT public.claim_stripe_event('evt_stale', 'x', NULL, false)`);
+    await svc(
+      `UPDATE stripe_events SET claimed_at = now() - interval '10 minutes' WHERE id = 'evt_stale'`,
+    );
+    const {
+      rows: [{ r }],
+    } = await svc<{ r: string }>(
+      `SELECT public.claim_stripe_event('evt_stale', 'x', NULL, false) AS r`,
+    );
+    expect(r).toBe("claimed");
+  });
+
+  it("stops checkout attempts at the per-IP limit", async () => {
+    const attempt = async () =>
+      (
+        await svc<{ ok: boolean }>(
+          `SELECT public.record_checkout_attempt('ip-limit-test', $1::uuid, 3, 600, 1000, 3600) AS ok`,
+          [BOB],
+        )
+      ).rows[0].ok;
+    const results = [];
+    for (let i = 0; i < 5; i++) results.push(await attempt());
+    expect(results).toEqual([true, true, true, false, false]);
+  });
+});
+
+describe("tipping eligibility and suspension", () => {
+  it("only accepts known creator types and a real description", async () => {
+    await expect(
+      as(ALICE, `UPDATE tip_settings SET creator_type = 'friend' WHERE user_id = '${ALICE}'`),
+    ).rejects.toThrow();
+    await expect(
+      as(ALICE, `UPDATE tip_settings SET offering = 'cash' WHERE user_id = '${ALICE}'`),
+    ).rejects.toThrow();
+    await as(
+      ALICE,
+      `UPDATE tip_settings SET creator_type = 'artist', offering = 'Weekly original songs', attested_at = now()
+       WHERE user_id = '${ALICE}'`,
+    );
+  });
+
+  it("creators can't lift a suspension themselves", async () => {
+    expect(
+      await as(
+        ALICE,
+        `UPDATE creator_payment_accounts SET tipping_suspended_at = NULL RETURNING user_id`,
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("only admins can suspend a creator, which also turns their tips off", async () => {
+    await expect(
+      as(BOB, `SELECT public.admin_set_tip_suspension('alice', true, 'test')`),
+    ).rejects.toThrow(/Not authorized/);
+
+    await as(ALICE, `UPDATE tip_settings SET enabled = true WHERE user_id = '${ALICE}'`);
+    const [{ admin_set_tip_suspension: done }] = await as<{ admin_set_tip_suspension: boolean }>(
+      ADMIN,
+      `SELECT public.admin_set_tip_suspension('alice', true, 'Looks like personal transfers')`,
+    );
+    expect(done).toBe(true);
+    const { rows } = await svc(
+      `SELECT a.tipping_suspended_at IS NOT NULL AS suspended, s.enabled
+         FROM creator_payment_accounts a JOIN tip_settings s USING (user_id) WHERE a.user_id = $1`,
+      [ALICE],
+    );
+    expect(rows[0]).toEqual({ suspended: true, enabled: false });
+
+    await as(ADMIN, `SELECT public.admin_set_tip_suspension('alice', false)`);
+    const { rows: after } = await svc(
+      `SELECT tipping_suspended_at FROM creator_payment_accounts WHERE user_id = $1`,
+      [ALICE],
+    );
+    expect(after[0]).toEqual({ tipping_suspended_at: null });
   });
 });
 

@@ -39,14 +39,22 @@ export const Route = createFileRoute("/api/stripe/webhook")({
             {
               store: supabaseTippingStore,
               liveModeAllowed: cfg.liveModeAllowed,
-              fetchLatestChargeId: async (pi, account) => {
+              fetchLatestCharge: async (pi, account) => {
                 const intent = await stripe.paymentIntents.retrieve(
                   pi,
-                  {},
+                  { expand: ["latest_charge"] },
                   { stripeAccount: account },
                 );
                 const latest = intent.latest_charge;
-                return typeof latest === "string" ? latest : (latest?.id ?? null);
+                if (!latest) return null;
+                if (typeof latest === "string")
+                  return { chargeId: latest, applicationFeeId: null, applicationFeeCents: null };
+                const fee = latest.application_fee;
+                return {
+                  chargeId: latest.id,
+                  applicationFeeId: typeof fee === "string" ? fee : (fee?.id ?? null),
+                  applicationFeeCents: latest.application_fee_amount ?? null,
+                };
               },
               log: (msg, extra) => console.log(`[stripe-webhook] ${msg}`, extra ?? {}),
             },

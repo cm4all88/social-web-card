@@ -23,10 +23,26 @@ import {
   startStripeOnboarding,
 } from "@/lib/tipping/functions";
 import { formatUsd } from "@/lib/tipping/money";
+import {
+  ATTESTATION_TEXT,
+  CREATOR_TYPES,
+  OFFERING_MAX,
+  OFFERING_MIN,
+  PROBLEM_COPY,
+  tipEligibility,
+} from "@/lib/tipping/eligibility";
 import type { PaymentAccountStatus } from "@/lib/tipping/account-status";
 
-type Settings = { enabled: boolean; show_on_profile: boolean; button_text: string };
+type Settings = {
+  enabled: boolean;
+  show_on_profile: boolean;
+  button_text: string;
+  creator_type: string | null;
+  offering: string | null;
+  attested_at: string | null;
+};
 type AccountRow = {
+  tipping_suspended_at: string | null;
   status: string;
   charges_enabled: boolean;
   payouts_enabled: boolean;
@@ -77,6 +93,9 @@ const DEFAULT_SETTINGS: Settings = {
   enabled: false,
   show_on_profile: true,
   button_text: "Send a tip",
+  creator_type: null,
+  offering: null,
+  attested_at: null,
 };
 
 export function TipsManager({ userId, username }: { userId: string; username: string }) {
@@ -84,18 +103,21 @@ export function TipsManager({ userId, username }: { userId: string; username: st
   const [account, setAccount] = useState<AccountRow | null>(null);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [tips, setTips] = useState<TipRow[]>([]);
+  const [linkCount, setLinkCount] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: acct }, { data: s }, { data: t }] = await Promise.all([
+    const [{ data: acct }, { data: s }, { data: t }, { count: links }] = await Promise.all([
       supabase
         .from("creator_payment_accounts")
-        .select("status, charges_enabled, payouts_enabled, requirements_due_count, disabled_reason")
+        .select(
+          "status, charges_enabled, payouts_enabled, requirements_due_count, disabled_reason, tipping_suspended_at",
+        )
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
         .from("tip_settings")
-        .select("enabled, show_on_profile, button_text")
+        .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
         .eq("user_id", userId)
         .maybeSingle(),
       supabase
@@ -107,7 +129,14 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         .in("status", ["succeeded", "needs_review"])
         .order("created_at", { ascending: false })
         .limit(100),
+      supabase
+        .from("social_links")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("enabled", true)
+        .neq("url", ""),
     ]);
+    setLinkCount(links ?? 0);
     setAccount((acct as AccountRow | null) ?? null);
     setSettings((s as Settings | null) ?? DEFAULT_SETTINGS);
     setTips((t ?? []) as TipRow[]);
@@ -146,6 +175,15 @@ export function TipsManager({ userId, username }: { userId: string; username: st
   const status: PaymentAccountStatus = (account?.status as PaymentAccountStatus) ?? "not_started";
   const copy = STATUS_COPY[status];
   const connected = status === "connected" && !!account?.charges_enabled;
+  const eligibility = tipEligibility({
+    creatorType: settings.creator_type,
+    offering: settings.offering,
+    attestedAt: settings.attested_at,
+    publicLinkCount: linkCount,
+    suspended: !!account?.tipping_suspended_at,
+  });
+  const eligible = eligibility.ok;
+  const suspended = !!account?.tipping_suspended_at;
   const tipUrl = `${window.location.origin}/${username}/tip`;
   const shareText = `Send me a tip on Yooits: ${tipUrl}`;
 
@@ -174,11 +212,28 @@ export function TipsManager({ userId, username }: { userId: string; username: st
       const { error } = await supabase.from("tip_settings").upsert({
         user_id: userId,
         ...settings,
-        enabled: settings.enabled && connected,
+        enabled: settings.enabled && connected && eligible,
         button_text: text,
       });
       if (error) throw new Error(error.message);
       toast.success("Tip settings saved");
+    });
+
+  const saveAbout = () =>
+    run("about", async () => {
+      const offering = (settings.offering ?? "").trim();
+      if (!settings.creator_type) throw new Error(PROBLEM_COPY.creator_type);
+      if (offering.length < OFFERING_MIN || offering.length > OFFERING_MAX)
+        throw new Error(PROBLEM_COPY.offering);
+      const { error } = await supabase.from("tip_settings").upsert({
+        user_id: userId,
+        ...settings,
+        offering,
+        enabled: settings.enabled && connected && !!settings.attested_at,
+      });
+      if (error) throw new Error("Couldn't save. Check the description and try again.");
+      toast.success("Saved");
+      await load();
     });
 
   const received = tips.filter((t) => t.status === "succeeded");
@@ -205,16 +260,83 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         </p>
       )}
 
+      {suspended ? (
+        <p className="mt-3 rounded-lg bg-red-500/10 p-3 text-sm text-red-600">
+          {PROBLEM_COPY.suspended}
+        </p>
+      ) : (
+        <div className="mt-4 grid gap-3 rounded-xl border border-border p-4">
+          <div className="text-sm font-medium">What supporters tip you for</div>
+          <p className="text-xs text-muted-foreground">
+            Tips on Yooits are for creators and service providers, not personal money transfers.
+            Your profile and wishlists work either way.
+          </p>
+          <div className="space-y-1">
+            <Label htmlFor="tips-type">I am a</Label>
+            <select
+              id="tips-type"
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={settings.creator_type ?? ""}
+              onChange={(e) => setSettings({ ...settings, creator_type: e.target.value || null })}
+            >
+              <option value="">Choose one</option>
+              {CREATOR_TYPES.map((t) => (
+                <option key={t.value} value={t.value}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="tips-offering">Supporters tip me for</Label>
+            <Input
+              id="tips-offering"
+              maxLength={OFFERING_MAX}
+              placeholder="e.g. my weekly cooking videos"
+              value={settings.offering ?? ""}
+              onChange={(e) => setSettings({ ...settings, offering: e.target.value })}
+            />
+          </div>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={!!settings.attested_at}
+              onChange={(e) =>
+                setSettings({
+                  ...settings,
+                  attested_at: e.target.checked ? new Date().toISOString() : null,
+                })
+              }
+            />
+            <span>{ATTESTATION_TEXT}</span>
+          </label>
+          {!eligibility.ok && (
+            <ul className="list-disc pl-5 text-xs text-muted-foreground">
+              {eligibility.problems.map((p) => (
+                <li key={p}>{PROBLEM_COPY[p]}</li>
+              ))}
+            </ul>
+          )}
+          <div>
+            <Button variant="secondary" onClick={saveAbout} disabled={busy !== null}>
+              {busy === "about" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex flex-wrap gap-2">
         {status === "not_started" || status === "disconnected" ? (
-          <Button onClick={goToStripe} disabled={busy !== null}>
+          <Button onClick={goToStripe} disabled={busy !== null || !eligible}>
             {busy === "onboard" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {status === "disconnected" ? "Reconnect Stripe" : "Connect with Stripe"}
           </Button>
         ) : (
           <>
             {status !== "connected" && (
-              <Button onClick={goToStripe} disabled={busy !== null}>
+              <Button onClick={goToStripe} disabled={busy !== null || !eligible}>
                 {busy === "onboard" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Continue setup
               </Button>
@@ -271,8 +393,8 @@ export function TipsManager({ userId, username }: { userId: string; username: st
             </div>
             <Switch
               id="tips-enabled"
-              checked={settings.enabled && connected}
-              disabled={!connected}
+              checked={settings.enabled && connected && eligible}
+              disabled={!connected || !eligible}
               onCheckedChange={(v) => setSettings({ ...settings, enabled: v })}
             />
           </div>
@@ -301,7 +423,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         </div>
       )}
 
-      {connected && settings.enabled && (
+      {connected && eligible && settings.enabled && (
         <div className="mt-6">
           <div className="text-sm font-medium">Your direct tip link</div>
           <div className="mt-2 break-all rounded-lg bg-muted px-3 py-2 font-mono text-sm">

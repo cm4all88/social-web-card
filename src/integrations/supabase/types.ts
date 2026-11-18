@@ -37,6 +37,8 @@ export type Database = {
       }
       creator_payment_accounts: {
         Row: {
+          tipping_suspended_at: string | null
+          tipping_suspended_reason: string | null
           charges_enabled: boolean
           country: string | null
           created_at: string
@@ -52,6 +54,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          tipping_suspended_at?: string | null
+          tipping_suspended_reason?: string | null
           charges_enabled?: boolean
           country?: string | null
           created_at?: string
@@ -67,6 +71,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          tipping_suspended_at?: string | null
+          tipping_suspended_reason?: string | null
           charges_enabled?: boolean
           country?: string | null
           created_at?: string
@@ -184,6 +190,8 @@ export type Database = {
       }
       stripe_events: {
         Row: {
+          attempts: number
+          claimed_at: string | null
           account: string | null
           id: string
           livemode: boolean
@@ -192,6 +200,8 @@ export type Database = {
           type: string
         }
         Insert: {
+          attempts?: number
+          claimed_at?: string | null
           account?: string | null
           id: string
           livemode?: boolean
@@ -200,6 +210,8 @@ export type Database = {
           type: string
         }
         Update: {
+          attempts?: number
+          claimed_at?: string | null
           account?: string | null
           id?: string
           livemode?: boolean
@@ -211,6 +223,9 @@ export type Database = {
       }
       tip_settings: {
         Row: {
+          attested_at: string | null
+          creator_type: string | null
+          offering: string | null
           button_text: string
           created_at: string
           enabled: boolean
@@ -219,6 +234,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attested_at?: string | null
+          creator_type?: string | null
+          offering?: string | null
           button_text?: string
           created_at?: string
           enabled?: boolean
@@ -227,6 +245,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attested_at?: string | null
+          creator_type?: string | null
+          offering?: string | null
           button_text?: string
           created_at?: string
           enabled?: boolean
@@ -238,6 +259,8 @@ export type Database = {
       }
       tips: {
         Row: {
+          application_fee_cents: number | null
+          application_fee_id: string | null
           amount_refunded_cents: number
           charge_id: string | null
           checkout_session_id: string | null
@@ -262,6 +285,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          application_fee_cents?: number | null
+          application_fee_id?: string | null
           amount_refunded_cents?: number
           charge_id?: string | null
           checkout_session_id?: string | null
@@ -286,6 +311,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          application_fee_cents?: number | null
+          application_fee_id?: string | null
           amount_refunded_cents?: number
           charge_id?: string | null
           checkout_session_id?: string | null
@@ -430,6 +457,31 @@ export type Database = {
     }
     Functions: {
       admin_tip_report: { Args: { _since?: string }; Returns: Json }
+      admin_set_tip_suspension: {
+        Args: { _username: string; _suspended: boolean; _reason?: string }
+        Returns: boolean
+      }
+      claim_stripe_event: {
+        Args: {
+          _id: string
+          _type: string
+          _account?: string
+          _livemode: boolean
+          _lease_seconds?: number
+        }
+        Returns: string
+      }
+      record_checkout_attempt: {
+        Args: {
+          _ip_hash: string
+          _creator_user_id: string
+          _ip_limit: number
+          _ip_window_seconds: number
+          _creator_limit: number
+          _creator_window_seconds: number
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
