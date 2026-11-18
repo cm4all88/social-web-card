@@ -4,7 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { getPlatform } from "@/lib/platforms";
 import { safeLinkHref } from "@/lib/safe-url";
 import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
-import { UserPlus } from "lucide-react";
+import { Gift, Heart, UserPlus } from "lucide-react";
+import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
+import { readableTextOn } from "@/lib/contrast";
+import { getPublicTipConfig } from "@/lib/tipping/functions";
 
 export const Route = createFileRoute("/$username")({
   component: ProfilePage,
@@ -36,6 +39,7 @@ type Profile = {
   custom_theme: Partial<ThemeTokens> | null;
 };
 type SocialLink = { id: string; platform: string; url: string; display_order: number; enabled: boolean };
+type WishlistSummary = { id: string; slug: string; title: string; occasion: string | null };
 
 function ProfilePage() {
   const { username } = Route.useParams();
@@ -43,6 +47,9 @@ function ProfilePage() {
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
+  const [tipConfig, setTipConfig] = useState<PublicTipConfig | null>(null);
+  const [tipOpen, setTipOpen] = useState(false);
+  const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
 
   useEffect(() => {
     const run = async () => {
@@ -65,6 +72,19 @@ function ProfilePage() {
         .order("display_order", { ascending: true });
       setLinks((l ?? []) as SocialLink[]);
       setLoading(false);
+
+      // Optional sections; failures here must never break the profile page.
+      getPublicTipConfig({ data: { username: prof.username } })
+        .then((cfg) => setTipConfig(cfg.available && cfg.showOnProfile ? cfg : null))
+        .catch(() => setTipConfig(null));
+      supabase
+        .from("wishlists")
+        .select("id, slug, title, occasion")
+        .eq("user_id", prof.user_id)
+        .eq("visibility", "public")
+        .eq("show_on_profile", true)
+        .order("display_order", { ascending: true })
+        .then(({ data }) => setWishlists((data ?? []) as WishlistSummary[]));
     };
     run();
   }, [username]);
@@ -159,6 +179,54 @@ function ProfilePage() {
             })
           )}
         </section>
+
+        {tipConfig && (
+          <section className="mt-6 w-full">
+            {tipOpen ? (
+              <TipPanel config={tipConfig} theme={theme} source="profile" />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setTipOpen(true)}
+                className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
+                style={{
+                  background: theme.accent,
+                  color: readableTextOn(theme.accent),
+                  borderColor: theme.accent,
+                  borderRadius: radius,
+                }}
+              >
+                <Heart className="h-5 w-5" /> {tipConfig.buttonText}
+              </button>
+            )}
+          </section>
+        )}
+
+        {wishlists.length > 0 && (
+          <section className="mt-6 w-full space-y-3">
+            {wishlists.map((w) => (
+              <Link
+                key={w.id}
+                to="/$username/wishlist/$slug"
+                params={{ username: profile?.username ?? username, slug: w.slug }}
+                className="flex items-center gap-4 border p-4 transition-all hover:-translate-y-0.5"
+                style={{
+                  background: theme.buttonStyle === "outline" ? "transparent" : theme.card,
+                  color: theme.cardForeground,
+                  borderColor: theme.border,
+                  borderRadius: radius,
+                }}
+              >
+                <Gift className="h-6 w-6 shrink-0" style={{ color: theme.accent }} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold">{w.title}</div>
+                  {w.occasion && <div className="text-xs opacity-70">{w.occasion}</div>}
+                </div>
+                <span className="text-xs opacity-70">View list →</span>
+              </Link>
+            ))}
+          </section>
+        )}
 
         <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
           <UserPlus className="h-3 w-3" /> Get your own Yooits
