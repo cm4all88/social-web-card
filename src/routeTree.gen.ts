@@ -9,19 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as OwnerIndexRouteImport } from './routes/owner.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as OwnerUsersRouteImport } from './routes/owner.users'
+import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
+import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
+import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
+import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
+import { Route as DashboardWishlistsRouteImport } from './routes/dashboard_.wishlists'
+import { Route as AdminSplatRouteImport } from './routes/admin.$'
+import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
+import { Route as OwnerUsersUserIdRouteImport } from './routes/owner.users_.$userId'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
 
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerRoute = OwnerRouteImport.update({
+  id: '/owner',
+  path: '/owner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsernameRoute = UsernameRouteImport.update({
@@ -34,55 +59,243 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OwnerIndexRoute = OwnerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerUsersRoute = OwnerUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerRevenueRoute = OwnerRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerInvitesRoute = OwnerInvitesRouteImport.update({
+  id: '/invites',
+  path: '/invites',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerAuditRoute = OwnerAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerSectionRoute = OwnerSectionRouteImport.update({
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const DashboardWishlistsRoute = DashboardWishlistsRouteImport.update({
+  id: '/dashboard_/wishlists',
+  path: '/dashboard/wishlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSplatRoute = AdminSplatRouteImport.update({
+  id: '/admin/$',
+  path: '/admin/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameTipRoute = UsernameTipRouteImport.update({
+  id: '/$username_/tip',
+  path: '/$username/tip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OwnerUsersUserIdRoute = OwnerUsersUserIdRouteImport.update({
+  id: '/users_/$userId',
+  path: '/users/$userId',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameWishlistSlugRoute = UsernameWishlistSlugRouteImport.update({
+  id: '/$username_/wishlist/$slug',
+  path: '/$username/wishlist/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/owner': typeof OwnerRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/$username/tip': typeof UsernameTipRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/owner/$section': typeof OwnerSectionRoute
+  '/owner/audit': typeof OwnerAuditRoute
+  '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/users': typeof OwnerUsersRoute
+  '/admin/': typeof AdminIndexRoute
+  '/owner/': typeof OwnerIndexRoute
+  '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/owner/users/$userId': typeof OwnerUsersUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/$username/tip': typeof UsernameTipRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/owner/$section': typeof OwnerSectionRoute
+  '/owner/audit': typeof OwnerAuditRoute
+  '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/users': typeof OwnerUsersRoute
+  '/admin': typeof AdminIndexRoute
+  '/owner': typeof OwnerIndexRoute
+  '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/owner/users/$userId': typeof OwnerUsersUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
-  '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/dashboard': typeof DashboardRoute
+  '/owner': typeof OwnerRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/$username_/tip': typeof UsernameTipRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/dashboard_/wishlists': typeof DashboardWishlistsRoute
+  '/owner/$section': typeof OwnerSectionRoute
+  '/owner/audit': typeof OwnerAuditRoute
+  '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/users': typeof OwnerUsersRoute
+  '/admin/': typeof AdminIndexRoute
+  '/owner/': typeof OwnerIndexRoute
+  '/$username_/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
+  '/owner/users_/$userId': typeof OwnerUsersUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$username' | '/admin' | '/auth'
+  fullPaths:
+    | '/'
+    | '/$username'
+    | '/auth'
+    | '/dashboard'
+    | '/owner'
+    | '/reset-password'
+    | '/$username/tip'
+    | '/admin/$'
+    | '/dashboard/wishlists'
+    | '/owner/$section'
+    | '/owner/audit'
+    | '/owner/invites'
+    | '/owner/revenue'
+    | '/owner/users'
+    | '/admin/'
+    | '/owner/'
+    | '/$username/wishlist/$slug'
+    | '/api/stripe/webhook'
+    | '/owner/users/$userId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$username' | '/admin' | '/auth'
-  id: '__root__' | '/' | '/$username' | '/admin' | '/auth'
+  to:
+    | '/'
+    | '/$username'
+    | '/auth'
+    | '/dashboard'
+    | '/reset-password'
+    | '/$username/tip'
+    | '/admin/$'
+    | '/dashboard/wishlists'
+    | '/owner/$section'
+    | '/owner/audit'
+    | '/owner/invites'
+    | '/owner/revenue'
+    | '/owner/users'
+    | '/admin'
+    | '/owner'
+    | '/$username/wishlist/$slug'
+    | '/api/stripe/webhook'
+    | '/owner/users/$userId'
+  id:
+    | '__root__'
+    | '/'
+    | '/$username'
+    | '/auth'
+    | '/dashboard'
+    | '/owner'
+    | '/reset-password'
+    | '/$username_/tip'
+    | '/admin/$'
+    | '/dashboard_/wishlists'
+    | '/owner/$section'
+    | '/owner/audit'
+    | '/owner/invites'
+    | '/owner/revenue'
+    | '/owner/users'
+    | '/admin/'
+    | '/owner/'
+    | '/$username_/wishlist/$slug'
+    | '/api/stripe/webhook'
+    | '/owner/users_/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   UsernameRoute: typeof UsernameRoute
-  AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  DashboardRoute: typeof DashboardRoute
+  OwnerRoute: typeof OwnerRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  UsernameTipRoute: typeof UsernameTipRoute
+  AdminSplatRoute: typeof AdminSplatRoute
+  DashboardWishlistsRoute: typeof DashboardWishlistsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner': {
+      id: '/owner'
+      path: '/owner'
+      fullPath: '/owner'
+      preLoaderRoute: typeof OwnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$username': {
@@ -99,14 +312,135 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/owner/': {
+      id: '/owner/'
+      path: '/'
+      fullPath: '/owner/'
+      preLoaderRoute: typeof OwnerIndexRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/users': {
+      id: '/owner/users'
+      path: '/users'
+      fullPath: '/owner/users'
+      preLoaderRoute: typeof OwnerUsersRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/revenue': {
+      id: '/owner/revenue'
+      path: '/revenue'
+      fullPath: '/owner/revenue'
+      preLoaderRoute: typeof OwnerRevenueRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/invites': {
+      id: '/owner/invites'
+      path: '/invites'
+      fullPath: '/owner/invites'
+      preLoaderRoute: typeof OwnerInvitesRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/audit': {
+      id: '/owner/audit'
+      path: '/audit'
+      fullPath: '/owner/audit'
+      preLoaderRoute: typeof OwnerAuditRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/$section': {
+      id: '/owner/$section'
+      path: '/$section'
+      fullPath: '/owner/$section'
+      preLoaderRoute: typeof OwnerSectionRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/dashboard_/wishlists': {
+      id: '/dashboard_/wishlists'
+      path: '/dashboard/wishlists'
+      fullPath: '/dashboard/wishlists'
+      preLoaderRoute: typeof DashboardWishlistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/$': {
+      id: '/admin/$'
+      path: '/admin/$'
+      fullPath: '/admin/$'
+      preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username_/tip': {
+      id: '/$username_/tip'
+      path: '/$username/tip'
+      fullPath: '/$username/tip'
+      preLoaderRoute: typeof UsernameTipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/owner/users_/$userId': {
+      id: '/owner/users_/$userId'
+      path: '/users/$userId'
+      fullPath: '/owner/users/$userId'
+      preLoaderRoute: typeof OwnerUsersUserIdRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username_/wishlist/$slug': {
+      id: '/$username_/wishlist/$slug'
+      path: '/$username/wishlist/$slug'
+      fullPath: '/$username/wishlist/$slug'
+      preLoaderRoute: typeof UsernameWishlistSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface OwnerRouteChildren {
+  OwnerSectionRoute: typeof OwnerSectionRoute
+  OwnerAuditRoute: typeof OwnerAuditRoute
+  OwnerInvitesRoute: typeof OwnerInvitesRoute
+  OwnerRevenueRoute: typeof OwnerRevenueRoute
+  OwnerUsersRoute: typeof OwnerUsersRoute
+  OwnerIndexRoute: typeof OwnerIndexRoute
+  OwnerUsersUserIdRoute: typeof OwnerUsersUserIdRoute
+}
+
+const OwnerRouteChildren: OwnerRouteChildren = {
+  OwnerSectionRoute: OwnerSectionRoute,
+  OwnerAuditRoute: OwnerAuditRoute,
+  OwnerInvitesRoute: OwnerInvitesRoute,
+  OwnerRevenueRoute: OwnerRevenueRoute,
+  OwnerUsersRoute: OwnerUsersRoute,
+  OwnerIndexRoute: OwnerIndexRoute,
+  OwnerUsersUserIdRoute: OwnerUsersUserIdRoute,
+}
+
+const OwnerRouteWithChildren = OwnerRoute._addFileChildren(OwnerRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   UsernameRoute: UsernameRoute,
-  AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  DashboardRoute: DashboardRoute,
+  OwnerRoute: OwnerRouteWithChildren,
+  ResetPasswordRoute: ResetPasswordRoute,
+  UsernameTipRoute: UsernameTipRoute,
+  AdminSplatRoute: AdminSplatRoute,
+  DashboardWishlistsRoute: DashboardWishlistsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
