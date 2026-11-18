@@ -43,9 +43,9 @@ beforeAll(async () => {
   for (const sql of migrationSql()) await db.exec(sql);
   await db.exec(SUPABASE_GRANTS);
 
-  // Three users via the real signup trigger (first one becomes admin).
+  // Three users via the real signup trigger.
   for (const [id, username] of [
-    [ADMIN, "boss"],
+    [ADMIN, "carol"],
     [ALICE, "alice"],
     [BOB, "bob"],
   ]) {
@@ -55,9 +55,11 @@ beforeAll(async () => {
       JSON.stringify({ username }),
     ]);
   }
-
-  // Phase 0: admin is never automatic; grant it explicitly.
-  await svc(`INSERT INTO user_roles (user_id, role) VALUES ($1, 'admin') ON CONFLICT DO NOTHING`, [ADMIN]);
+  // Grant admin explicitly rather than relying on signup order.
+  await svc(
+    `INSERT INTO public.user_roles (user_id, role) VALUES ($1, 'admin') ON CONFLICT DO NOTHING`,
+    [ADMIN],
+  );
 
   // Alice is a connected creator with two tips (one partly refunded, fee refunded).
   await svc(
