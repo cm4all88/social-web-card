@@ -26,7 +26,7 @@ import {
   type WishlistItem,
 } from "@/lib/wishlists";
 
-export const Route = createFileRoute("/admin_/wishlists")({
+export const Route = createFileRoute("/dashboard_/wishlists")({
   component: WishlistsAdmin,
   head: () => ({ meta: [{ title: "Your wishlists — Yooits" }] }),
 });
@@ -224,7 +224,7 @@ function WishlistsAdmin() {
       <Toaster />
       <div className="mx-auto max-w-3xl">
         <Link
-          to="/admin"
+          to="/dashboard"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" /> Back

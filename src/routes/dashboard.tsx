@@ -16,12 +16,21 @@ import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
-import { BarChart3, Gift } from "lucide-react";
+import { Gift, Shield } from "lucide-react";
 
-export const Route = createFileRoute("/admin")({
-  component: AdminPage,
-  head: () => ({ meta: [{ title: "Manage your links — Yooits" }] }),
+/** Creator dashboard: every signed-in user manages their own page here. */
+export const Route = createFileRoute("/dashboard")({
+  component: DashboardPage,
+  head: () => ({ meta: [{ title: "Your dashboard — Yooits" }, { name: "robots", content: "noindex" }] }),
 });
+
+const SECTIONS = [
+  { id: "profile", label: "Profile" },
+  { id: "earnings", label: "Earnings" },
+  { id: "wishlists", label: "Wishlists" },
+  { id: "appearance", label: "Appearance" },
+  { id: "links", label: "Links" },
+] as const;
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const BIO_MAX = 300;
@@ -45,9 +54,8 @@ type Profile = {
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
 };
-type Invite = { id: string; code: string; used_by: string | null; used_at: string | null; created_at: string };
 
-function AdminPage() {
+function DashboardPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -58,7 +66,6 @@ function AdminPage() {
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
-  const [invites, setInvites] = useState<Invite[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -80,11 +87,6 @@ function AdminPage() {
       const admin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
       setIsAdmin(admin);
       setLinks((l ?? []) as SocialLink[]);
-
-      if (admin) {
-        const { data: inv } = await supabase.from("invites").select("*").order("created_at", { ascending: false });
-        setInvites((inv ?? []) as Invite[]);
-      }
       setReady(true);
     };
     init();
@@ -252,32 +254,6 @@ function AdminPage() {
     else if (data) setLinks((p) => [...p, data as SocialLink]);
   };
 
-  const createInvite = async () => {
-    if (!userId) return;
-    const code = Array.from(crypto.getRandomValues(new Uint8Array(6)))
-      .map((b) => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31])
-      .join("");
-    const { data, error } = await supabase
-      .from("invites")
-      .insert({ code, created_by: userId })
-      .select()
-      .single();
-    if (error) toast.error(error.message);
-    else if (data) {
-      setInvites((p) => [data as Invite, ...p]);
-      toast.success(`Invite created: ${code}`);
-    }
-  };
-
-  const revokeInvite = async (id: string) => {
-    const { error } = await supabase.from("invites").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      setInvites((p) => p.filter((i) => i.id !== id));
-      toast.success("Invite revoked");
-    }
-  };
-
   const copyShareLink = () => {
     if (!profile) return;
     const url = `${window.location.origin}/${profile.username}`;
@@ -303,9 +279,18 @@ function AdminPage() {
             <ArrowLeft className="h-4 w-4" /> Home
           </Link>
           <img src="/yooits-logo.png" alt="yooits.me" className="h-9 w-auto" />
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="mr-2 h-4 w-4" /> Sign out
-          </Button>
+          <div className="flex items-center gap-1">
+            {isAdmin && (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/owner">
+                  <Shield className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Owner console</span><span className="sm:hidden">Owner</span>
+                </Link>
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" /> Sign out
+            </Button>
+          </div>
         </div>
 
         {profile && (
@@ -337,9 +322,25 @@ function AdminPage() {
 
         <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
 
+        {/* Section shortcuts: scrolls on small screens, sticks while you scroll */}
+        <nav
+          aria-label="Dashboard sections"
+          className="sticky top-0 z-20 -mx-4 mt-4 flex gap-2 overflow-x-auto bg-background/90 px-4 py-3 backdrop-blur"
+        >
+          {SECTIONS.map((sec) => (
+            <a
+              key={sec.id}
+              href={`#${sec.id}`}
+              className="shrink-0 rounded-full border border-border px-3 py-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              {sec.label}
+            </a>
+          ))}
+        </nav>
+
         {/* Profile */}
         {profile && (
-          <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div id="profile" className="mt-8 scroll-mt-20 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="mb-4 font-semibold">Profile</div>
 
             <div className="mb-6 flex items-center gap-4">
@@ -429,17 +430,19 @@ function AdminPage() {
         )}
 
         {/* Tips (hidden unless tipping is switched on for this deployment) */}
-        {profile && userId && <TipsManager userId={userId} username={profile.username} />}
+        <div id="earnings" className="scroll-mt-20">
+          {profile && userId && <TipsManager userId={userId} username={profile.username} />}
+        </div>
 
         {/* Wishlists */}
         {profile && (
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div id="wishlists" className="mt-8 flex scroll-mt-20 flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div>
               <div className="font-semibold">Wishlists</div>
               <p className="text-sm text-muted-foreground">Share gift lists for birthdays, holidays and big days.</p>
             </div>
             <Button variant="secondary" asChild>
-              <Link to="/admin/wishlists">
+              <Link to="/dashboard/wishlists">
                 <Gift className="mr-2 h-4 w-4" /> Manage wishlists
               </Link>
             </Button>
@@ -448,7 +451,7 @@ function AdminPage() {
 
         {/* Theme picker */}
         {profile && (
-          <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+          <div id="appearance" className="mt-8 scroll-mt-20 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
             <div className="mb-1 font-semibold">Theme</div>
             <p className="mb-4 text-sm text-muted-foreground">Pick a vibe for your public page. Click to apply instantly.</p>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
@@ -566,7 +569,7 @@ function AdminPage() {
         )}
 
         {/* Links */}
-        <h2 className="mt-10 text-xl font-bold">Your links</h2>
+        <h2 id="links" className="mt-10 scroll-mt-20 text-xl font-bold">Your links</h2>
         <p className="mt-1 text-sm text-muted-foreground">Empty links are hidden from your public page.</p>
 
         <div className="mt-4 space-y-4">
@@ -641,59 +644,6 @@ function AdminPage() {
             <Button onClick={add}><Plus className="mr-2 h-4 w-4" /> Add</Button>
           </div>
         </div>
-
-        {/* Invites (admin only) */}
-        {isAdmin && (
-          <div className="mt-12">
-            <div className="mb-6">
-              <Button variant="outline" asChild>
-                <Link to="/admin/revenue">
-                  <BarChart3 className="mr-2 h-4 w-4" /> Tip revenue report
-                </Link>
-              </Button>
-            </div>
-            <h2 className="text-xl font-bold">Invites</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Create codes to let new people sign up.</p>
-            <div className="mt-4">
-              <Button onClick={createInvite}><Plus className="mr-2 h-4 w-4" /> Generate invite code</Button>
-            </div>
-            <div className="mt-4 space-y-2">
-              {invites.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
-                  No invites yet.
-                </div>
-              ) : (
-                invites.map((inv) => (
-                  <div key={inv.id} className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
-                    <div className="flex items-center gap-3">
-                      <code className="rounded-md bg-muted px-2 py-1 text-sm font-mono">{inv.code}</code>
-                      <span className={`text-xs ${inv.used_by ? "text-muted-foreground" : "text-primary"}`}>
-                        {inv.used_by ? "Used" : "Available"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {!inv.used_by && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            navigator.clipboard.writeText(inv.code);
-                            toast.success("Code copied");
-                          }}
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => revokeInvite(inv.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

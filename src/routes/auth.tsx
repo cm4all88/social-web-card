@@ -35,7 +35,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/admin" });
+      if (data.session) navigate({ to: "/dashboard" });
     });
   }, [navigate]);
 
@@ -80,7 +80,7 @@ function AuthPage() {
         if (error) throw error;
         if (data.session) {
           // Email confirmation is off in Supabase: the account is ready now.
-          navigate({ to: "/admin" });
+          navigate({ to: "/dashboard" });
         } else {
           setNotice(
             `Check ${email} for a link to confirm your account. You can sign in once it's confirmed.`,
@@ -101,7 +101,7 @@ function AuthPage() {
           }
           throw error;
         }
-        navigate({ to: "/admin" });
+        navigate({ to: "/dashboard" });
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           ...captchaOptions(),

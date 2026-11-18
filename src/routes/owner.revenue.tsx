@@ -1,6 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatUsd } from "@/lib/tipping/money";
 
 /** Yooits-admin-only platform revenue report. Access is enforced in the database function. */
-export const Route = createFileRoute("/admin_/revenue")({
+export const Route = createFileRoute("/owner/revenue")({
   component: RevenuePage,
   head: () => ({
     meta: [{ title: "Tip revenue — Yooits" }, { name: "robots", content: "noindex" }],
@@ -118,15 +118,9 @@ function RevenuePage() {
     : [];
 
   return (
-    <div className="min-h-screen px-4 py-10">
-      <div className="mx-auto max-w-3xl">
-        <Link
-          to="/admin"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Link>
-        <h1 className="mt-6 text-3xl font-bold">Tip revenue</h1>
+    <div>
+      <div className="max-w-4xl">
+        <h1 className="text-3xl font-bold">Money</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Totals only. Stripe charges its processing fees to creators, so these are Yooits&apos;
           gross margin before hosting and other running costs.
