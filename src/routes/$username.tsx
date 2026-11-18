@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlatform } from "@/lib/platforms";
+import { safeLinkHref } from "@/lib/safe-url";
 import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { UserPlus } from "lucide-react";
 
@@ -124,11 +125,12 @@ function ProfilePage() {
               const meta = getPlatform(link.platform);
               const Icon = meta.icon;
               const isOutline = theme.buttonStyle === "outline";
+              const href = safeLinkHref(link.url);
               return (
                 <a
                   key={link.id}
-                  href={link.url}
-                  target="_blank"
+                  href={href}
+                  target={href ? "_blank" : undefined}
                   rel="noreferrer noopener"
                   className="group relative flex items-center gap-4 overflow-hidden border p-4 transition-all hover:-translate-y-0.5"
                   style={{
@@ -144,6 +146,7 @@ function ProfilePage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{meta.label}</div>
+                    {!href && <div className="truncate text-xs opacity-70">{link.url}</div>}
                   </div>
                   <div
                     className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"

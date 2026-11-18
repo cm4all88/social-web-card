@@ -6,20 +6,32 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/Turnstile";
+import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
   head: () => ({ meta: [{ title: "Sign in — Yooits" }] }),
 });
 
+type Mode = "signin" | "signup" | "forgot";
+
+const MIN_PASSWORD = 8;
+
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  // Honeypot: real people never see or fill this field.
+  const [website, setWebsite] = useState("");
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaReset, setCaptchaReset] = useState(0);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -27,49 +39,128 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setNotice(null);
+    setUnconfirmedEmail(null);
+  };
+
+  const captchaOptions = () => (captchaToken ? { captchaToken } : {});
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (website) return; // bot filled the hidden field
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toast.error("Please complete the human check.");
+      return;
+    }
     setLoading(true);
+    setNotice(null);
+    setUnconfirmedEmail(null);
     try {
       if (mode === "signup") {
-        const cleanUsername = username.trim().toLowerCase();
-        if (!/^[a-z0-9_-]{2,30}$/.test(cleanUsername)) {
-          throw new Error("Username must be 2–30 chars: a-z, 0-9, _ or -");
+        const cleanUsername = normalizeUsername(username);
+        const problem = usernameError(cleanUsername);
+        if (problem) throw new Error(problem);
+        if (password.length < MIN_PASSWORD) {
+          throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
         }
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
+            ...captchaOptions(),
             emailRedirectTo: `${window.location.origin}/admin`,
             data: {
               username: cleanUsername,
-              display_name: displayName.trim() || cleanUsername,
+              display_name: displayName.trim().slice(0, 50) || cleanUsername,
             },
           },
         });
         if (error) throw error;
-        toast.success("Account created. You can sign in now.");
-        setMode("signin");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        if (data.session) {
+          // Email confirmation is off in Supabase: the account is ready now.
+          navigate({ to: "/admin" });
+        } else {
+          setNotice(
+            `Check ${email} for a link to confirm your account. You can sign in once it's confirmed.`,
+          );
+          setPassword("");
+          setMode("signin");
+        }
+      } else if (mode === "signin") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          options: captchaOptions(),
+        });
+        if (error) {
+          if (/not confirmed/i.test(error.message)) {
+            setUnconfirmedEmail(email);
+            throw new Error("Please confirm your email first. Check your inbox for the link.");
+          }
+          throw error;
+        }
         navigate({ to: "/admin" });
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          ...captchaOptions(),
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        // Same message whether or not the address has an account.
+        if (error && !/rate limit|captcha/i.test(error.message)) {
+          console.error("[auth] reset", error.message);
+        } else if (error) {
+          throw error;
+        }
+        setNotice(`If ${email} has a Yooits account, a link to reset the password is on its way.`);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
+      setCaptchaReset((n) => n + 1);
     }
   };
+
+  const resendConfirmation = async () => {
+    if (!unconfirmedEmail) return;
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toast.error("Please complete the human check.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: unconfirmedEmail,
+      options: { ...captchaOptions(), emailRedirectTo: `${window.location.origin}/admin` },
+    });
+    setLoading(false);
+    setCaptchaReset((n) => n + 1);
+    if (error) toast.error(error.message);
+    else setNotice(`We sent a new confirmation link to ${unconfirmedEmail}.`);
+  };
+
+  const title =
+    mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your page" : "Reset your password";
+  const subtitle =
+    mode === "signin"
+      ? "Sign in to manage your links."
+      : mode === "signup"
+        ? "Claim your username and start sharing."
+        : "Enter your email and we'll send you a reset link.";
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <Toaster />
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-card)" }}>
-        <h1 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your page"}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {mode === "signin" ? "Sign in to manage your links." : "Claim your username and start sharing."}
-        </p>
+        <h1 className="text-2xl font-bold">{title}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        {notice && (
+          <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">
+            {notice}
+          </div>
+        )}
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           {mode === "signup" && (
             <>
@@ -83,34 +174,81 @@ function AuthPage() {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     placeholder="yourname"
+                    maxLength={30}
+                    autoCapitalize="none"
+                    autoComplete="username"
                     className="border-0 focus-visible:ring-0"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground">2–30 chars: a-z, 0-9, _ or -</p>
+                <p className="text-xs text-muted-foreground">{USERNAME_HELP}</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="display">Display name (optional)</Label>
-                <Input id="display" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Your Name" />
+                <Input
+                  id="display"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your Name"
+                  maxLength={50}
+                />
               </div>
             </>
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          {mode !== "forgot" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                {mode === "signin" && (
+                  <button type="button" onClick={() => switchMode("forgot")} className="text-xs text-primary hover:underline">
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <Input
+                id="password"
+                type="password"
+                required
+                minLength={mode === "signup" ? MIN_PASSWORD : undefined}
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              {mode === "signup" && (
+                <p className="text-xs text-muted-foreground">At least {MIN_PASSWORD} characters.</p>
+              )}
+            </div>
+          )}
+          <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+            <label htmlFor="website">Website</label>
+            <input id="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
+          <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            {loading
+              ? "Please wait…"
+              : mode === "signin"
+                ? "Sign in"
+                : mode === "signup"
+                  ? "Create account"
+                  : "Send reset link"}
           </Button>
+          {unconfirmedEmail && (
+            <Button type="button" variant="outline" className="w-full" disabled={loading} onClick={resendConfirmation}>
+              Resend confirmation email
+            </Button>
+          )}
         </form>
         <div className="mt-4 text-center text-sm text-muted-foreground">
           {mode === "signin" ? (
-            <>No account? <button onClick={() => setMode("signup")} className="text-primary hover:underline">Sign up</button></>
+            <>No account? <button onClick={() => switchMode("signup")} className="text-primary hover:underline">Sign up</button></>
+          ) : mode === "signup" ? (
+            <>Have an account? <button onClick={() => switchMode("signin")} className="text-primary hover:underline">Sign in</button></>
           ) : (
-            <>Have an account? <button onClick={() => setMode("signin")} className="text-primary hover:underline">Sign in</button></>
+            <>Remembered it? <button onClick={() => switchMode("signin")} className="text-primary hover:underline">Back to sign in</button></>
           )}
         </div>
         <div className="mt-6 text-center">
