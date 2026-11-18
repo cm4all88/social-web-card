@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
+import { normalizeLinkValue } from "@/lib/safe-url";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
@@ -18,6 +20,9 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
   head: () => ({ meta: [{ title: "Manage your links — Yooits" }] }),
 });
+
+const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
+const BIO_MAX = 300;
 
 type SocialLink = {
   id: string;
@@ -89,12 +94,10 @@ function AdminPage() {
 
   const saveProfile = async () => {
     if (!profile) return;
-    const username = (profile.username ?? "").trim().toLowerCase();
-    // Instagram-style rules: 1-30 chars, lowercase letters, numbers, periods, underscores
-    // Cannot start/end with a period, no consecutive periods
-    const usernameRe = /^(?!.*\.\.)(?!\.)(?!.*\.$)[a-z0-9._]{1,30}$/;
-    if (!usernameRe.test(username)) {
-      toast.error("Username: 1–30 chars, lowercase letters, numbers, '.' or '_'. No leading/trailing or consecutive periods.");
+    const username = normalizeUsername(profile.username ?? "");
+    const problem = usernameError(username);
+    if (problem) {
+      toast.error(problem);
       return;
     }
     setSavingProfile(true);
@@ -112,6 +115,8 @@ function AdminPage() {
     if (error) {
       if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
         toast.error("That username is already taken");
+      } else if (/reserved/i.test(error.message)) {
+        toast.error("That username is reserved. Please pick another.");
       } else {
         toast.error(error.message);
       }
@@ -127,16 +132,17 @@ function AdminPage() {
       toast.error("Image must be under 5MB");
       return;
     }
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please choose an image file");
+    if (!AVATAR_TYPES.includes(file.type)) {
+      toast.error("Please choose a PNG, JPEG, WebP or GIF image");
       return;
     }
     setUploadingAvatar(true);
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" }[file.type] ?? "jpg";
     const path = `${userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
       cacheControl: "3600",
       upsert: true,
+      contentType: file.type,
     });
     if (upErr) {
       setUploadingAvatar(false);
@@ -205,14 +211,22 @@ function AdminPage() {
   };
 
   const save = async (link: SocialLink) => {
+    const url = normalizeLinkValue(link.url);
+    if (url === null) {
+      toast.error("Links must start with https://, mailto:, tel: or sms:");
+      return;
+    }
     setSavingId(link.id);
     const { error } = await supabase
       .from("social_links")
-      .update({ url: link.url, enabled: link.enabled, platform: link.platform })
+      .update({ url, enabled: link.enabled, platform: link.platform })
       .eq("id", link.id);
     setSavingId(null);
     if (error) toast.error(error.message);
-    else toast.success("Saved");
+    else {
+      updateLink(link.id, { url });
+      toast.success("Saved");
+    }
   };
 
   const remove = async (id: string) => {
@@ -340,7 +354,7 @@ function AdminPage() {
                     {uploadingAvatar ? "Uploading…" : profile.avatar_url ? "Change photo" : "Upload photo"}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
                       className="hidden"
                       onChange={(e) => {
                         const f = e.target.files?.[0];
@@ -367,12 +381,13 @@ function AdminPage() {
                   onChange={(e) =>
                     setProfile({
                       ...profile,
-                      username: e.target.value.toLowerCase().replace(/[^a-z0-9._]/g, "").slice(0, 30),
+                      username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30),
                     })
                   }
                   placeholder="yourname"
                   maxLength={30}
                 />
+                <p className="text-xs text-muted-foreground">{USERNAME_HELP}</p>
                 <p className="text-xs text-muted-foreground">
                   yooits.me/<span className="font-medium text-foreground">{profile.username || "yourname"}</span>
                 </p>
@@ -396,7 +411,11 @@ function AdminPage() {
                 onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
                 placeholder="A short line about you"
                 rows={2}
+                maxLength={BIO_MAX}
               />
+              <p className="text-right text-xs text-muted-foreground">
+                {(profile.bio ?? "").length}/{BIO_MAX}
+              </p>
             </div>
             <div className="mt-4">
               <Button onClick={saveProfile} disabled={savingProfile}>

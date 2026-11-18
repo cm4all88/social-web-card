@@ -208,7 +208,7 @@ export function getTheme(
 ): ThemeTokens {
   if (key === "custom" && custom) {
     const base = THEME_PRESETS[0].tokens;
-    return { ...base, ...custom };
+    return { ...base, ...sanitizeCustomTheme(custom) };
   }
   const preset = THEME_PRESETS.find((p) => p.key === key) ?? THEME_PRESETS[0];
   return preset.tokens;
@@ -240,4 +240,31 @@ export function buttonRadiusFor(style: ThemeTokens["buttonStyle"]): string {
     default:
       return "16px";
   }
+}
+
+const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
+const COLOR_KEYS = ["background", "foreground", "card", "cardForeground", "border", "accent"] as const;
+const BUTTON_STYLES = ["rounded", "pill", "square", "outline", "soft"] as const;
+const FONTS = ["sans", "serif", "mono", "display"] as const;
+
+/**
+ * Keep only values a creator can actually pick in the editor (hex colors and
+ * the listed styles), so a hand-written row can't inject other CSS such as
+ * url(...) into visitors' pages. Mirrors public.custom_theme_is_valid().
+ */
+export function sanitizeCustomTheme(custom: unknown): Partial<ThemeTokens> {
+  if (!custom || typeof custom !== "object" || Array.isArray(custom)) return {};
+  const src = custom as Record<string, unknown>;
+  const out: Partial<ThemeTokens> = {};
+  for (const k of COLOR_KEYS) {
+    const v = src[k];
+    if (typeof v === "string" && HEX_COLOR.test(v)) out[k] = v;
+  }
+  if (BUTTON_STYLES.includes(src.buttonStyle as (typeof BUTTON_STYLES)[number])) {
+    out.buttonStyle = src.buttonStyle as ThemeTokens["buttonStyle"];
+  }
+  if (FONTS.includes(src.font as (typeof FONTS)[number])) {
+    out.font = src.font as ThemeTokens["font"];
+  }
+  return out;
 }
