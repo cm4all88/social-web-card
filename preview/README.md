@@ -13,18 +13,40 @@ database or live payments.
   - `bob@example.com`: creator with a private wishlist
   - `casey@example.com`: an account to try suspend and unpublish on
 
-Everything runs on free plans: Supabase Free, Cloudflare Workers Free,
+Everything runs on free plans in accounts you control (not Lovable's): Supabase Free, Cloudflare Workers Free,
 Stripe test mode and GitHub Actions (free for public repositories).
 
-## One-time setup (about 20 minutes, all in accounts you already have)
+## One-time setup (about 20 minutes)
 
 Pick one long password (12+ characters) for the preview first. It opens the
 site and signs in to the test accounts.
 
-### 1. Supabase: a new free project
-1. In your Supabase organization, create a new project called `yooits-preview`.
-   It's separate from the live project. Free organizations allow two active
-   projects; if you're at the limit, pause one you don't use.
+### 0. Check what Lovable manages (2 minutes, changes nothing)
+In the Yooits project in Lovable:
+- Click the **Cloud** icon on the top bar. If you see **Database** and
+  **Users** screens inside Lovable, the live database is Lovable Cloud and
+  isn't in any Supabase account of yours. If you see a Supabase project name
+  with links to the Supabase Dashboard, it's your own Supabase project.
+- **Project > Settings > Domains**: if yooits.me is listed, Lovable hosts
+  the live site.
+
+Either way the preview uses its own new database, so nothing here touches
+the live one.
+
+### 1. Cloudflare: an API token
+Sign in to Cloudflare (or create a free account if you don't have one).
+1. Workers & Pages: note your `<subdomain>.workers.dev` subdomain (set one up
+   if it asks). The preview is a new Worker named `yooits-preview`; nothing
+   else in the account is changed.
+2. Copy your Account ID (Workers & Pages overview, right-hand side).
+3. My Profile, API Tokens, Create Token, template **Edit Cloudflare Workers**,
+   limited to your account. Copy the token.
+
+### 2. Supabase: a new free project
+Sign in at supabase.com (or sign up free; with Lovable Cloud you may not have
+an account yet).
+1. Create a new project called `yooits-preview`. Free organizations allow two
+   active projects; if you're at the limit, pause one you don't use.
 2. Copy these (Project Settings, then API Keys, plus the Connect button):
    - Project URL, e.g. `https://abcd1234.supabase.co`
    - Publishable key (or legacy `anon` key)
@@ -36,15 +58,9 @@ site and signs in to the test accounts.
    - URL Configuration: Site URL `https://yooits-preview.<your-subdomain>.workers.dev`,
      and add `https://yooits-preview.<your-subdomain>.workers.dev/**` to Redirect URLs
 
-### 2. Cloudflare: an API token
-1. Workers & Pages: note your `<subdomain>.workers.dev` subdomain (set one up
-   if it asks). The preview is a new Worker named `yooits-preview`; nothing
-   else in the account is changed.
-2. Copy your Account ID (Workers & Pages overview, right-hand side).
-3. My Profile, API Tokens, Create Token, template **Edit Cloudflare Workers**,
-   limited to your account. Copy the token.
-
 ### 3. Stripe: test mode keys
+Sign in to Stripe (or create a free account; test mode works before any
+business verification).
 1. Switch Stripe to **Test mode** (or a Sandbox).
 2. Developers, API keys: copy the secret key. It must start with `sk_test_`;
    the setup refuses anything else.
@@ -52,6 +68,7 @@ site and signs in to the test accounts.
    the platform questions. The two webhooks are created automatically.
 
 ### 4. GitHub: store the settings
+You need to be an owner of the `cm4all88/social-web-card` repository.
 Repository Settings, Secrets and variables, Actions.
 
 **Secrets:**
