@@ -13,6 +13,8 @@ import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { TipsManager } from "@/components/tipping/TipsManager";
+import { BarChart3, Gift } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -407,6 +409,24 @@ function AdminPage() {
           </div>
         )}
 
+        {/* Tips (hidden unless tipping is switched on for this deployment) */}
+        {profile && userId && <TipsManager userId={userId} username={profile.username} />}
+
+        {/* Wishlists */}
+        {profile && (
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
+            <div>
+              <div className="font-semibold">Wishlists</div>
+              <p className="text-sm text-muted-foreground">Share gift lists for birthdays, holidays and big days.</p>
+            </div>
+            <Button variant="secondary" asChild>
+              <Link to="/admin/wishlists">
+                <Gift className="mr-2 h-4 w-4" /> Manage wishlists
+              </Link>
+            </Button>
+          </div>
+        )}
+
         {/* Theme picker */}
         {profile && (
           <div className="mt-8 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
@@ -606,6 +626,13 @@ function AdminPage() {
         {/* Invites (admin only) */}
         {isAdmin && (
           <div className="mt-12">
+            <div className="mb-6">
+              <Button variant="outline" asChild>
+                <Link to="/admin/revenue">
+                  <BarChart3 className="mr-2 h-4 w-4" /> Tip revenue report
+                </Link>
+              </Button>
+            </div>
             <h2 className="text-xl font-bold">Invites</h2>
             <p className="mt-1 text-sm text-muted-foreground">Create codes to let new people sign up.</p>
             <div className="mt-4">
