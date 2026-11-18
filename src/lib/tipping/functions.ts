@@ -21,6 +21,7 @@ import { buildTipCheckoutParams } from "./checkout-params";
 import { isCreatorType, stripeProductDescription, tipEligibility } from "./eligibility";
 import { checkAndRecordAttempt, hashIp } from "./rate-limit.server";
 import { getStripe } from "./stripe.server";
+import { tipsAllowed } from "@/lib/owner/restrictions.server";
 
 const usernameSchema = z
   .string()
@@ -58,7 +59,8 @@ async function countPublicLinks(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-async function loadCreatorByUsername(username: string) {
+/** Exported for tests: the server-side gate every public tip and checkout goes through. */
+export async function loadCreatorByUsername(username: string) {
   const { data: profile, error } = await supabaseAdmin
     .from("profiles")
     .select("user_id, username, display_name")
@@ -66,7 +68,7 @@ async function loadCreatorByUsername(username: string) {
     .maybeSingle();
   if (error) throw error;
   if (!profile) return null;
-  const [{ data: settings }, { data: account }, publicLinkCount] = await Promise.all([
+  const [{ data: settings }, { data: account }, publicLinkCount, allowed] = await Promise.all([
     supabaseAdmin
       .from("tip_settings")
       .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
@@ -78,13 +80,15 @@ async function loadCreatorByUsername(username: string) {
       .eq("user_id", profile.user_id)
       .maybeSingle(),
     countPublicLinks(profile.user_id),
+    // Owner switches: page unpublished, account suspended or tips turned off.
+    tipsAllowed(profile.user_id),
   ]);
   const eligible = tipEligibility({
     creatorType: settings?.creator_type,
     offering: settings?.offering,
     attestedAt: settings?.attested_at,
     publicLinkCount,
-    suspended: !!account?.tipping_suspended_at,
+    suspended: !!account?.tipping_suspended_at || !allowed,
   }).ok;
   return { profile, settings, account, eligible };
 }
@@ -289,7 +293,7 @@ export const startStripeOnboarding = createServerFn({ method: "POST" })
       }
 
       // Only creators and service providers can set up tips (not personal transfers).
-      const [{ data: profile }, { data: settings }, { data: acct }, publicLinkCount] =
+      const [{ data: profile }, { data: settings }, { data: acct }, publicLinkCount, allowed] =
         await Promise.all([
           supabaseAdmin.from("profiles").select("username").eq("user_id", userId).maybeSingle(),
           supabaseAdmin
@@ -303,13 +307,14 @@ export const startStripeOnboarding = createServerFn({ method: "POST" })
             .eq("user_id", userId)
             .maybeSingle(),
           countPublicLinks(userId),
+          tipsAllowed(userId),
         ]);
       const eligibility = tipEligibility({
         creatorType: settings?.creator_type,
         offering: settings?.offering,
         attestedAt: settings?.attested_at,
         publicLinkCount,
-        suspended: !!acct?.tipping_suspended_at,
+        suspended: !!acct?.tipping_suspended_at || !allowed,
       });
       if (!eligibility.ok) {
         throw new UserFacingError(

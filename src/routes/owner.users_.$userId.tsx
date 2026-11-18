@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { ownerRpc, type OwnerUserDetail } from "@/lib/owner/api";
 import { safeLinkHref } from "@/lib/safe-url";
+import { AccountControls } from "@/components/owner/AccountControls";
 
 export const Route = createFileRoute("/owner/users_/$userId")({
   component: UserDetailPage,
@@ -24,10 +25,14 @@ function UserDetailPage() {
   const [user, setUser] = useState<OwnerUserDetail | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setUser(undefined);
+  const load = useCallback(() => {
     ownerRpc("owner_get_user", { _user_id: userId }).then(setUser, (e: Error) => setError(e.message));
   }, [userId]);
+
+  useEffect(() => {
+    setUser(undefined);
+    load();
+  }, [load]);
 
   return (
     <div>
@@ -53,7 +58,9 @@ function UserDetailPage() {
             </a>
           )}
 
-          <section className="mt-6 rounded-2xl border border-border p-4">
+          <AccountControls user={user} onChanged={load} />
+
+          <section className="mt-4 rounded-2xl border border-border p-4">
             <h2 className="mb-2 font-semibold">Account</h2>
             <Row label="Email">{user.email ?? "None"}</Row>
             <Row label="Email confirmed">{user.email_confirmed ? "Yes" : "No"}</Row>
@@ -97,9 +104,6 @@ function UserDetailPage() {
               </Row>
             )}
             <Row label="Wishlists">{user.wishlists}</Row>
-            <p className="mt-2 text-xs text-muted-foreground">
-              To stop or restore tips for this creator, use Money.
-            </p>
           </section>
         </>
       )}

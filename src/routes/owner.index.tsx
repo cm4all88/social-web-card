@@ -24,6 +24,8 @@ function OverviewPage() {
         { label: "Pages with links", value: data.profiles_with_links },
         { label: "Creators taking tips", value: data.connected_creators, note: `${data.tipping_suspended} stopped` },
         { label: "Public wishlists", value: data.public_wishlists },
+        { label: "Unpublished pages", value: data.unpublished },
+        { label: "Suspended accounts", value: data.suspended },
         { label: "Open invite codes", value: data.open_invites },
         { label: "Admins", value: data.admins },
       ]

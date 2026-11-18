@@ -60,6 +60,7 @@ function DashboardPage() {
   const [ready, setReady] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [restriction, setRestriction] = useState<"suspended" | "unpublished" | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -87,6 +88,16 @@ function DashboardPage() {
       const admin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
       setIsAdmin(admin);
       setLinks((l ?? []) as SocialLink[]);
+
+      // Set by Yooits admins from the owner console; readable only by this user.
+      // (Not in the generated types yet; called as a method so the client keeps its `this`.)
+      const { data: st } = await (supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> })
+        .from("account_status")
+        .select("unpublished_at, suspended_at")
+        .eq("user_id", uid)
+        .maybeSingle();
+      const status = st as { unpublished_at: string | null; suspended_at: string | null } | null;
+      setRestriction(status?.suspended_at ? "suspended" : status?.unpublished_at ? "unpublished" : null);
       setReady(true);
     };
     init();
@@ -317,6 +328,14 @@ function DashboardPage() {
                 </a>
               </Button>
             </div>
+          </div>
+        )}
+
+        {restriction && (
+          <div role="status" className="mt-8 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm">
+            {restriction === "suspended"
+              ? "Your account is suspended by Yooits. Your page is hidden and changes are turned off. Your information hasn't been deleted."
+              : "Your page is unpublished by Yooits, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
         )}
 
