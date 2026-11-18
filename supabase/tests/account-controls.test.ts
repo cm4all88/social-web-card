@@ -74,7 +74,9 @@ beforeAll(async () => {
   await db.exec(`ALTER TABLE auth.users ADD COLUMN last_sign_in_at timestamptz, ADD COLUMN email_confirmed_at timestamptz`);
   for (const sql of migrationSql()) await db.exec(sql);
   await db.exec(SUPABASE_GRANTS);
-  await db.exec(`GRANT USAGE ON SCHEMA storage TO authenticated; GRANT ALL ON storage.objects TO authenticated;`);
+  await db.exec(
+    `GRANT USAGE ON SCHEMA storage TO anon, authenticated; GRANT ALL ON storage.objects TO authenticated; GRANT SELECT ON storage.objects TO anon;`,
+  );
   await signUp(OWNER, "boss");
   await signUp(ADMIN2, "deputy");
   await signUp(ALICE, "alice");
@@ -156,6 +158,30 @@ describe("unpublishing a page", () => {
     await as(OWNER, `SELECT public.owner_set_unpublished($1, false)`, [ALICE]);
     expect(await publicView()).toEqual(VISIBLE);
     expect(await svc(`SELECT public.tips_allowed($1) AS ok`, [ALICE])).toEqual([{ ok: true }]);
+  });
+});
+
+describe("avatar files", () => {
+  const listed = (who: string | null) =>
+    as<{ name: string }>(who, `SELECT name FROM storage.objects WHERE bucket_id = 'avatars' AND name LIKE $1`, [`${ALICE}/%`]);
+
+  it("can't be listed while the page is hidden, except by the owner and admins", async () => {
+    await svc(`INSERT INTO storage.objects (bucket_id, name) VALUES ('avatars', $1)`, [`${ALICE}/avatar-1.png`]);
+    expect(await listed(null)).toHaveLength(1);
+    await as(OWNER, `SELECT public.owner_set_unpublished($1, true, 'Hide avatar test')`, [ALICE]);
+    expect(await listed(null)).toHaveLength(0);
+    expect(await listed(BOB)).toHaveLength(0);
+    expect(await listed(ALICE)).toHaveLength(1);
+    expect(await listed(OWNER)).toHaveLength(1);
+    await as(OWNER, `SELECT public.owner_set_unpublished($1, false)`, [ALICE]);
+    expect(await listed(null)).toHaveLength(1);
+    // Nothing is deleted.
+    expect(await svc(`SELECT name FROM storage.objects WHERE name = $1`, [`${ALICE}/avatar-1.png`])).toHaveLength(1);
+  });
+
+  it("files outside a user's own folder are never listed", async () => {
+    await svc(`INSERT INTO storage.objects (bucket_id, name) VALUES ('avatars', 'stray.png')`);
+    expect(await as(null, `SELECT name FROM storage.objects WHERE name = 'stray.png'`)).toHaveLength(0);
   });
 });
 
@@ -279,6 +305,8 @@ describe("audit log", () => {
     expect(log.map((e) => [e.action, e.target_id === ALICE ? "alice" : e.target_id === BOB ? "bob" : "boss"])).toEqual([
       ["account.unpublished", "alice"],
       ["account.republished", "alice"],
+      ["account.unpublished", "alice"],
+      ["account.republished", "alice"],
       ["account.suspended", "alice"],
       ["account.reactivated", "alice"],
       ["account.unpublished", "boss"],
@@ -292,7 +320,8 @@ describe("audit log", () => {
     ]);
     expect(log.every((e) => e.actor_user_id === OWNER)).toBe(true);
     expect(log[0].reason).toBe("Reported spam links");
-    expect(log[2].reason).toBe("Impersonating a brand");
+    expect(log[2].reason).toBe("Hide avatar test");
+    expect(log[4].reason).toBe("Impersonating a brand");
   });
 
   it("shows up in the owner console with names", async () => {

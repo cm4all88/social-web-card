@@ -158,6 +158,30 @@ CREATE POLICY "Suspended accounts cannot delete avatars"
   ON storage.objects AS RESTRICTIVE FOR DELETE TO authenticated
   USING (bucket_id <> 'avatars' OR NOT public.account_is_suspended(auth.uid()));
 
+-- The avatars bucket lets anyone list its files. Hide the files of unpublished
+-- and suspended accounts from listing and authenticated downloads, so they
+-- can't be found again. (A public image address someone already saved keeps
+-- working while the bucket is public; that needs a bucket setting change.)
+CREATE OR REPLACE FUNCTION public.avatar_is_visible(_name text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN split_part(_name, '/', 1) !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' THEN false
+    ELSE public.profile_is_public(split_part(_name, '/', 1)::uuid)
+      OR split_part(_name, '/', 1)::uuid = auth.uid()
+      OR public.has_role(auth.uid(), 'admin')
+  END
+$$;
+GRANT EXECUTE ON FUNCTION public.avatar_is_visible(text) TO anon, authenticated;
+
+CREATE POLICY "Avatars of hidden pages are not listed"
+  ON storage.objects AS RESTRICTIVE FOR SELECT
+  USING (bucket_id <> 'avatars' OR public.avatar_is_visible(name));
+
 -- ---------------------------------------------------------------------------
 -- Audit (reuses admin_audit_log from the owner console migration)
 -- ---------------------------------------------------------------------------
