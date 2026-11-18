@@ -13,6 +13,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminWishlistsRouteImport } from './routes/admin_.wishlists'
+import { Route as AdminRevenueRouteImport } from './routes/admin_.revenue'
+import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -34,18 +39,53 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminWishlistsRoute = AdminWishlistsRouteImport.update({
+  id: '/admin_/wishlists',
+  path: '/admin/wishlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRevenueRoute = AdminRevenueRouteImport.update({
+  id: '/admin_/revenue',
+  path: '/admin/revenue',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameTipRoute = UsernameTipRouteImport.update({
+  id: '/$username_/tip',
+  path: '/$username/tip',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameWishlistSlugRoute = UsernameWishlistSlugRouteImport.update({
+  id: '/$username_/wishlist/$slug',
+  path: '/$username/wishlist/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/$username/tip': typeof UsernameTipRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/wishlists': typeof AdminWishlistsRoute
+  '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$username': typeof UsernameRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/$username/tip': typeof UsernameTipRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/wishlists': typeof AdminWishlistsRoute
+  '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +93,46 @@ export interface FileRoutesById {
   '/$username': typeof UsernameRoute
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
+  '/$username_/tip': typeof UsernameTipRoute
+  '/admin_/revenue': typeof AdminRevenueRoute
+  '/admin_/wishlists': typeof AdminWishlistsRoute
+  '/$username_/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$username' | '/admin' | '/auth'
+  fullPaths:
+    | '/'
+    | '/$username'
+    | '/admin'
+    | '/auth'
+    | '/$username/tip'
+    | '/admin/revenue'
+    | '/admin/wishlists'
+    | '/$username/wishlist/$slug'
+    | '/api/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$username' | '/admin' | '/auth'
-  id: '__root__' | '/' | '/$username' | '/admin' | '/auth'
+  to:
+    | '/'
+    | '/$username'
+    | '/admin'
+    | '/auth'
+    | '/$username/tip'
+    | '/admin/revenue'
+    | '/admin/wishlists'
+    | '/$username/wishlist/$slug'
+    | '/api/stripe/webhook'
+  id:
+    | '__root__'
+    | '/'
+    | '/$username'
+    | '/admin'
+    | '/auth'
+    | '/$username_/tip'
+    | '/admin_/revenue'
+    | '/admin_/wishlists'
+    | '/$username_/wishlist/$slug'
+    | '/api/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +140,11 @@ export interface RootRouteChildren {
   UsernameRoute: typeof UsernameRoute
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
+  UsernameTipRoute: typeof UsernameTipRoute
+  AdminRevenueRoute: typeof AdminRevenueRoute
+  AdminWishlistsRoute: typeof AdminWishlistsRoute
+  UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +177,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin_/wishlists': {
+      id: '/admin_/wishlists'
+      path: '/admin/wishlists'
+      fullPath: '/admin/wishlists'
+      preLoaderRoute: typeof AdminWishlistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin_/revenue': {
+      id: '/admin_/revenue'
+      path: '/admin/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminRevenueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username_/tip': {
+      id: '/$username_/tip'
+      path: '/$username/tip'
+      fullPath: '/$username/tip'
+      preLoaderRoute: typeof UsernameTipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username_/wishlist/$slug': {
+      id: '/$username_/wishlist/$slug'
+      path: '/$username/wishlist/$slug'
+      fullPath: '/$username/wishlist/$slug'
+      preLoaderRoute: typeof UsernameWishlistSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +220,11 @@ const rootRouteChildren: RootRouteChildren = {
   UsernameRoute: UsernameRoute,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
+  UsernameTipRoute: UsernameTipRoute,
+  AdminRevenueRoute: AdminRevenueRoute,
+  AdminWishlistsRoute: AdminWishlistsRoute,
+  UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
