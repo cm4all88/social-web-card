@@ -88,11 +88,11 @@ export async function ownerRpc<K extends keyof OwnerFunctions>(
   fn: K,
   args: OwnerFunctions[K]["args"],
 ): Promise<OwnerFunctions[K]["result"]> {
-  const rpc = supabase.rpc as unknown as (
-    f: string,
-    a: object,
-  ) => PromiseLike<{ data: unknown; error: { code?: string; message: string } | null }>;
-  const { data, error } = await rpc(fn, args);
+  // Called as a method so the client keeps its `this`.
+  const client = supabase as unknown as {
+    rpc: (f: string, a: object) => PromiseLike<{ data: unknown; error: { code?: string; message: string } | null }>;
+  };
+  const { data, error } = await client.rpc(fn, args);
   if (error) {
     if (error.code === "42501") throw new OwnerAccessError("Only Yooits admins can see this.");
     throw new Error(error.message);
