@@ -20,6 +20,20 @@ export type OwnerOverview = {
   connected_creators: number;
   tipping_suspended: number;
   public_wishlists: number;
+  unpublished: number;
+  suspended: number;
+};
+
+export type AccountStatus = {
+  unpublished_at: string | null;
+  unpublished_reason: string | null;
+  unpublished_by: string | null;
+  suspended_at: string | null;
+  suspended_reason: string | null;
+  suspended_by: string | null;
+  tips_disabled_at: string | null;
+  tips_disabled_reason: string | null;
+  tips_disabled_by: string | null;
 };
 
 export type OwnerUserRow = {
@@ -32,6 +46,9 @@ export type OwnerUserRow = {
   email_confirmed: boolean;
   link_count: number;
   is_admin: boolean;
+  unpublished: boolean;
+  suspended: boolean;
+  tips_disabled: boolean;
   total_count: number;
 };
 
@@ -41,6 +58,8 @@ export type OwnerUserDetail = {
   created_at: string;
   last_sign_in_at: string | null;
   email_confirmed: boolean;
+  is_self: boolean;
+  status: AccountStatus | null;
   profile: {
     username: string;
     display_name: string | null;
@@ -80,6 +99,9 @@ type OwnerFunctions = {
   };
   owner_get_user: { args: { _user_id: string }; result: OwnerUserDetail | null };
   owner_audit_log: { args: { _limit?: number; _before_id?: number | null }; result: AuditEntry[] };
+  owner_set_unpublished: { args: { _user_id: string; _unpublished: boolean; _reason?: string | null }; result: boolean };
+  owner_set_suspended: { args: { _user_id: string; _suspended: boolean; _reason?: string | null }; result: boolean };
+  owner_set_tips_disabled: { args: { _user_id: string; _disabled: boolean; _reason?: string | null }; result: boolean };
 };
 
 export class OwnerAccessError extends Error {}
@@ -94,7 +116,12 @@ export async function ownerRpc<K extends keyof OwnerFunctions>(
   };
   const { data, error } = await client.rpc(fn, args);
   if (error) {
-    if (error.code === "42501") throw new OwnerAccessError("Only Yooits admins can see this.");
+    if (error.code === "42501") {
+      // The database says why (e.g. "You can't suspend your own account.").
+      throw new OwnerAccessError(
+        /^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message,
+      );
+    }
     throw new Error(error.message);
   }
   return data as OwnerFunctions[K]["result"];
@@ -109,6 +136,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "invite.revoked": "Invite code revoked",
   "tipping.suspended": "Tips stopped",
   "tipping.restored": "Tips restored",
+  "account.unpublished": "Page unpublished",
+  "account.republished": "Page republished",
+  "account.suspended": "Account suspended",
+  "account.reactivated": "Account reactivated",
 };
 
 export function auditLabel(action: string): string {

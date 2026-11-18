@@ -11,6 +11,18 @@ export const Route = createFileRoute("/owner/users")({
   component: UsersPage,
 });
 
+function StatusBadge({ children, tone }: { children: React.ReactNode; tone?: "danger" }) {
+  return (
+    <span
+      className={`ml-2 rounded-full border px-2 py-0.5 text-[10px] uppercase ${
+        tone === "danger" ? "border-destructive text-destructive" : "border-border text-muted-foreground"
+      }`}
+    >
+      {children}
+    </span>
+  );
+}
+
 const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString() : "Never");
 
 function UsersPage() {
@@ -78,6 +90,9 @@ function UsersPage() {
                           Admin
                         </span>
                       )}
+                      {u.suspended && <StatusBadge tone="danger">Suspended</StatusBadge>}
+                      {u.unpublished && !u.suspended && <StatusBadge>Unpublished</StatusBadge>}
+                      {u.tips_disabled && <StatusBadge>Tips off</StatusBadge>}
                     </div>
                     <div className="truncate text-sm text-muted-foreground">
                       {u.display_name ?? ""} {u.email ? `· ${u.email}` : ""}
