@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Brings preview/yooits up to date with the latest commits on every branch in
-# preview/branches.txt, runs the tests, and pushes. The push redeploys the
+# deploy/branches.txt, runs the tests, and pushes. The push redeploys the
 # preview through GitHub Actions (once PREVIEW_DEPLOY is on). Never touches main.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -9,7 +9,7 @@ cd "$(dirname "$0")/.."
 
 git fetch -q origin
 git merge -q --ff-only origin/preview/yooits 2>/dev/null || true
-grep -vE '^\s*(#|$)' preview/branches.txt | while read -r b; do
+grep -vE '^\s*(#|$)' deploy/branches.txt | while read -r b; do
   echo "Merging $b"
   if ! git merge --no-edit -q "origin/$b"; then
     conflicts=$(git diff --name-only --diff-filter=U)

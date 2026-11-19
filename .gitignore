@@ -33,3 +33,7 @@ dist-ssr
 
 # Supabase CLI
 supabase/.temp/
+
+# Deploy secrets and backups (never commit)
+deploy/environments/*.secrets.local
+backups/

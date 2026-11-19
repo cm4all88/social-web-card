@@ -1,8 +1,8 @@
 /**
  * Preview-only password gate (exists only on the preview/yooits branch).
- * When PREVIEW_PASSWORD is set on the server, every page asks for it with the
+ * When SITE_PASSWORD is set on the server, every page asks for it with the
  * browser's own sign-in box. Stripe's webhook is let through because Stripe
- * signs those requests itself. Without PREVIEW_PASSWORD it does nothing.
+ * signs those requests itself. Without SITE_PASSWORD it does nothing.
  */
 const OPEN_PATHS = new Set(["/api/stripe/webhook"]);
 

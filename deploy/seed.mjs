@@ -1,10 +1,10 @@
 /**
  * Loads test accounts and content into the PREVIEW Supabase project.
  * Safe to run again: it only adds what's missing and resets the test
- * accounts' password to PREVIEW_PASSWORD. Never point it at production;
- * preview/deploy.sh checks that before calling it.
+ * accounts' password to SITE_PASSWORD. Never point it at production;
+ * deploy/deploy.sh checks that before calling it.
  *
- * Accounts (all use PREVIEW_PASSWORD):
+ * Accounts (all use SITE_PASSWORD):
  *   owner@example.com  @previewowner  Yooits admin (Owner console)
  *   alice@example.com  @alice         creator with links, a public wishlist and tip setup
  *   bob@example.com    @bob           creator with a private wishlist
@@ -12,11 +12,15 @@
  */
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.PREVIEW_SUPABASE_URL;
-const key = process.env.PREVIEW_SUPABASE_SECRET_KEY;
-const password = process.env.PREVIEW_PASSWORD;
+const url = process.env.SUPABASE_URL;
+const key = process.env.SUPABASE_SECRET_KEY;
+const password = process.env.SITE_PASSWORD;
 if (!url || !key || !password) {
-  console.error("seed: PREVIEW_SUPABASE_URL, PREVIEW_SUPABASE_SECRET_KEY and PREVIEW_PASSWORD are required");
+  console.error("seed: SUPABASE_URL, SUPABASE_SECRET_KEY and SITE_PASSWORD are required");
+  process.exit(1);
+}
+if (process.env.YOOITS_ENV !== "preview") {
+  console.error("seed: test data only goes into the preview (YOOITS_ENV=preview)");
   process.exit(1);
 }
 const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });

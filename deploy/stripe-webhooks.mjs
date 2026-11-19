@@ -1,20 +1,20 @@
 /**
  * Creates the two TEST-mode Stripe webhook endpoints for the preview site
  * (one for the platform, one for connected accounts) and prints their signing
- * secrets as JSON on stdout for preview/deploy.sh to store as Worker secrets.
+ * secrets as JSON on stdout for deploy/deploy.sh to store as Worker secrets.
  * Refuses live keys. Never deletes anything.
  */
 import Stripe from "stripe";
 import { readFileSync } from "node:fs";
 
-const key = process.env.PREVIEW_STRIPE_SECRET_KEY ?? "";
-const site = process.env.PREVIEW_SITE_URL ?? "";
+const key = process.env.STRIPE_SECRET_KEY ?? "";
+const site = process.env.SITE_URL ?? "";
 if (!/^(sk|rk)_test_/.test(key)) {
   console.error("stripe: only a Stripe TEST key (sk_test_...) is allowed for the preview");
   process.exit(1);
 }
 if (!/^https:\/\/[^/]+$/.test(site)) {
-  console.error("stripe: PREVIEW_SITE_URL must be the preview's https address");
+  console.error("stripe: SITE_URL must be the preview's https address");
   process.exit(1);
 }
 
@@ -40,13 +40,13 @@ if (existing.data.some((e) => e.url === url)) {
 const platform = await stripe.webhookEndpoints.create({
   url,
   enabled_events: events,
-  description: "Yooits preview (platform)",
+  description: `Yooits ${process.env.YOOITS_ENV ?? "preview"} (platform)`,
 });
 const connect = await stripe.webhookEndpoints.create({
   url,
   enabled_events: events,
   connect: true,
-  description: "Yooits preview (connected accounts)",
+  description: `Yooits ${process.env.YOOITS_ENV ?? "preview"} (connected accounts)`,
 });
 if (platform.livemode || connect.livemode) {
   console.error("stripe: refusing, Stripe reports live mode");

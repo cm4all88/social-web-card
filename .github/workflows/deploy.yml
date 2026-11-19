@@ -1,0 +1,63 @@
+# Deploys Yooits with deploy/deploy.sh. Setup: deploy/README.md
+#   preview:    every push to preview/yooits, once the repository variable
+#               PREVIEW_DEPLOY is "on". Uses the "preview" GitHub environment.
+#   production: NOT IN USE YET. Only by hand ("Run workflow"), only from main,
+#               only once PRODUCTION_DEPLOY is "on" and the repository is
+#               private. Uses the "production" GitHub environment, which
+#               should require Chris's approval. See deploy/MIGRATION.md.
+# Neither can reach the Lovable-hosted live site: deploy.sh refuses its database.
+name: Deploy Yooits
+on:
+  push:
+    branches: [preview/yooits]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [preview, production]
+        default: preview
+concurrency:
+  group: deploy-${{ inputs.environment || 'preview' }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      ((inputs.environment || 'preview') == 'preview' && vars.PREVIEW_DEPLOY == 'on') ||
+      (inputs.environment == 'production' && vars.PRODUCTION_DEPLOY == 'on'
+        && github.ref == 'refs/heads/main' && github.event.repository.private)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'preview' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Tests
+        run: npx vitest run
+      - name: Deploy
+        id: deploy
+        run: bash deploy/deploy.sh "${{ inputs.environment || 'preview' }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      # Production takes an encrypted backup before migrating; keep it.
+      - name: Keep the pre-deploy backup
+        if: ${{ always() && hashFiles('backups/*.gpg') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-deploy-backup-${{ github.run_id }}
+          path: backups/*.gpg
+          retention-days: 30

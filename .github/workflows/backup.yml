@@ -1,0 +1,47 @@
+# Encrypted backup of one environment: database (including user accounts)
+# and all uploaded files, made by deploy/backup.sh. Kept as a workflow
+# artifact for 30 days. Restore steps: deploy/MIGRATION.md.
+#   By hand: Actions > Back up Yooits > Run workflow.
+#   Daily:   production only, once PRODUCTION_BACKUPS is "on" (not yet).
+# Production backups only run while the repository is private, because
+# anyone signed in to GitHub can download a public repository's artifacts.
+name: Back up Yooits
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [preview, production]
+        default: preview
+  schedule:
+    - cron: "17 10 * * *" # daily, 10:17 UTC
+jobs:
+  backup:
+    if: >-
+      (github.event_name == 'workflow_dispatch'
+        && (inputs.environment == 'preview' || github.event.repository.private)) ||
+      (github.event_name == 'schedule' && vars.PRODUCTION_BACKUPS == 'on' && github.event.repository.private)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'production' }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Back up
+        run: bash deploy/backup.sh "${{ inputs.environment || 'production' }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yooits-backup-${{ inputs.environment || 'production' }}-${{ github.run_id }}
+          path: backups/*.gpg
+          retention-days: 30

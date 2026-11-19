@@ -1,12 +1,17 @@
-# Yooits preview
+# Yooits preview (and, later, production)
 
 A private copy of Yooits with everything from PRs #1 to #4, its own test
 database and Stripe in test mode. It never touches the live site, the live
 database or live payments.
 
+It's built as the first copy of Yooits's own hosting, not a throwaway: the
+same scripts deploy a future production site from different settings
+(`deploy/environments/`), with database migrations and encrypted backups.
+How the live site would later move off Lovable: `deploy/MIGRATION.md`.
+
 - **Branch:** `preview/yooits` (PRs #1 to #4 combined; `main` is untouched)
 - **Address:** `https://yooits-preview.<your-subdomain>.workers.dev`
-- **Site password:** the `PREVIEW_PASSWORD` you choose (any user name)
+- **Site password:** the `SITE_PASSWORD` you choose (any user name)
 - **Test sign-ins** (same password):
   - `owner@example.com`: admin, opens the Owner console
   - `alice@example.com`: creator with links, a public wishlist and tips ready to connect
@@ -69,23 +74,27 @@ business verification).
 
 ### 4. GitHub: store the settings
 You need to be an owner of the `cm4all88/social-web-card` repository.
-Repository Settings, Secrets and variables, Actions.
+Each environment keeps its own settings, so production can later get its own
+set without touching the preview's.
 
-**Secrets:**
+1. Repository Settings, **Environments**, New environment, name it `preview`.
+2. In the `preview` environment, **Environment secrets**, add:
 
 | Name | Value |
 |---|---|
-| `PREVIEW_SUPABASE_URL` | Supabase project URL |
-| `PREVIEW_SUPABASE_PUBLISHABLE_KEY` | publishable or anon key |
-| `PREVIEW_SUPABASE_SECRET_KEY` | secret or service_role key |
-| `PREVIEW_SUPABASE_DB_URL` | Session pooler connection string |
-| `PREVIEW_STRIPE_SECRET_KEY` | `sk_test_...` key |
-| `PREVIEW_PASSWORD` | your preview password |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_PUBLISHABLE_KEY` | publishable or anon key |
+| `SUPABASE_SECRET_KEY` | secret or service_role key |
+| `SUPABASE_DB_URL` | Session pooler connection string |
+| `STRIPE_SECRET_KEY` | `sk_test_...` key |
+| `SITE_PASSWORD` | your preview password |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare token |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `BACKUP_PASSPHRASE` | optional: a long passphrase (16+ characters) that encrypts backups. Keep a copy somewhere safe; backups can't be opened without it. |
 
-**Variables:** `PREVIEW_DEPLOY` = `on`. This switch allows preview deploys.
-Set it to `off` to stop them.
+3. Repository Settings, Secrets and variables, Actions, **Variables** tab,
+   New repository variable: `PREVIEW_DEPLOY` = `on`. This switch allows
+   preview deploys. Set it to `off` to stop them.
 
 Then ask Claude to start the preview. The first deploy takes about five
 minutes and prints the address in the Actions run summary.
@@ -99,21 +108,32 @@ minutes and prints the address in the Actions run summary.
 
 ## Keeping it up to date
 Ask Claude to "update the preview". That merges the latest PR branches into
-`preview/yooits` (`preview/update-branch.sh`), runs the tests and pushes;
+`preview/yooits` (`deploy/update-branch.sh`), runs the tests and pushes;
 GitHub Actions then migrates the test database and redeploys. New PR branches
-go in `preview/branches.txt`.
+go in `deploy/branches.txt`.
+
+## Backups
+Actions, **Back up Yooits**, Run workflow, `preview`: saves an encrypted copy
+of the database (accounts included) and every uploaded file, kept for 30
+days. Needs `BACKUP_PASSPHRASE`. Production will back up daily and before
+every deploy, but never into a public repository, because anyone signed in
+to GitHub can download its backups (see `deploy/MIGRATION.md`).
 
 ## Safety checks built in
-`preview/deploy.sh` stops before doing anything if:
-- any Supabase setting points at the live project
-- the Stripe key isn't a test key
+`deploy/deploy.sh <environment>` stops before doing anything if:
+- any Supabase setting points at the database Lovable runs the live site on
+  (in every environment, production included)
+- the Stripe key is a live key and live payments aren't approved for that environment
 - the database address belongs to a different project than the URL
-- the finished build contains the live project's id
+- test data would go anywhere but the preview
+- the finished build contains the live database's id, or not this environment's
 
 `STRIPE_LIVE_MODE_APPROVED` is never set, so the app itself also refuses live
-keys. Deploys only ever go to the `yooits-preview` Worker.
+keys. Production deploys are switched off (`PRODUCTION_DEPLOY` isn't set),
+run only by hand from `main`, and only from a private repository.
 
 ## Running it from your own computer instead (optional)
-Put the same eight values in `preview/preview.env.local` (ignored by git) as
-`NAME=value` lines, then run `npm install --legacy-peer-deps` and
-`bash preview/deploy.sh`.
+Put the same values in `deploy/environments/preview.secrets.local` (ignored
+by git) as `NAME=value` lines, then run `npm install --legacy-peer-deps` and
+`bash deploy/deploy.sh preview`. Add `DRY_RUN=1` in front to check the
+settings and build without changing anything.
