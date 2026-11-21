@@ -55,6 +55,7 @@ describe.skipIf(!ADMIN_URL)("founding beta against a real Postgres", () => {
         SUPABASE_GRANTS,
         `INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ('${OWNER}', 'o@x.test', '{"username":"boss"}')`,
         `INSERT INTO user_roles (user_id, role) VALUES ('${OWNER}', 'admin')`,
+        `UPDATE beta_programs SET open = true`,
         ...Array.from(
           { length: 12 },
           (_, i) =>

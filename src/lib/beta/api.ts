@@ -1,5 +1,5 @@
 /**
- * Typed calls for the Founding Creator Beta database functions (migration
+ * Typed calls for the Founding Members database functions (migration
  * 20261121230000_founding_creator_beta.sql). Owner functions check
  * has_role(admin) inside the database and write the audit log, so these are
  * safe from the browser; a non-admin gets error code 42501.
@@ -93,6 +93,7 @@ type BetaFunctions = {
     args: { _limit?: number; _before_id?: number | null };
     result: BetaFeedbackRow[];
   };
+  owner_beta_set_open: { args: { _open: boolean }; result: boolean };
   beta_code_state: { args: { _code: string }; result: BetaCodeState };
   redeem_beta_invite: { args: { _code: string }; result: BetaCodeState };
 };

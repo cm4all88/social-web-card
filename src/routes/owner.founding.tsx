@@ -26,11 +26,11 @@ import {
 import { betaInviteLink } from "@/lib/beta/invite";
 
 /**
- * Founding Creator Beta: codes, who joined, who's active, and feedback.
+ * Founding Members (launch promotion): codes, who joined, who's active, and feedback.
  * Every read and write here is checked for admin in the database, and every
  * change is written to the audit log there.
  */
-export const Route = createFileRoute("/owner/beta")({
+export const Route = createFileRoute("/owner/founding")({
   component: BetaPage,
 });
 
@@ -69,6 +69,7 @@ function BetaPage() {
   const [pending, setPending] = useState<Pending | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState<boolean | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -107,6 +108,20 @@ function BetaPage() {
       toast.error((e as Error).message);
     } finally {
       setLoadingOlder(false);
+    }
+  };
+
+  const setOpen = async (open: boolean) => {
+    setBusy(true);
+    try {
+      await betaRpc("owner_beta_set_open", { _open: open });
+      toast.success(open ? "Invites are on" : "Invites are off");
+      setConfirmOpen(null);
+      await load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -162,7 +177,7 @@ function BetaPage() {
   const tiles = [
     { label: "Seats left", value: overview.seats_left, note: `of ${overview.max_seats}` },
     {
-      label: "Invites sent",
+      label: "Invites created",
       value: overview.codes_created,
       note: `${overview.codes_open} still open`,
     },
@@ -178,12 +193,29 @@ function BetaPage() {
 
   return (
     <div className="max-w-5xl">
-      <h1 className="text-3xl font-bold">Founding Creator Beta</h1>
+      <h1 className="text-3xl font-bold">Founding Members</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {overview.max_seats} seats, {overview.plus_months} months of Plus free each. No card is
-        collected and nothing renews or turns into a paid plan.{" "}
-        {overview.open ? "Open to new members." : "Closed to new members."}
+        collected and nothing renews or turns into a paid plan.
       </p>
+      <div
+        className={`mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 text-sm ${overview.open ? "border-primary/40 bg-primary/5" : "border-border bg-muted"}`}
+      >
+        <div>
+          <div className="font-medium">{overview.open ? "Invites are on" : "Invites are off"}</div>
+          <div className="text-muted-foreground">
+            {overview.open
+              ? "Anyone with an open code can claim their 3 months of Plus."
+              : "You can create and copy codes, but none can be used until you turn invites on. People who open a link can still make a free page."}
+          </div>
+        </div>
+        <Button
+          variant={overview.open ? "outline" : "default"}
+          onClick={() => setConfirmOpen(!overview.open)}
+        >
+          {overview.open ? "Turn invites off" : "Turn invites on"}
+        </Button>
+      </div>
 
       <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3">
         {tiles.map((t) => (
@@ -240,7 +272,7 @@ function BetaPage() {
             ))}
           </select>
         </div>
-        <Button onClick={create} disabled={creating || !overview.open || overview.seats_left < 1}>
+        <Button onClick={create} disabled={creating || overview.seats_left < 1}>
           {creating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           ) : (
@@ -341,7 +373,7 @@ function BetaPage() {
         </table>
       </div>
 
-      <h2 className="mt-10 text-xl font-bold">Beta members</h2>
+      <h2 className="mt-10 text-xl font-bold">Members</h2>
       <p className="mt-1 text-sm text-muted-foreground">
         Active means signed in within the last 14 days.
       </p>
@@ -421,7 +453,7 @@ function BetaPage() {
           <div key={f.id} className="rounded-xl border border-border bg-card p-3 text-sm">
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>
-                @{f.username ?? "deleted"} {f.in_beta ? "· beta" : ""}{" "}
+                @{f.username ?? "deleted"} {f.in_beta ? "· founding member" : ""}{" "}
                 {f.rating ? `· ${f.rating}/5` : ""}
               </span>
               <span>{fmtDate(f.created_at)}</span>
@@ -436,6 +468,28 @@ function BetaPage() {
           </Button>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen !== null} onOpenChange={(o) => !o && setConfirmOpen(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmOpen ? "Turn Founding Member invites on?" : "Turn invites off?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmOpen
+                ? "Every open code starts working right away, including any you've already copied. This is logged."
+                : "Open codes stop working until you turn invites back on. Nobody loses Plus they already have. This is logged."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <Button disabled={busy} onClick={() => confirmOpen !== null && setOpen(confirmOpen)}>
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {confirmOpen ? "Turn on" : "Turn off"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>
         <AlertDialogContent>

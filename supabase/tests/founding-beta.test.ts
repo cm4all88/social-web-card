@@ -1,5 +1,5 @@
 /**
- * Founding Creator Beta on in-memory Postgres with every real migration
+ * Founding Members on in-memory Postgres with every real migration
  * applied: codes, the 50-seat cap, signup and later redemption, the 3-month
  * Plus grant that ends on its own with no renewal, feedback, who can do what,
  * and the audit log. No network.
@@ -99,6 +99,9 @@ beforeAll(async () => {
   await signUp(DAN, "dan");
   await svc(`INSERT INTO user_roles (user_id, role) VALUES ($1, 'admin')`, [OWNER]);
   await as(OWNER, `SELECT public.owner_set_suspended($1, true, 'spam account')`, [DAN]);
+  // The program ships closed; the owner turns invites on.
+  expect((await svc<{ open: boolean }>(`SELECT open FROM beta_programs`))[0].open).toBe(false);
+  await as(OWNER, `SELECT public.owner_beta_set_open(true)`);
 }, 60_000);
 
 afterAll(() => db?.close());
@@ -108,6 +111,7 @@ describe("who can manage the beta", () => {
     for (const q of [
       `SELECT public.owner_beta_overview()`,
       `SELECT * FROM public.owner_beta_create_invites(1)`,
+      `SELECT public.owner_beta_set_open(true)`,
       `SELECT * FROM public.owner_beta_list_invites()`,
       `SELECT * FROM public.owner_beta_list_members()`,
       `SELECT * FROM public.owner_beta_list_feedback()`,
@@ -128,7 +132,7 @@ describe("who can manage the beta", () => {
           [OWNER],
         ),
       ),
-    ).toMatch(/Founding beta page/);
+    ).toMatch(/Founding Members page/);
     expect(
       await fails(
         as(
@@ -370,9 +374,18 @@ describe("the 50-seat cap", () => {
     await svc(`UPDATE beta_programs SET max_seats = 50`);
   });
 
-  it("stops new codes and redemptions when the program is closed", async () => {
-    await svc(`UPDATE beta_programs SET open = false`);
-    expect(await fails(createCodes(1))).toMatch(/closed/);
+  it("when invites are off, codes can still be prepared but none can be redeemed", async () => {
+    await as(OWNER, `SELECT public.owner_beta_set_open(false)`);
+    const [prepared] = await createCodes(1);
+    expect(
+      (await as<{ s: string }>(null, `SELECT beta_code_state($1) AS s`, [prepared.code]))[0].s,
+    ).toBe("closed");
+    expect(
+      (await as<{ r: string }>(DAN, `SELECT redeem_beta_invite($1) AS r`, [prepared.code]))[0].r,
+    ).toMatch(/closed|invalid/);
+    await as(OWNER, `SELECT public.owner_beta_revoke_invite($1, 'prepared for the test')`, [
+      prepared.id,
+    ]);
     const [spare] = (
       await as<{ code: string; status: string }>(
         OWNER,
@@ -382,7 +395,7 @@ describe("the 50-seat cap", () => {
     expect(
       (await as<{ s: string }>(null, `SELECT beta_code_state($1) AS s`, [spare.code]))[0].s,
     ).toBe("closed");
-    await svc(`UPDATE beta_programs SET open = true`);
+    await as(OWNER, `SELECT public.owner_beta_set_open(true)`);
   });
 });
 
@@ -478,6 +491,8 @@ describe("owner console numbers and the audit log", () => {
     expect(actions).toContain("beta.codes_created");
     expect(actions).toContain("beta.code_revoked");
     expect(actions).toContain("beta.grant_revoked");
+    expect(actions).toContain("beta.program_opened");
+    expect(actions).toContain("beta.program_closed");
     expect(actions.filter((a) => a === "beta.redeemed")).toHaveLength(3); // Bob, Alice, Carol
     const codes = (
       await svc<{ code: string }>(`SELECT code FROM invites WHERE program IS NOT NULL`)

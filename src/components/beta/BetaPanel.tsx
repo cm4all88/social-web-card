@@ -8,7 +8,7 @@ import { loadOwnEntitlement, sendFeedback, type OwnEntitlement } from "@/lib/bet
 import { BETA_NAME, betaPlanLine } from "@/lib/beta/invite";
 
 /**
- * Shown on the creator dashboard to Founding Creator Beta members only:
+ * Shown on the creator dashboard to Founding Members only:
  * when their free Plus months end, and a short feedback form.
  */
 export function BetaPanel({ userId }: { userId: string }) {

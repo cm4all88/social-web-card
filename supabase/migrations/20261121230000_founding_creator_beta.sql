@@ -1,4 +1,6 @@
--- Founding Creator Beta: the first 50 creators get three months of Plus free.
+-- Founding Members: launch promotion. The first 50 creators get three months
+-- of Plus free. No card, no auto-renewal, no paid conversion.
+-- Internal names (beta_*, founding_creator) are kept from the first draft.
 --
 -- * Reuses public.invites. Beta codes are ordinary invite rows tagged
 --   program = 'founding_creator', with a label (who it was sent to), the
@@ -42,8 +44,10 @@ CREATE POLICY "Admins read beta programs"
   USING (public.has_role(auth.uid(), 'admin'));
 -- No write policies: changed by SQL only.
 
-INSERT INTO public.beta_programs (key, name, max_seats, plus_months)
-VALUES ('founding_creator', 'Founding Creator Beta', 50, 3)
+-- Starts closed: codes can be prepared, but none can be redeemed until the
+-- owner turns invites on (owner_beta_set_open).
+INSERT INTO public.beta_programs (key, name, max_seats, plus_months, open)
+VALUES ('founding_creator', 'Founding Members', 50, 3, false)
 ON CONFLICT (key) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -71,7 +75,7 @@ BEGIN
   IF coalesce(current_setting('yooits.beta_write', true), '') <> 'on' THEN
     IF (TG_OP IN ('UPDATE', 'DELETE') AND OLD.program IS NOT NULL)
        OR (TG_OP IN ('INSERT', 'UPDATE') AND NEW.program IS NOT NULL) THEN
-      RAISE EXCEPTION 'Founding beta codes are managed from the Founding beta page.'
+      RAISE EXCEPTION 'Founding Member codes are managed from the Founding Members page.'
         USING ERRCODE = '42501';
     END IF;
   END IF;
@@ -285,7 +289,7 @@ BEGIN
       BEGIN
         PERFORM public.beta_redeem_for(new.id, v_invite_code, true);
       EXCEPTION WHEN OTHERS THEN
-        RAISE WARNING 'founding beta redemption skipped: %', SQLERRM;
+        RAISE WARNING 'founding member redemption skipped: %', SQLERRM;
       END;
     ELSE
       UPDATE public.invites
@@ -445,9 +449,8 @@ BEGIN
   END IF;
 
   SELECT * INTO prog FROM public.beta_programs WHERE key = 'founding_creator' FOR UPDATE;
-  IF NOT prog.open THEN
-    RAISE EXCEPTION 'The Founding Creator Beta is closed to new codes.' USING ERRCODE = '22023';
-  END IF;
+  -- Codes can be created while invites are off, so they can be prepared ahead;
+  -- they just can't be redeemed until the program is open.
   IF _days IS NOT NULL AND _days NOT BETWEEN 1 AND 180 THEN
     RAISE EXCEPTION 'Codes can last 1 to 180 days.' USING ERRCODE = '22023';
   END IF;
@@ -621,6 +624,33 @@ BEGIN
 END;
 $$;
 
+-- Turn redemption on or off. Codes keep their seats either way.
+CREATE OR REPLACE FUNCTION public.owner_beta_set_open(_open boolean)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  was boolean;
+BEGIN
+  PERFORM public.owner_require_admin();
+  IF _open IS NULL THEN
+    RAISE EXCEPTION 'Say whether invites should be on or off.' USING ERRCODE = '22023';
+  END IF;
+  SELECT open INTO was FROM public.beta_programs WHERE key = 'founding_creator' FOR UPDATE;
+  IF was IS DISTINCT FROM _open THEN
+    UPDATE public.beta_programs SET open = _open WHERE key = 'founding_creator';
+    PERFORM public.write_admin_audit(
+      CASE WHEN _open THEN 'beta.program_opened' ELSE 'beta.program_closed' END,
+      'beta_program', 'founding_creator', '{}'::jsonb);
+  END IF;
+  RETURN _open;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.owner_beta_set_open(boolean) FROM public, anon;
+GRANT EXECUTE ON FUNCTION public.owner_beta_set_open(boolean) TO authenticated;
 REVOKE ALL ON FUNCTION public.owner_beta_overview() FROM public, anon;
 REVOKE ALL ON FUNCTION public.owner_beta_create_invites(integer, text, text, integer) FROM public, anon;
 REVOKE ALL ON FUNCTION public.owner_beta_list_invites(integer, integer) FROM public, anon;

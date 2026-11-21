@@ -1,5 +1,5 @@
 /**
- * Founding Creator Beta helpers that don't touch the network, so they can be
+ * Founding Members helpers that don't touch the network, so they can be
  * tested on their own. The database is the authority on every rule here
  * (seats, single use, expiry); these only shape what people see.
  */
@@ -8,7 +8,7 @@
 export type BetaCodeState =
   "ok" | "used" | "expired" | "revoked" | "full" | "closed" | "invalid" | "already";
 
-export const BETA_NAME = "Founding Creator Beta";
+export const BETA_NAME = "Founding Members";
 
 /** Codes look like fc-abcd234xyz. Accepts what people paste: spaces, capitals, a whole link. */
 export function normalizeBetaCode(input: string | null | undefined): string | null {
@@ -29,9 +29,9 @@ export function betaInviteLink(code: string, origin: string): string {
 export function betaStateMessage(state: BetaCodeState): string {
   switch (state) {
     case "ok":
-      return "You're invited to the Founding Creator Beta: 3 months of Plus, free. No card needed, and nothing renews or charges when it ends.";
+      return "You're invited to be a Founding Member: 3 months of Plus, free. No card needed, and nothing renews or charges when it ends.";
     case "already":
-      return "Your account is already in the Founding Creator Beta.";
+      return "Your account is already a Founding Member.";
     case "used":
       return "This invite has already been used. You can still create a free page.";
     case "expired":
@@ -40,9 +40,9 @@ export function betaStateMessage(state: BetaCodeState): string {
     case "invalid":
       return "This invite isn't valid. You can still create a free page.";
     case "full":
-      return "The Founding Creator Beta is full. You can still create a free page.";
+      return "All Founding Member spots are taken. You can still create a free page.";
     case "closed":
-      return "The Founding Creator Beta isn't taking new members right now. You can still create a free page.";
+      return "Founding Member invites aren't open yet. You can still create a free page.";
   }
 }
 

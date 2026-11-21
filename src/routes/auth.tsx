@@ -12,7 +12,7 @@ import { z } from "zod";
 import { betaRpc } from "@/lib/beta/api";
 import { BETA_NAME, betaStateMessage, isBetaCodeState, normalizeBetaCode, type BetaCodeState } from "@/lib/beta/invite";
 
-// yooits.me/auth?invite=fc-xxxxxxxxxx opens sign-up with a Founding Creator Beta code.
+// yooits.me/auth?invite=fc-xxxxxxxxxx opens sign-up with a Founding Member code.
 const searchSchema = z.object({
   invite: z.string().max(200).optional().catch(undefined),
 });
