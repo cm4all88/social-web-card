@@ -92,7 +92,7 @@ const terms: LegalDocument = {
     {
       heading: "Ending your account",
       paragraphs: [
-        `You can stop using Yooits at any time. To delete your account, contact us at ${P.contact}.`,
+        "You can stop using Yooits at any time. You can delete your account yourself from the Account section of your dashboard.",
       ],
     },
     {
@@ -141,7 +141,7 @@ const privacy: LegalDocument = {
     {
       heading: "Keeping and deleting data",
       paragraphs: [
-        `We keep your information while your account is open. You can edit or remove your profile content at any time. To delete your account or ask for a copy of your information, contact us at ${P.contact}. We keep tip and payment records for as long as tax and payment rules require.`,
+        `We keep your information while your account is open. You can edit or remove your profile content at any time. You can delete your account from the Account section of your dashboard; that removes your profile, links, wishlists and sign-in. To ask for a copy of your information, contact us at ${P.contact}. We keep tip and payment records for as long as tax and payment rules require.`,
       ],
     },
     {
