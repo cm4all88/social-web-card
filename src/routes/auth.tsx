@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/Turnstile";
+import { LegalLinks } from "@/components/legal/LegalPage";
 import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username";
 import { z } from "zod";
 import { betaRpc } from "@/lib/beta/api";
@@ -293,6 +294,23 @@ function AuthPage() {
             <input id="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
           <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
+          {mode === "signup" && (
+            <p className="text-xs text-muted-foreground">
+              By creating an account you agree to the{" "}
+              <Link to="/legal/$doc" params={{ doc: "terms" }} className="text-primary hover:underline">
+                Terms of Service
+              </Link>
+              ,{" "}
+              <Link to="/legal/$doc" params={{ doc: "acceptable-use" }} className="text-primary hover:underline">
+                Acceptable Use Policy
+              </Link>{" "}
+              and{" "}
+              <Link to="/legal/$doc" params={{ doc: "privacy" }} className="text-primary hover:underline">
+                Privacy Policy
+              </Link>
+              .
+            </p>
+          )}
           <Button type="submit" disabled={loading} className="w-full">
             {loading
               ? "Please wait…"
@@ -320,6 +338,7 @@ function AuthPage() {
         <div className="mt-6 text-center">
           <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link>
         </div>
+        <LegalLinks className="mt-4" />
       </div>
     </div>
   );

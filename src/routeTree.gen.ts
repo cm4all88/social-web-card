@@ -14,11 +14,15 @@ import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as OwnerRouteImport } from './routes/owner'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as DashboardWishlistsRouteImport } from './routes/dashboard_.wishlists'
+import { Route as LegalIndexRouteImport } from './routes/legal.index'
+import { Route as LegalDocRouteImport } from './routes/legal.$doc'
 import { Route as OwnerIndexRouteImport } from './routes/owner.index'
 import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
@@ -55,9 +59,19 @@ const OwnerRoute = OwnerRouteImport.update({
   path: '/owner',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsernameTipRoute = UsernameTipRouteImport.update({
@@ -78,6 +92,16 @@ const AdminSplatRoute = AdminSplatRouteImport.update({
 const DashboardWishlistsRoute = DashboardWishlistsRouteImport.update({
   id: '/dashboard_/wishlists',
   path: '/dashboard/wishlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalIndexRoute = LegalIndexRouteImport.update({
+  id: '/legal/',
+  path: '/legal/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalDocRoute = LegalDocRouteImport.update({
+  id: '/legal/$doc',
+  path: '/legal/$doc',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerIndexRoute = OwnerIndexRouteImport.update({
@@ -137,10 +161,13 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/owner': typeof OwnerRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/legal/$doc': typeof LegalDocRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -148,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -158,10 +186,13 @@ export interface FileRoutesByTo {
   '/$username': typeof UsernameRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/legal/$doc': typeof LegalDocRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -169,6 +200,7 @@ export interface FileRoutesByTo {
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin': typeof AdminIndexRoute
+  '/legal': typeof LegalIndexRoute
   '/owner': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -181,10 +213,13 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
   '/owner': typeof OwnerRouteWithChildren
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/terms': typeof TermsRoute
   '/$username_/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard_/wishlists': typeof DashboardWishlistsRoute
+  '/legal/$doc': typeof LegalDocRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -192,6 +227,7 @@ export interface FileRoutesById {
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin/': typeof AdminIndexRoute
+  '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username_/wishlist/$slug': typeof UsernameWishlistSlugRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -205,10 +241,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/owner'
+    | '/privacy'
     | '/reset-password'
+    | '/terms'
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
+    | '/legal/$doc'
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/founding'
@@ -216,6 +255,7 @@ export interface FileRouteTypes {
     | '/owner/revenue'
     | '/owner/users'
     | '/admin/'
+    | '/legal/'
     | '/owner/'
     | '/$username/wishlist/$slug'
     | '/api/stripe/webhook'
@@ -226,10 +266,13 @@ export interface FileRouteTypes {
     | '/$username'
     | '/auth'
     | '/dashboard'
+    | '/privacy'
     | '/reset-password'
+    | '/terms'
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
+    | '/legal/$doc'
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/founding'
@@ -237,6 +280,7 @@ export interface FileRouteTypes {
     | '/owner/revenue'
     | '/owner/users'
     | '/admin'
+    | '/legal'
     | '/owner'
     | '/$username/wishlist/$slug'
     | '/api/stripe/webhook'
@@ -248,10 +292,13 @@ export interface FileRouteTypes {
     | '/auth'
     | '/dashboard'
     | '/owner'
+    | '/privacy'
     | '/reset-password'
+    | '/terms'
     | '/$username_/tip'
     | '/admin/$'
     | '/dashboard_/wishlists'
+    | '/legal/$doc'
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/founding'
@@ -259,6 +306,7 @@ export interface FileRouteTypes {
     | '/owner/revenue'
     | '/owner/users'
     | '/admin/'
+    | '/legal/'
     | '/owner/'
     | '/$username_/wishlist/$slug'
     | '/api/stripe/webhook'
@@ -271,11 +319,15 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
   OwnerRoute: typeof OwnerRouteWithChildren
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  TermsRoute: typeof TermsRoute
   UsernameTipRoute: typeof UsernameTipRoute
   AdminSplatRoute: typeof AdminSplatRoute
   DashboardWishlistsRoute: typeof DashboardWishlistsRoute
+  LegalDocRoute: typeof LegalDocRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  LegalIndexRoute: typeof LegalIndexRoute
   UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
@@ -317,11 +369,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$username_/tip': {
@@ -350,6 +416,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard/wishlists'
       fullPath: '/dashboard/wishlists'
       preLoaderRoute: typeof DashboardWishlistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/': {
+      id: '/legal/'
+      path: '/legal'
+      fullPath: '/legal/'
+      preLoaderRoute: typeof LegalIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/$doc': {
+      id: '/legal/$doc'
+      path: '/legal/$doc'
+      fullPath: '/legal/$doc'
+      preLoaderRoute: typeof LegalDocRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/owner/': {
@@ -455,11 +535,15 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
   OwnerRoute: OwnerRouteWithChildren,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  TermsRoute: TermsRoute,
   UsernameTipRoute: UsernameTipRoute,
   AdminSplatRoute: AdminSplatRoute,
   DashboardWishlistsRoute: DashboardWishlistsRoute,
+  LegalDocRoute: LegalDocRoute,
   AdminIndexRoute: AdminIndexRoute,
+  LegalIndexRoute: LegalIndexRoute,
   UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
