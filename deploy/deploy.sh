@@ -6,14 +6,14 @@
 #   2. optional backup, then database migrations (only ones not applied yet)
 #   3. test accounts and content (preview only)
 #   4. builds the site for this environment, without Lovable
-#   5. deploys it as a Cloudflare Worker and stores its secrets
+#   5. deploys it to this environment's own Vercel project, with its settings
 #   6. creates the Stripe webhooks the first time
 #
 # Non-secret settings: deploy/environments/<env>.env (committed).
 # Secrets come from the GitHub environment of the same name, or for local
 # runs from deploy/environments/<env>.secrets.local (never committed):
 #   SUPABASE_URL  SUPABASE_PUBLISHABLE_KEY  SUPABASE_SECRET_KEY  SUPABASE_DB_URL
-#   STRIPE_SECRET_KEY  SITE_PASSWORD (preview)  CLOUDFLARE_API_TOKEN  CLOUDFLARE_ACCOUNT_ID
+#   STRIPE_SECRET_KEY  SITE_PASSWORD (preview)  VERCEL_TOKEN  (VERCEL_SCOPE: team accounts only)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -30,9 +30,10 @@ say() { echo "deploy $ENV_NAME: $*"; }
 need() { [ -n "${!1:-}" ] || fail "$1 is not set (see deploy/README.md)"; }
 
 for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SUPABASE_DB_URL STRIPE_SECRET_KEY \
-         CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID WORKER_NAME BUILD_MODE; do need "$v"; done
+         VERCEL_TOKEN PROJECT_NAME BUILD_MODE; do need "$v"; done
 if [ "$PASSWORD_PROTECT" = yes ]; then need SITE_PASSWORD; fi
-export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+[[ "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "PROJECT_NAME should be lowercase letters, numbers and dashes"
+export VERCEL_TOKEN VERCEL_SCOPE
 
 # --- 1. Safety checks ---------------------------------------------------------------
 # The database Lovable runs the live site on. No environment may use it: our
@@ -61,7 +62,7 @@ fi
 if [ "$PASSWORD_PROTECT" = yes ] && [ ${#SITE_PASSWORD} -lt 12 ]; then fail "SITE_PASSWORD must be at least 12 characters."; fi
 if [ "$SEED_TEST_DATA" = yes ] && [ "$ENV_NAME" != preview ]; then fail "test data is only allowed in the preview."; fi
 unset STRIPE_LIVE_MODE_APPROVED
-say "Supabase project $REF, Worker $WORKER_NAME, Stripe $STRIPE_MODE mode"
+say "Supabase project $REF, Vercel project $PROJECT_NAME, Stripe $STRIPE_MODE mode"
 
 # --- 2. Backup, then database migrations ------------------------------------------------
 # (DRY_RUN=1 checks the settings and builds, but changes nothing anywhere.)
@@ -80,45 +81,72 @@ VITE_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLISHABLE_KEY
 VITE_SUPABASE_PROJECT_ID=$REF
 ENV
 trap 'rm -f ".env.$BUILD_MODE.local"' EXIT
-rm -rf dist .wrangler
-npx vite build --config vite.config.standalone.ts --mode "$BUILD_MODE"
-if grep -rq "$LOVABLE_REF" dist; then fail "the build still contains the Lovable database's id; not deploying"; fi
-grep -rq "$REF" dist/client || fail "the build doesn't use this environment's database; not deploying"
-[ -f dist/server/wrangler.json ] || fail "the build didn't produce dist/server/wrangler.json"
+rm -rf dist .wrangler .vercel/output
+NITRO_PRESET=vercel npx vite build --config vite.config.standalone.ts --mode "$BUILD_MODE"
+OUTPUT=.vercel/output
+[ -f "$OUTPUT/config.json" ] || fail "the build didn't produce $OUTPUT"
+if grep -rq "$LOVABLE_REF" "$OUTPUT"; then fail "the build still contains the Lovable database's id; not deploying"; fi
+grep -rq "$REF" "$OUTPUT/static" || fail "the build doesn't use this environment's database; not deploying"
 if [ "${DRY_RUN:-}" = 1 ]; then say "dry run: built and checked, not deployed"; exit 0; fi
 
-# --- 5. Deploy and store secrets ---------------------------------------------------------------
-OUT=$(npx -y wrangler@4 deploy --config dist/server/wrangler.json --name "$WORKER_NAME" 2>&1 | tee /dev/stderr)
-if [ -n "${CUSTOM_DOMAIN:-}" ]; then
-  SITE="https://$CUSTOM_DOMAIN"
-else
-  SITE=$(printf '%s' "$OUT" | grep -oE "https://$WORKER_NAME\.[a-z0-9-]+\.workers\.dev" | head -1)
-  [ -n "$SITE" ] || fail "deployed, but couldn't find the workers.dev address in Wrangler's output. Is a workers.dev subdomain set up in Cloudflare?"
+# --- 5. Deploy to this environment's Vercel project --------------------------------------
+# Each environment is its own Vercel project (PROJECT_NAME), so preview and
+# production never share settings. The project is created on the first run.
+vc() { npx -y vercel@66.6.0 --token "$VERCEL_TOKEN" ${VERCEL_SCOPE:+--scope "$VERCEL_SCOPE"} "$@"; }
+if ! vc project inspect "$PROJECT_NAME" >/dev/null 2>&1; then
+  vc project create "$PROJECT_NAME" >/dev/null
+  say "created Vercel project $PROJECT_NAME"
+fi
+vc link --yes --project "$PROJECT_NAME" >/dev/null
+[ -f "$OUTPUT/config.json" ] || fail "linking the Vercel project removed the build; not deploying"
+
+if [ -n "${CUSTOM_DOMAIN:-}" ]; then SITE="https://$CUSTOM_DOMAIN"; else SITE="https://$PROJECT_NAME.vercel.app"; fi
+settings() { # prints this environment's settings as JSON for deploy/vercel-env.mjs
+  SITE="$SITE" node -e '
+    const e = process.env;
+    const s = {
+      SUPABASE_URL: e.SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY: e.SUPABASE_PUBLISHABLE_KEY,
+      SUPABASE_SERVICE_ROLE_KEY: e.SUPABASE_SECRET_KEY,
+      STRIPE_SECRET_KEY: e.STRIPE_SECRET_KEY,
+      TIPPING_ENABLED: "true",
+      PUBLIC_SITE_URL: e.SITE,
+    };
+    if (e.PASSWORD_PROTECT === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
+    process.stdout.write(JSON.stringify(s));'
+}
+settings | node deploy/vercel-env.mjs
+if [ "$PASSWORD_PROTECT" != yes ]; then
+  vc env remove SITE_PASSWORD --environment production --yes >/dev/null 2>&1 || true
 fi
 
-SITE="$SITE" node -e '
-  const e = process.env;
-  const s = {
-    SUPABASE_URL: e.SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY: e.SUPABASE_PUBLISHABLE_KEY,
-    SUPABASE_SERVICE_ROLE_KEY: e.SUPABASE_SECRET_KEY,
-    STRIPE_SECRET_KEY: e.STRIPE_SECRET_KEY,
-    TIPPING_ENABLED: "true",
-    PUBLIC_SITE_URL: e.SITE,
-  };
-  if (e.PASSWORD_PROTECT === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
-  process.stdout.write(JSON.stringify(s));' | npx -y wrangler@4 secret bulk --name "$WORKER_NAME" >/dev/null
-SECRETS=$(npx -y wrangler@4 secret list --name "$WORKER_NAME" 2>/dev/null || true)
-if [ "$PASSWORD_PROTECT" != yes ] && printf '%s' "$SECRETS" | grep -q SITE_PASSWORD; then
-  npx -y wrangler@4 secret delete SITE_PASSWORD --name "$WORKER_NAME" >/dev/null
+deploy_once() { # deploys the build to production on this project; sets DEPLOYED to its address
+  local out
+  out=$(vc deploy --prebuilt --prod --yes --json)
+  DEPLOYED=$(printf '%s' "$out" | node deploy/vercel-site.mjs)
+  if [ -z "$DEPLOYED" ]; then
+    DEPLOYED="$PROJECT_NAME.vercel.app"
+    say "warning: Vercel's reply didn't list the site's address; assuming $DEPLOYED (check the project's Domains in Vercel)"
+  fi
+}
+deploy_once
+REDEPLOY=no
+if [ -z "${CUSTOM_DOMAIN:-}" ] && [ "https://$DEPLOYED" != "$SITE" ]; then
+  SITE="https://$DEPLOYED"   # the plain name was taken; use the address Vercel gave
+  settings | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(JSON.stringify({PUBLIC_SITE_URL:JSON.parse(s).PUBLIC_SITE_URL})))' \
+    | node deploy/vercel-env.mjs
+  REDEPLOY=yes
 fi
-say "secrets stored"
+say "settings stored"
 
 # --- 6. Stripe webhooks (first deploy only) ------------------------------------------------------
-if ! printf '%s' "$SECRETS" | grep -q STRIPE_WEBHOOK_SECRET; then
-  SITE_URL="$SITE" node deploy/stripe-webhooks.mjs | npx -y wrangler@4 secret bulk --name "$WORKER_NAME" >/dev/null
+if ! vc env ls 2>/dev/null | grep -q STRIPE_WEBHOOK_SECRET; then
+  SITE_URL="$SITE" node deploy/stripe-webhooks.mjs | node deploy/vercel-env.mjs
   say "Stripe test webhooks connected"
+  REDEPLOY=yes
 fi
+# Settings only reach a deployment made after they were stored.
+if [ "$REDEPLOY" = yes ]; then deploy_once; fi
 
 echo
 echo "Yooits $ENV_NAME is live at $SITE"

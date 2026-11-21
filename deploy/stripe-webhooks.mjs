@@ -1,7 +1,7 @@
 /**
  * Creates the two TEST-mode Stripe webhook endpoints for the preview site
  * (one for the platform, one for connected accounts) and prints their signing
- * secrets as JSON on stdout for deploy/deploy.sh to store as Worker secrets.
+ * secrets as JSON on stdout for deploy/deploy.sh to store as the site's settings.
  * Refuses live keys. Never deletes anything.
  */
 import Stripe from "stripe";

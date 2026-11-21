@@ -9,7 +9,7 @@ The preview is built as the first copy of the final setup, not a stand-in:
 
 | Part | Preview (now) | Production (after the move) |
 | --- | --- | --- |
-| Hosting | Cloudflare Worker `yooits-preview` | Cloudflare Worker `yooits` on yooits.me |
+| Hosting | Vercel project `yooits-preview` | Vercel project `yooits` on yooits.me (paid Pro plan: Vercel's free plan is for non-commercial use) |
 | Database, sign-in, files | Supabase project `yooits-preview` | a new Supabase project `yooits-production` |
 | Settings | `deploy/environments/preview.env` + GitHub environment `preview` | `deploy/environments/production.env` + GitHub environment `production` (with required approval) |
 | Deploys | every push to `preview/yooits` | by hand from `main`, after approval |
@@ -17,9 +17,11 @@ The preview is built as the first copy of the final setup, not a stand-in:
 | Backups | `deploy/backup.sh` on demand | daily (`backup.yml`), plus before every deploy |
 | Payments | Stripe test mode | Stripe live mode, only once approved |
 
-Same code, same scripts; only the settings differ. The build already runs
-without Lovable (`vite.config.standalone.ts` produces the same output as
-Lovable's build, checked file by file).
+Same code, same scripts; only the settings differ. The build runs without
+Lovable (`vite.config.standalone.ts`). It targets Vercel; set
+`NITRO_PRESET=cloudflare-module` to build for Cloudflare Workers instead
+(checked file by file against Lovable's own build), so the host can change
+again later without code changes.
 
 ## What depends on Lovable today
 
@@ -73,12 +75,12 @@ Things specific to Yooits that the move must handle:
    where production backups live (below).
 2. **Rehearse:** Lovable export → restore into a throwaway Supabase project →
    copy avatars → fix addresses → apply new migrations → deploy to a
-   workers.dev address → check account, page and file counts against live and
+   vercel.app address → check account, page and file counts against live and
    sign in with your own account. Delete the throwaway project after.
 3. **Move day:** pause edits on the live site → fresh Lovable export (it's a
    snapshot, so it must be taken at the start of the move) → repeat the
-   rehearsed steps into `yooits-production` → test on its workers.dev address.
-4. **Switch the domain:** point yooits.me at the Cloudflare Worker. Lovable's
+   rehearsed steps into `yooits-production` → test on its vercel.app address.
+4. **Switch the domain:** add yooits.me to the `yooits` Vercel project and point its DNS there. Lovable's
    lovable.app address keeps serving the old version, which is the fallback.
 5. **After a quiet week:** unpublish on Lovable, keep the export file safe,
    and only then remove Lovable Cloud. Lovable's docs warn that removing it
@@ -92,9 +94,10 @@ repositories get no per-environment secrets and no required approvals
 (GitHub's "deployments and environments" docs). So production needs one of:
 
 - **GitHub Pro (paid) and a private repository:** the workflows run as written.
-- **Stay public and free:** keep the `production` environment with a required
-  reviewer, and send backups to a private Cloudflare R2 bucket instead of
-  GitHub (a small workflow change, made when we get there).
+- **Stay public:** keep the `production` environment with a required
+  reviewer, and send backups to private storage outside GitHub (for example
+  a private Supabase Storage bucket or Cloudflare R2; a small workflow change,
+  made when we get there).
 
 The preview isn't affected: it only holds test data.
 
@@ -102,7 +105,7 @@ The preview isn't affected: it only holds test data.
 
 Then the live data is already in your account and nothing needs copying.
 The move is hosting only: add the production site address to Supabase's
-redirect list, deploy the Worker, switch the domain, disconnect Lovable.
+redirect list, deploy to Vercel, switch the domain, disconnect Lovable.
 `deploy.sh` refuses the live database in every environment today; that
 guard would be lifted for production only, as part of the approved move.
 

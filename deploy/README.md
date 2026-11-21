@@ -10,7 +10,7 @@ same scripts deploy a future production site from different settings
 How the live site would later move off Lovable: `deploy/MIGRATION.md`.
 
 - **Branch:** `preview/yooits` (PRs #1 to #4 combined; `main` is untouched)
-- **Address:** `https://yooits-preview.<your-subdomain>.workers.dev`
+- **Address:** `https://yooits-preview.vercel.app` (Vercel adds a suffix if that name is taken; the deploy prints the real one)
 - **Site password:** the `SITE_PASSWORD` you choose (any user name)
 - **Test sign-ins** (same password):
   - `owner@example.com`: admin, opens the Owner console
@@ -18,8 +18,13 @@ How the live site would later move off Lovable: `deploy/MIGRATION.md`.
   - `bob@example.com`: creator with a private wishlist
   - `casey@example.com`: an account to try suspend and unpublish on
 
-Everything runs on free plans in accounts you control (not Lovable's): Supabase Free, Cloudflare Workers Free,
+Everything runs in accounts you control (not Lovable's): Vercel, Supabase Free,
 Stripe test mode and GitHub Actions (free for public repositories).
+
+**About Vercel's free plan:** Vercel's terms limit the free Hobby plan to
+"personal or non-commercial use". Yooits takes payments, so production on
+Vercel needs a paid plan (Pro). The terms don't mention testing; using Pro
+from the start avoids the question. Your choice; the setup is the same.
 
 ## One-time setup (about 20 minutes)
 
@@ -38,14 +43,14 @@ In the Yooits project in Lovable:
 Either way the preview uses its own new database, so nothing here touches
 the live one.
 
-### 1. Cloudflare: an API token
-Sign in to Cloudflare (or create a free account if you don't have one).
-1. Workers & Pages: note your `<subdomain>.workers.dev` subdomain (set one up
-   if it asks). The preview is a new Worker named `yooits-preview`; nothing
-   else in the account is changed.
-2. Copy your Account ID (Workers & Pages overview, right-hand side).
-3. My Profile, API Tokens, Create Token, template **Edit Cloudflare Workers**,
-   limited to your account. Copy the token.
+### 1. Vercel: an account and a token
+Sign up or sign in at vercel.com (signing up with GitHub is quickest).
+You don't need to import the repository: the deploy creates a Vercel
+project called `yooits-preview` itself and changes nothing else.
+1. Account Settings, **Tokens**: create a token (any name, e.g. "Yooits
+   deploys"), scoped to your account, and copy it. Vercel shows it once.
+2. Only if you use a Vercel *team* rather than your personal account: note the
+   team's slug (in its URL) for step 4.
 
 ### 2. Supabase: a new free project
 Sign in at supabase.com (or sign up free; with Lovable Cloud you may not have
@@ -60,8 +65,9 @@ an account yet).
      database password filled in
 3. Authentication settings for this project only:
    - Sign In / Providers, Email: turn **Confirm email** off
-   - URL Configuration: Site URL `https://yooits-preview.<your-subdomain>.workers.dev`,
-     and add `https://yooits-preview.<your-subdomain>.workers.dev/**` to Redirect URLs
+   - URL Configuration: Site URL `https://yooits-preview.vercel.app`, and add
+     `https://yooits-preview*.vercel.app/**` to Redirect URLs (the `*` also
+     covers the address Vercel uses if the plain name is taken)
 
 ### 3. Stripe: test mode keys
 Sign in to Stripe (or create a free account; test mode works before any
@@ -88,19 +94,24 @@ set without touching the preview's.
 | `SUPABASE_DB_URL` | Session pooler connection string |
 | `STRIPE_SECRET_KEY` | `sk_test_...` key |
 | `SITE_PASSWORD` | your preview password |
-| `CLOUDFLARE_API_TOKEN` | Cloudflare token |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `VERCEL_TOKEN` | Vercel token |
 | `BACKUP_PASSPHRASE` | optional: a long passphrase (16+ characters) that encrypts backups. Keep a copy somewhere safe; backups can't be opened without it. |
 
 3. Repository Settings, Secrets and variables, Actions, **Variables** tab,
    New repository variable: `PREVIEW_DEPLOY` = `on`. This switch allows
-   preview deploys. Set it to `off` to stop them.
+   preview deploys. Set it to `off` to stop them. (Team accounts only: also
+   add `VERCEL_SCOPE` = your team's slug.)
 
 Then ask Claude to start the preview. The first deploy takes about five
 minutes and prints the address in the Actions run summary.
 
 ## Using it
 - Open the address, enter the site password, then sign in with a test account.
+- If Vercel asks you to log in to Vercel before the site password, its
+  Deployment Protection is on for this project: turn it off in the
+  `yooits-preview` project's Settings, Deployment Protection. The site
+  password still protects the preview, and Stripe can't reach a page that
+  asks for a Vercel login.
 - **Tips:** sign in as Alice, connect Stripe from the dashboard (Stripe's
   test onboarding has "use test data" buttons), switch tips on, then tip her
   page with card `4242 4242 4242 4242`, any future date and any CVC.

@@ -1,4 +1,4 @@
-// Builds Yooits for Cloudflare Workers without Lovable.
+// Builds Yooits for its own hosting (Vercel by default) without Lovable.
 //
 // vite.config.ts uses Lovable's wrapper, which Lovable's editor needs while
 // the live site is still built there. This file sets up the same plugins
@@ -13,6 +13,8 @@ import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
 
+const preset = process.env.NITRO_PRESET ?? "vercel";
+
 export default defineConfig({
   resolve: {
     alias: { "@": `${process.cwd()}/src` },
@@ -25,11 +27,16 @@ export default defineConfig({
       // Same rule as Lovable's config: server-only code can't end up in the browser bundle.
       importProtection: { behavior: "error", client: { files: ["**/server/**"], specifiers: ["server-only"] } },
     }),
-    nitro({
-      preset: "cloudflare-module",
-      output: { dir: "dist", serverDir: "dist/server", publicDir: "dist/client" },
-      cloudflare: { nodeCompat: true, deployConfig: true },
-    }),
+    // Hosting target. Vercel by default (writes .vercel/output for
+    // `vercel deploy --prebuilt`); NITRO_PRESET=cloudflare-module builds for
+    // Cloudflare Workers instead, and other Nitro presets work the same way.
+    preset === "cloudflare-module"
+      ? nitro({
+          preset,
+          output: { dir: "dist", serverDir: "dist/server", publicDir: "dist/client" },
+          cloudflare: { nodeCompat: true, deployConfig: true },
+        })
+      : nitro({ preset }),
     viteReact(),
   ],
   server: { host: "::", port: 8080 },

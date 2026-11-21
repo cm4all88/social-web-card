@@ -5,6 +5,7 @@
 #               only once PRODUCTION_DEPLOY is "on" and the repository is
 #               private. Uses the "production" GitHub environment, which
 #               should require Chris's approval. See deploy/MIGRATION.md.
+# Each environment deploys to its own Vercel project (deploy/environments/).
 # Neither can reach the Lovable-hosted live site: deploy.sh refuses its database.
 name: Deploy Yooits
 on:
@@ -50,8 +51,8 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
       # Production takes an encrypted backup before migrating; keep it.
       - name: Keep the pre-deploy backup
