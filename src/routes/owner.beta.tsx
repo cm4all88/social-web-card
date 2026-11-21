@@ -41,6 +41,8 @@ const CHANNELS: { value: BetaChannel; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const FEEDBACK_PAGE = 50;
+
 const fmtDate = (s: string | null) =>
   s
     ? new Date(s).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
@@ -54,6 +56,8 @@ function BetaPage() {
   const [invites, setInvites] = useState<BetaInviteRow[] | null>(null);
   const [members, setMembers] = useState<BetaMemberRow[] | null>(null);
   const [feedback, setFeedback] = useState<BetaFeedbackRow[] | null>(null);
+  const [moreFeedback, setMoreFeedback] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [count, setCount] = useState(1);
@@ -72,12 +76,13 @@ function BetaPage() {
         betaRpc("owner_beta_overview", {}),
         betaRpc("owner_beta_list_invites", { _limit: 200 }),
         betaRpc("owner_beta_list_members", { _limit: 200 }),
-        betaRpc("owner_beta_list_feedback", { _limit: 50 }),
+        betaRpc("owner_beta_list_feedback", { _limit: FEEDBACK_PAGE }),
       ]);
       setOverview(o);
       setInvites(i ?? []);
       setMembers(m ?? []);
       setFeedback(f ?? []);
+      setMoreFeedback((f ?? []).length === FEEDBACK_PAGE);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -86,6 +91,24 @@ function BetaPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadOlderFeedback = async () => {
+    const last = feedback?.[feedback.length - 1];
+    if (!last) return;
+    setLoadingOlder(true);
+    try {
+      const older = await betaRpc("owner_beta_list_feedback", {
+        _limit: FEEDBACK_PAGE,
+        _before_id: last.id,
+      });
+      setFeedback((cur) => [...(cur ?? []), ...(older ?? [])]);
+      setMoreFeedback((older ?? []).length === FEEDBACK_PAGE);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setLoadingOlder(false);
+    }
+  };
 
   const origin = typeof window !== "undefined" ? window.location.origin : "https://yooits.me";
   const copy = (text: string, what: string) => {
@@ -406,6 +429,12 @@ function BetaPage() {
             <p className="mt-1 whitespace-pre-wrap">{f.message}</p>
           </div>
         ))}
+        {moreFeedback && (
+          <Button variant="outline" onClick={loadOlderFeedback} disabled={loadingOlder}>
+            {loadingOlder && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Load older feedback
+          </Button>
+        )}
       </div>
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>

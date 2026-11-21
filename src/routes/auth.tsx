@@ -116,8 +116,9 @@ function AuthPage() {
             data: {
               username: cleanUsername,
               display_name: displayName.trim().slice(0, 50) || cleanUsername,
-              // Checked and redeemed by the database at signup; a bad code just means the free plan.
-              ...(inviteCode && betaState === "ok" ? { invite_code: inviteCode } : {}),
+              // Send any well-formed beta code, even if the precheck failed or is still
+              // loading: the database checks and redeems it, and a bad code just means the free plan.
+              ...(inviteCode ? { invite_code: inviteCode } : {}),
             },
           },
         });
