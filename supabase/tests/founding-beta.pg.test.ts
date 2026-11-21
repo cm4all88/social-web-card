@@ -57,7 +57,7 @@ describe.skipIf(!ADMIN_URL)("founding beta against a real Postgres", () => {
         `INSERT INTO user_roles (user_id, role) VALUES ('${OWNER}', 'admin')`,
         `UPDATE beta_programs SET open = true`,
         ...Array.from(
-          { length: 12 },
+          { length: 13 },
           (_, i) =>
             `INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ('${user(i + 1)}', 'u${i}@x.test', '{"username":"user${i}"}')`,
         ),
@@ -88,6 +88,40 @@ describe.skipIf(!ADMIN_URL)("founding beta against a real Postgres", () => {
     expect(outcomes.filter((o) => o === "used")).toHaveLength(5);
     const [n] = await psql(dbUrl(DB_NAME), `SELECT count(*) FROM plan_entitlements`);
     expect(Number(n)).toBe(1);
+  }, 30_000);
+
+  it("a redemption waiting while the owner turns invites off gets nothing", async () => {
+    await psql(dbUrl(DB_NAME), `UPDATE beta_programs SET open = true, max_seats = 50`);
+    const [code] = await psql(
+      dbUrl(DB_NAME),
+      asUser(OWNER, `SELECT code FROM public.owner_beta_create_invites(1)`).replace(
+        "SELECT pg_sleep(0.2);",
+        "",
+      ),
+    );
+    const [before] = await psql(dbUrl(DB_NAME), `SELECT count(*) FROM plan_entitlements`);
+    // The owner turns invites off and holds the program lock for a second; the
+    // redemption starts meanwhile, sees invites on, then waits for the lock.
+    const closing = psql(
+      dbUrl(DB_NAME),
+      `BEGIN; SET LOCAL request.jwt.claim.sub = '${OWNER}'; SET LOCAL ROLE authenticated;
+       SELECT public.owner_beta_set_open(false); SELECT pg_sleep(1); COMMIT;`,
+    );
+    await new Promise((r) => setTimeout(r, 300));
+    const redeeming = psql(
+      dbUrl(DB_NAME),
+      asUser(user(13), `SELECT public.redeem_beta_invite('${code}')`),
+    );
+    const [, [outcome]] = await Promise.all([closing, redeeming]);
+    expect(outcome).toBe("closed");
+    const [after] = await psql(dbUrl(DB_NAME), `SELECT count(*) FROM plan_entitlements`);
+    expect(after).toBe(before);
+    const [usedBy] = await psql(
+      dbUrl(DB_NAME),
+      `SELECT coalesce(used_by::text, 'unused') FROM invites WHERE code = '${code}'`,
+    );
+    expect(usedBy).toBe("unused");
+    await psql(dbUrl(DB_NAME), `UPDATE beta_programs SET open = true`);
   }, 30_000);
 
   it("six people racing for the last two seats: two get in", async () => {

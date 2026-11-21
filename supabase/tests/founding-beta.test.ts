@@ -597,7 +597,9 @@ describe("applying the migration to a database that already has users and invite
       );
       await fresh.query(`INSERT INTO invites (code, created_by) VALUES ('plaincode', $1)`, [OWNER]);
       const before = await snapshot(fresh);
-      await fresh.exec(readFileSync(join(MIGRATIONS, files[beta]), "utf8"));
+      // The beta migration and its follow-ups, all undone by the one rollback.
+      for (const f of files.slice(beta).filter((f) => f.includes("founding")))
+        await fresh.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
       await fresh.exec(SUPABASE_GRANTS);
       expect(await snapshot(fresh)).not.toEqual(before);
       await fresh.exec(
