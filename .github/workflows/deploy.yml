@@ -64,6 +64,9 @@ jobs:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          # Tipping stays off unless this variable is exactly "true" (and the key is a test key).
+          TIPPING_ENABLED: ${{ vars.TIPPING_ENABLED }}
+          VERCEL_ENV_TARGET: ${{ vars.VERCEL_ENV_TARGET }}
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
@@ -81,7 +84,7 @@ jobs:
           SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          TIPPING: ${{ secrets.STRIPE_SECRET_KEY != '' }}
+          TIPPING: ${{ secrets.STRIPE_SECRET_KEY != '' && vars.TIPPING_ENABLED == 'true' }}
       - name: Keep the test report
         if: ${{ always() && hashFiles('e2e/report/**') != '' }}
         uses: actions/upload-artifact@v4

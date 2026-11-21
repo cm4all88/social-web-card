@@ -7,6 +7,9 @@
  *  - Tipping is OFF unless TIPPING_ENABLED=true.
  *  - Only Stripe TEST keys are accepted unless STRIPE_LIVE_MODE_APPROVED=true.
  *    Flipping that flag is a deliberate production decision for the owner.
+ *  - On a Vercel production deployment (yooits.me), a TEST key also keeps
+ *    tipping off unless STRIPE_TEST_MODE_ON_PRODUCTION=true, so a test key
+ *    ticked for "all environments" can't put test checkouts on the live site.
  */
 
 export class TippingUnavailableError extends Error {
@@ -54,6 +57,9 @@ export function getTippingConfig(): TippingConfig {
   if (!isLiveKey(secretKey) && !isTestKey(secretKey)) {
     throw new TippingUnavailableError("Payments are misconfigured.");
   }
+  if (isTestKey(secretKey) && env("VERCEL_ENV") === "production" && env("STRIPE_TEST_MODE_ON_PRODUCTION") !== "true") {
+    throw new TippingUnavailableError();
+  }
 
   const webhookSecrets = [
     env("STRIPE_WEBHOOK_SECRET"),
@@ -67,4 +73,14 @@ export function getTippingConfig(): TippingConfig {
     siteUrl: env("PUBLIC_SITE_URL")?.replace(/\/+$/, "") ?? null,
     ipHashSalt: env("TIP_IP_HASH_SALT") ?? secretKey,
   };
+}
+
+/** True only when tipping is switched on AND the Stripe settings pass every check above. */
+export function isTippingAvailable(): boolean {
+  try {
+    getTippingConfig();
+    return true;
+  } catch {
+    return false;
+  }
 }

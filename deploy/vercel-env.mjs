@@ -1,6 +1,6 @@
 /**
  * Stores settings on the Vercel project linked in .vercel/project.json, for
- * its production deployments. Reads a JSON object of NAME: value pairs on
+ * the target in VERCEL_ENV_TARGET (production, the default, or preview). Reads a JSON object of NAME: value pairs on
  * stdin and passes each value to `vercel env add` on stdin, so no secret
  * ever appears in a command line or log:
  *   printf '%s' '{"A":"1"}' | node deploy/vercel-env.mjs
@@ -14,6 +14,11 @@ const input = await new Promise((resolve) => {
   process.stdin.on("end", () => resolve(s));
 });
 const vars = JSON.parse(input || "{}");
+const target = process.env.VERCEL_ENV_TARGET || "production";
+if (target !== "production" && target !== "preview") {
+  console.error("vercel-env: VERCEL_ENV_TARGET must be production or preview");
+  process.exit(1);
+}
 const scope = process.env.VERCEL_SCOPE ? ["--scope", process.env.VERCEL_SCOPE] : [];
 for (const [name, value] of Object.entries(vars)) {
   if (!/^[A-Z][A-Z0-9_]*$/.test(name) || typeof value !== "string" || value === "") {
@@ -22,7 +27,7 @@ for (const [name, value] of Object.entries(vars)) {
   }
   const r = spawnSync(
     "npx",
-    ["-y", "vercel@66.6.0", "env", "add", name, "--environment", "production", "--force", "--sensitive", "--yes",
+    ["-y", "vercel@66.6.0", "env", "add", name, "--environment", target, "--force", "--sensitive", "--yes",
      "--token", process.env.VERCEL_TOKEN ?? "", ...scope],
     { input: value, stdio: ["pipe", "ignore", "inherit"] },
   );

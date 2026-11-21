@@ -13,6 +13,7 @@ import { canAcceptTips, snapshotAccount } from "./account-status";
 import {
   getTippingConfig,
   isLiveKey,
+  isTippingAvailable,
   isTippingEnabled,
   TippingUnavailableError,
 } from "./config.server";
@@ -270,7 +271,7 @@ const authed = [attachSupabaseAuth, requireSupabaseAuth] as const;
 
 export const getTippingAvailability = createServerFn({ method: "GET" })
   .middleware([...authed])
-  .handler(async () => ({ enabled: isTippingEnabled() }));
+  .handler(async () => ({ enabled: isTippingAvailable() }));
 
 export const startStripeOnboarding = createServerFn({ method: "POST" })
   .middleware([...authed])

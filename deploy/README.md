@@ -137,7 +137,19 @@ to GitHub can download its backups (see `deploy/MIGRATION.md`).
 - the finished build contains the live database's id, or not this environment's
 
 `STRIPE_LIVE_MODE_APPROVED` is never set, so the app itself also refuses live
-keys. Production deploys are switched off (`PRODUCTION_DEPLOY` isn't set),
+keys.
+
+Tipping never switches on just because a Stripe key was added (Nov 21):
+- a deploy stores the Stripe key and `TIPPING_ENABLED=true` only when the
+  GitHub environment's variable `TIPPING_ENABLED` is exactly `true` and the key
+  is a test key (`deploy/vercel-settings.mjs`); otherwise it stores
+  `TIPPING_ENABLED=false` and makes no webhooks
+- a live key never switches tipping on from a deploy; live tipping also needs
+  `STRIPE_LIVE_MODE_APPROVED=true`, set by hand in Vercel by the owner
+- on a Vercel production deployment (yooits.me) the app refuses a test key
+  unless `STRIPE_TEST_MODE_ON_PRODUCTION=true`
+- `VERCEL_ENV_TARGET=preview` (a GitHub variable) sends the settings to the
+  project's Preview target instead of Production. Production deploys are switched off (`PRODUCTION_DEPLOY` isn't set),
 run only by hand from `main`, and only from a private repository.
 
 ## Running it from your own computer instead (optional)

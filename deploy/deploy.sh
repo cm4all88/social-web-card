@@ -115,10 +115,15 @@ if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
   STRIPE_MODE="off (no STRIPE_SECRET_KEY, tipping switched off)"
 elif [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_live_ ]]; then
   [ "${ALLOW_STRIPE_LIVE:-no}" = yes ] || fail "STRIPE_SECRET_KEY is a LIVE key. Live payments aren't approved for $ENV_NAME."
-  STRIPE_MODE=LIVE
+  STRIPE_MODE="LIVE key, but tipping stays off: deploys never switch live tipping on"
 else
   [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_test_ ]] || fail "STRIPE_SECRET_KEY doesn't look like a Stripe secret key."
+  if [ "${TIPPING_ENABLED:-}" != true ]; then STRIPE_MODE="test key present, but tipping stays off (TIPPING_ENABLED isn't true)"; fi
 fi
+# Which Vercel target gets the settings: production (default) or preview.
+VERCEL_ENV_TARGET=${VERCEL_ENV_TARGET:-production}
+case "$VERCEL_ENV_TARGET" in production|preview) ;; *) fail "VERCEL_ENV_TARGET must be production or preview";; esac
+export VERCEL_ENV_TARGET TIPPING_ENABLED
 if [ "$GATE" = yes ] && [ ${#SITE_PASSWORD} -lt 12 ]; then fail "SITE_PASSWORD must be at least 12 characters."; fi
 if [ "$SEED_TEST_DATA" = yes ] && [ "$ENV_NAME" != preview ]; then fail "test data is only allowed in the preview."; fi
 unset STRIPE_LIVE_MODE_APPROVED
@@ -190,27 +195,19 @@ vc link --yes --project "$PROJECT_NAME" >/dev/null
 
 if [ -n "${CUSTOM_DOMAIN:-}" ]; then SITE="https://$CUSTOM_DOMAIN"; else SITE="https://$PROJECT_NAME.vercel.app"; fi
 settings() { # prints this environment's settings as JSON for deploy/vercel-env.mjs
-  SITE="$SITE" node -e '
-    const e = process.env;
-    const s = {
-      SUPABASE_URL: e.SUPABASE_URL,
-      SUPABASE_PUBLISHABLE_KEY: e.SUPABASE_PUBLISHABLE_KEY,
-      SUPABASE_SERVICE_ROLE_KEY: e.SUPABASE_SECRET_KEY,
-      TIPPING_ENABLED: e.STRIPE_SECRET_KEY ? "true" : "false",
-      PUBLIC_SITE_URL: e.SITE,
-    };
-    if (e.STRIPE_SECRET_KEY) s.STRIPE_SECRET_KEY = e.STRIPE_SECRET_KEY;
-    if (e.GATE === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
-    process.stdout.write(JSON.stringify(s));'
+  # Tipping turns on only with an explicit TIPPING_ENABLED=true and a TEST key;
+  # a Stripe key alone, or any live key, leaves it off (deploy/vercel-settings.mjs).
+  SITE="$SITE" node deploy/vercel-settings.mjs
 }
 settings | node deploy/vercel-env.mjs
 if [ "$GATE" != yes ]; then
-  vc env remove SITE_PASSWORD --environment production --yes >/dev/null 2>&1 || true
+  vc env remove SITE_PASSWORD --environment "$VERCEL_ENV_TARGET" --yes >/dev/null 2>&1 || true
 fi
 
 deploy_once() { # deploys the build to production on this project; sets DEPLOYED to its address
   local out
-  out=$(vc deploy --prebuilt --prod --yes --json)
+  local prod=(--prod); [ "$VERCEL_ENV_TARGET" = preview ] && prod=()
+  out=$(vc deploy --prebuilt "${prod[@]}" --yes --json)
   DEPLOYED=$(printf '%s' "$out" | node deploy/vercel-site.mjs)
   if [ -z "$DEPLOYED" ]; then
     DEPLOYED="$PROJECT_NAME.vercel.app"
@@ -228,7 +225,7 @@ fi
 say "settings stored"
 
 # --- 6. Stripe webhooks (first deploy only) ------------------------------------------------------
-if [ -n "${STRIPE_SECRET_KEY:-}" ] && ! vc env ls 2>/dev/null | grep -q STRIPE_WEBHOOK_SECRET; then
+if [ "$(node deploy/vercel-settings.mjs --stripe)" = yes ] && ! vc env ls 2>/dev/null | grep -q STRIPE_WEBHOOK_SECRET; then
   SITE_URL="$SITE" node deploy/stripe-webhooks.mjs | node deploy/vercel-env.mjs
   say "Stripe test webhooks connected"
   REDEPLOY=yes
