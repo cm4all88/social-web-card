@@ -1,4 +1,5 @@
-# Tests the Yooits preview each time Vercel finishes deploying preview/yooits:
+# Tests the Yooits preview after each push to preview/yooits, once Vercel has
+# finished deploying that commit:
 # the password gate, public pages, sign-up, the creator dashboard and the owner
 # console with its account controls (e2e/preview.e2e.mjs). Read-only apart from
 # the test accounts' own data, which the tests put back.
@@ -7,21 +8,19 @@
 # PREVIEW_URL says otherwise.
 name: Test Yooits preview
 on:
-  deployment_status:
+  push:
+    branches: [preview/yooits]
   workflow_dispatch:
 concurrency:
   group: e2e-preview
   cancel-in-progress: true
 jobs:
   e2e:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.deployment_status.state == 'success' &&
-        (github.event.deployment.ref == 'preview/yooits' || contains(github.event.deployment.environment, 'yooits-preview')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
+      statuses: read
     steps:
       - name: Check the password is in place
         id: ready
@@ -32,6 +31,22 @@ jobs:
           else echo "Skipped: add the repository secret SITE_PASSWORD (deploy/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"; fi
       - uses: actions/checkout@v4
         if: steps.ready.outputs.go == 'yes'
+      # Vercel reports each deploy as a "Vercel" status on the commit.
+      - name: Wait for Vercel to finish deploying this commit
+        if: steps.ready.outputs.go == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for i in $(seq 1 90); do
+            state=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/statuses" \
+              --jq '[.[] | select(.context == "Vercel")][0].state // "none"')
+            case "$state" in
+              success) echo "Vercel deployed ${{ github.sha }}"; exit 0 ;;
+              failure|error) echo "Vercel's deploy of this commit failed; see the Vercel status on the commit." | tee -a "$GITHUB_STEP_SUMMARY"; exit 1 ;;
+            esac
+            sleep 10
+          done
+          echo "Vercel didn't finish deploying within 15 minutes." | tee -a "$GITHUB_STEP_SUMMARY"; exit 1
       - uses: actions/setup-node@v4
         if: steps.ready.outputs.go == 'yes'
         with:
