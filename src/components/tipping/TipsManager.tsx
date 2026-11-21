@@ -104,10 +104,11 @@ export function TipsManager({ userId, username }: { userId: string; username: st
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [tips, setTips] = useState<TipRow[]>([]);
   const [linkCount, setLinkCount] = useState(0);
+  const [approved, setApproved] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: acct }, { data: s }, { data: t }, { count: links }] = await Promise.all([
+    const [{ data: acct }, { data: s }, { data: t }, { count: links }, { data: st }] = await Promise.all([
       supabase
         .from("creator_payment_accounts")
         .select(
@@ -135,7 +136,15 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         .eq("user_id", userId)
         .eq("enabled", true)
         .neq("url", ""),
+      // Owner approval (the server checks it too; this only explains it).
+      // (Not in the generated types yet; called as a method so the client keeps its `this`.)
+      (supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> })
+        .from("account_status")
+        .select("tips_approved_at")
+        .eq("user_id", userId)
+        .maybeSingle(),
     ]);
+    setApproved(!!(st as { tips_approved_at: string | null } | null)?.tips_approved_at);
     setLinkCount(links ?? 0);
     setAccount((acct as AccountRow | null) ?? null);
     setSettings((s as Settings | null) ?? DEFAULT_SETTINGS);
@@ -257,6 +266,13 @@ export function TipsManager({ userId, username }: { userId: string; username: st
       {status === "restricted" && account?.disabled_reason && (
         <p className="mt-2 text-sm text-red-600">
           Stripe says: {account.disabled_reason.replaceAll("_", " ")}
+        </p>
+      )}
+
+      {!suspended && !approved && (
+        <p className="mt-3 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+          Tips go live once Yooits approves your page. You can describe your work and connect Stripe
+          now; your tip button appears after approval.
         </p>
       )}
 

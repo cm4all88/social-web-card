@@ -34,6 +34,9 @@ export type AccountStatus = {
   tips_disabled_at: string | null;
   tips_disabled_reason: string | null;
   tips_disabled_by: string | null;
+  tips_approved_at?: string | null;
+  tips_approval_note?: string | null;
+  tips_approved_by?: string | null;
 };
 
 export type OwnerUserRow = {
@@ -102,6 +105,7 @@ type OwnerFunctions = {
   owner_set_unpublished: { args: { _user_id: string; _unpublished: boolean; _reason?: string | null }; result: boolean };
   owner_set_suspended: { args: { _user_id: string; _suspended: boolean; _reason?: string | null }; result: boolean };
   owner_set_tips_disabled: { args: { _user_id: string; _disabled: boolean; _reason?: string | null }; result: boolean };
+  owner_set_tips_approved: { args: { _user_id: string; _approved: boolean; _note?: string | null }; result: boolean };
 };
 
 export class OwnerAccessError extends Error {}
@@ -136,6 +140,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "invite.revoked": "Invite code revoked",
   "tipping.suspended": "Tips stopped",
   "tipping.restored": "Tips restored",
+  "tipping.approved": "Tips approved",
+  "tipping.approval_revoked": "Tips approval withdrawn",
   "account.unpublished": "Page unpublished",
   "account.republished": "Page republished",
   "account.suspended": "Account suspended",

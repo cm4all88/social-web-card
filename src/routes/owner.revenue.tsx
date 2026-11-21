@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { formatUsd } from "@/lib/tipping/money";
+import { TipApprovals } from "@/components/owner/TipApprovals";
 
 /** Yooits-admin-only platform revenue report. Access is enforced in the database function. */
 export const Route = createFileRoute("/owner/revenue")({
@@ -162,6 +163,7 @@ function RevenuePage() {
             ))}
           </div>
         )}
+        {state === "ready" && <TipApprovals />}
         {state === "ready" && <SuspendCreator />}
       </div>
     </div>
