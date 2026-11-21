@@ -62,6 +62,8 @@ use_first SUPABASE_URL NEXT_PUBLIC_SUPABASE_URL VITE_SUPABASE_URL
 use_first SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY VITE_SUPABASE_PUBLISHABLE_KEY
 # On Vercel the secret key is stored as SUPABASE_SERVICE_ROLE_KEY (the name the app reads).
 use_first SUPABASE_SECRET_KEY SUPABASE_SERVICE_ROLE_KEY
+# The site and the tests ignore spaces or line breaks pasted around the password.
+clean SITE_PASSWORD; export SITE_PASSWORD
 while [ "${SUPABASE_URL%/}" != "$SUPABASE_URL" ]; do SUPABASE_URL=${SUPABASE_URL%/}; done
 
 # Every missing setting is named at once, with the name to use where it's set.

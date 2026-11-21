@@ -15,7 +15,7 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: process.env.SITE_URL,
-    httpCredentials: { username: "preview", password: process.env.SITE_PASSWORD ?? "" },
+    httpCredentials: { username: "preview", password: (process.env.SITE_PASSWORD ?? "").trim() },
     screenshot: "only-on-failure",
     trace: "off",
     video: "off",

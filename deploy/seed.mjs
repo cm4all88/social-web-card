@@ -14,7 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY;
-const password = process.env.SITE_PASSWORD;
+const password = process.env.SITE_PASSWORD?.trim();
 if (!url || !key || !password) {
   console.error("seed: SUPABASE_URL, SUPABASE_SECRET_KEY and SITE_PASSWORD are required");
   process.exit(1);

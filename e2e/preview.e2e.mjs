@@ -4,7 +4,7 @@
 import { test, expect, request } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
-const PASSWORD = process.env.SITE_PASSWORD ?? "";
+const PASSWORD = (process.env.SITE_PASSWORD ?? "").trim();
 const TIPPING = process.env.TIPPING === "true";
 const SIGNUP_EMAIL = `e2e-${Date.now()}@example.com`;
 test.describe.configure({ mode: "serial" });
