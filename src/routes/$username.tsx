@@ -7,6 +7,8 @@ import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/li
 import { Gift, Heart, UserPlus } from "lucide-react";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
 import { readableTextOn } from "@/lib/contrast";
+import { ReportLink } from "@/components/reports/ReportLink";
+import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
 
 export const Route = createFileRoute("/$username")({
@@ -231,6 +233,12 @@ function ProfilePage() {
         <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
           <UserPlus className="h-3 w-3" /> Get your own Yooits
         </Link>
+        {profile && (
+          <div className="mt-3">
+            <ReportLink username={profile.username} color={theme.foreground} />
+          </div>
+        )}
+        <Toaster />
       </main>
     </div>
   );

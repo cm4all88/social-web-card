@@ -91,6 +91,24 @@ export type AuditEntry = {
   details: Record<string, unknown>;
 };
 
+export type AbuseReport = {
+  id: string;
+  created_at: string;
+  status: "open" | "resolved" | "dismissed";
+  reason: string;
+  details: string | null;
+  target_kind: "profile" | "wishlist";
+  target_user_id: string;
+  target_username: string | null;
+  wishlist_slug: string | null;
+  wishlist_title: string | null;
+  reporter_user_id: string | null;
+  reporter_username: string | null;
+  reporter_contact: string | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
+};
+
 type OwnerFunctions = {
   owner_overview: { args: Record<string, never>; result: OwnerOverview };
   owner_list_users: {
@@ -102,6 +120,12 @@ type OwnerFunctions = {
   owner_set_unpublished: { args: { _user_id: string; _unpublished: boolean; _reason?: string | null }; result: boolean };
   owner_set_suspended: { args: { _user_id: string; _suspended: boolean; _reason?: string | null }; result: boolean };
   owner_set_tips_disabled: { args: { _user_id: string; _disabled: boolean; _reason?: string | null }; result: boolean };
+  owner_list_reports: { args: { _status?: "open" | "resolved" | "dismissed" | "all" }; result: AbuseReport[] };
+  owner_resolve_report: {
+    args: { _id: string; _status: "open" | "resolved" | "dismissed"; _note?: string | null };
+    result: string;
+  };
+  owner_open_report_count: { args: Record<string, never>; result: number };
 };
 
 export class OwnerAccessError extends Error {}
@@ -140,6 +164,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "account.republished": "Page republished",
   "account.suspended": "Account suspended",
   "account.reactivated": "Account reactivated",
+  "report.resolved": "Report resolved",
+  "report.dismissed": "Report dismissed",
+  "report.reopened": "Report reopened",
 };
 
 export function auditLabel(action: string): string {

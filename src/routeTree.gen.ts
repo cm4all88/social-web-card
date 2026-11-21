@@ -27,6 +27,7 @@ import { Route as OwnerIndexRouteImport } from './routes/owner.index'
 import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
+import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
 import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
@@ -123,6 +124,11 @@ const OwnerInvitesRoute = OwnerInvitesRouteImport.update({
   path: '/invites',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerReportsRoute = OwnerReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerRevenueRoute = OwnerRevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin': typeof AdminIndexRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/invites'
+    | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
     | '/admin/'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/invites'
+    | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
     | '/admin'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/owner/$section'
     | '/owner/audit'
     | '/owner/invites'
+    | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
     | '/admin/'
@@ -448,6 +460,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerInvitesRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/reports': {
+      id: '/owner/reports'
+      path: '/reports'
+      fullPath: '/owner/reports'
+      preLoaderRoute: typeof OwnerReportsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/revenue': {
       id: '/owner/revenue'
       path: '/revenue'
@@ -490,6 +509,7 @@ interface OwnerRouteChildren {
   OwnerSectionRoute: typeof OwnerSectionRoute
   OwnerAuditRoute: typeof OwnerAuditRoute
   OwnerInvitesRoute: typeof OwnerInvitesRoute
+  OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
   OwnerUsersRoute: typeof OwnerUsersRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
@@ -500,6 +520,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerSectionRoute: OwnerSectionRoute,
   OwnerAuditRoute: OwnerAuditRoute,
   OwnerInvitesRoute: OwnerInvitesRoute,
+  OwnerReportsRoute: OwnerReportsRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
   OwnerUsersRoute: OwnerUsersRoute,
   OwnerIndexRoute: OwnerIndexRoute,

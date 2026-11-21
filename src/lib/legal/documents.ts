@@ -92,7 +92,7 @@ const terms: LegalDocument = {
     {
       heading: "Ending your account",
       paragraphs: [
-        `You can stop using Yooits at any time. To delete your account, contact us at ${P.contact}.`,
+        "You can stop using Yooits at any time, and delete your account yourself from your dashboard (Account > Delete account). Deleting removes your page, links, wishlists, avatar and sign-in; records of tips are kept as the Privacy Policy explains.",
       ],
     },
     {
@@ -117,7 +117,8 @@ const privacy: LegalDocument = {
         "Account details: your email address, password (stored only as a secure hash by our sign-in provider), username and display name.",
         "Profile content: your avatar, links, theme and wishlists. Anything you publish on your profile or a public wishlist is visible to anyone. Private wishlists are visible only to you.",
         "Tips, once available: the amount, the Yooits fee, the supporter's optional name and message, and payment references from Stripe. Card details are entered on Stripe's pages and never reach Yooits.",
-        "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
+        "Reports: if you report a page or wishlist, we keep the reason, what you write, and your email if you choose to give it. The person you report doesn't see who sent it.",
+        "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout or send a report, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
       ],
     },
     {
@@ -141,7 +142,7 @@ const privacy: LegalDocument = {
     {
       heading: "Keeping and deleting data",
       paragraphs: [
-        `We keep your information while your account is open. You can edit or remove your profile content at any time. To delete your account or ask for a copy of your information, contact us at ${P.contact}. We keep tip and payment records for as long as tax and payment rules require.`,
+        `We keep your information while your account is open. You can edit or remove your profile content at any time, and delete your whole account from your dashboard. To ask for a copy of your information, contact us at ${P.contact}. We keep tip and payment records for as long as tax and payment rules require.`,
       ],
     },
     {
@@ -187,7 +188,7 @@ const acceptableUse: LegalDocument = {
     {
       heading: "What happens if you break these rules",
       paragraphs: [
-        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a profile or a wishlist, contact ${P.contact}.`,
+        "We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a page or a wishlist, use the Report link at the bottom of it.",
       ],
     },
   ],
