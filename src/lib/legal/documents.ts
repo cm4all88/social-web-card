@@ -131,7 +131,8 @@ const privacy: LegalDocument = {
         "Account details: your email address, password (stored only as a secure hash by our sign-in provider), username and display name.",
         "Profile content: your avatar, links, theme and wishlists. Anything you publish on your profile or a public wishlist is visible to anyone. Private wishlists are visible only to you.",
         "Tips, once available: the amount, the Yooits fee, the supporter's optional name and message, and payment references from Stripe. Card details are entered on Stripe's pages and never reach Yooits.",
-        "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
+        "Reports: if you report a page or wishlist, we keep the reason, what you write, and your email if you choose to give it. The person you report doesn't see who sent it.",
+        "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout or send a report, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
       ],
     },
     {
@@ -201,7 +202,7 @@ const acceptableUse: LegalDocument = {
     {
       heading: "What happens if you break these rules",
       paragraphs: [
-        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a profile or a wishlist, email ${P.contact} with its address and what is wrong. We review every report.`,
+        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a page or a wishlist, use the Report link at the bottom of it, or email ${P.contact} with its address and what is wrong. We review every report.`,
       ],
     },
   ],

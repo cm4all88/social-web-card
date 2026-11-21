@@ -51,6 +51,6 @@ describe("legal drafts", () => {
   });
 
   it("gives a working email for reports", () => {
-    expect(text("acceptable-use")).toContain("To report a profile or a wishlist, email admin@tahomaindustries.com");
+    expect(text("acceptable-use")).toContain("To report a page or a wishlist, use the Report link at the bottom of it, or email admin@tahomaindustries.com");
   });
 });
