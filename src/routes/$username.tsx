@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlatform } from "@/lib/platforms";
-import { safeLinkHref } from "@/lib/safe-url";
+import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
 import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { Gift, Heart, UserPlus } from "lucide-react";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
@@ -146,12 +146,13 @@ function ProfilePage() {
               const Icon = meta.icon;
               const isOutline = theme.buttonStyle === "outline";
               const href = safeLinkHref(link.url);
+              const host = linkDisplayHost(href);
               return (
                 <a
                   key={link.id}
                   href={href}
                   target={href ? "_blank" : undefined}
-                  rel="noreferrer noopener"
+                  rel="noopener noreferrer nofollow ugc"
                   className="group relative flex items-center gap-4 overflow-hidden border p-4 transition-all hover:-translate-y-0.5"
                   style={{
                     background: isOutline ? "transparent" : theme.card,
@@ -167,6 +168,7 @@ function ProfilePage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold">{meta.label}</div>
                     {!href && <div className="truncate text-xs opacity-70">{link.url}</div>}
+                    {host && <div className="truncate text-xs opacity-70">{host}</div>}
                   </div>
                   <div
                     className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"

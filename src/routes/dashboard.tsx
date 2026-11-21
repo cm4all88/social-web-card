@@ -231,7 +231,7 @@ function DashboardPage() {
   const save = async (link: SocialLink) => {
     const url = normalizeLinkValue(link.url);
     if (url === null) {
-      toast.error("Links must start with https://, mailto:, tel: or sms:");
+      toast.error("Links must be a plain web address (https://...), mailto:, tel: or sms:");
       return;
     }
     setSavingId(link.id);

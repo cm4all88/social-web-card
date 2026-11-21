@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /owner
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /reset-password
+
+Sitemap: https://yooits.me/sitemap.xml
