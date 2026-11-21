@@ -8,8 +8,17 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/Turnstile";
 import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username";
+import { z } from "zod";
+import { betaRpc } from "@/lib/beta/api";
+import { BETA_NAME, betaStateMessage, isBetaCodeState, normalizeBetaCode, type BetaCodeState } from "@/lib/beta/invite";
+
+// yooits.me/auth?invite=fc-xxxxxxxxxx opens sign-up with a Founding Member code.
+const searchSchema = z.object({
+  invite: z.string().max(200).optional().catch(undefined),
+});
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: searchSchema,
   component: AuthPage,
   head: () => ({ meta: [{ title: "Sign in — Yooits" }] }),
 });
@@ -20,7 +29,11 @@ const MIN_PASSWORD = 8;
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>("signin");
+  const { invite } = Route.useSearch();
+  const inviteCode = normalizeBetaCode(invite);
+  const [betaState, setBetaState] = useState<BetaCodeState | null>(invite && !inviteCode ? "invalid" : null);
+  const [mode, setMode] = useState<Mode>(invite ? "signup" : "signin");
+  const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -33,11 +46,40 @@ function AuthPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
 
+  /** Signed-in people who open an invite link redeem it straight away. */
+  const redeemAndGo = async () => {
+    if (inviteCode) {
+      try {
+        const r = await betaRpc("redeem_beta_invite", { _code: inviteCode });
+        const state = isBetaCodeState(r) ? r : "invalid";
+        if (state !== "ok" && state !== "already") {
+          setBetaState(state);
+          setSignedIn(true);
+          return;
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Couldn't use that invite");
+        return;
+      }
+    }
+    navigate({ to: "/dashboard" });
+  };
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data.session) {
+        await redeemAndGo();
+      } else if (inviteCode) {
+        try {
+          const r = await betaRpc("beta_code_state", { _code: inviteCode });
+          setBetaState(isBetaCodeState(r) ? r : "invalid");
+        } catch {
+          setBetaState(null);
+        }
+      }
     });
-  }, [navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate, inviteCode]);
 
   const switchMode = (m: Mode) => {
     setMode(m);
@@ -74,6 +116,9 @@ function AuthPage() {
             data: {
               username: cleanUsername,
               display_name: displayName.trim().slice(0, 50) || cleanUsername,
+              // Send any well-formed beta code, even if the precheck failed or is still
+              // loading: the database checks and redeems it, and a bad code just means the free plan.
+              ...(inviteCode ? { invite_code: inviteCode } : {}),
             },
           },
         });
@@ -101,7 +146,7 @@ function AuthPage() {
           }
           throw error;
         }
-        navigate({ to: "/dashboard" });
+        await redeemAndGo();
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           ...captchaOptions(),
@@ -156,6 +201,27 @@ function AuthPage() {
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-card)" }}>
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+        {betaState && (
+          <div
+            className={`mt-4 rounded-xl border p-3 text-sm ${betaState === "ok" ? "border-primary/40 bg-primary/10" : "border-border bg-muted"}`}
+            role="status"
+          >
+            {betaState === "ok" && <div className="font-medium">{BETA_NAME}</div>}
+            {betaStateMessage(betaState)}
+            {betaState === "ok" && mode === "signup" && (
+              <div className="mt-1 text-xs text-muted-foreground">
+                Already have an account? Sign in and the invite is added to it.
+              </div>
+            )}
+            {signedIn && (
+              <div className="mt-2">
+                <Link to="/dashboard" className="text-primary hover:underline">
+                  Go to your dashboard
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
         {notice && (
           <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">
             {notice}

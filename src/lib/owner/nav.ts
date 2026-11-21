@@ -17,6 +17,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
   { id: "users", label: "Users", to: "/owner/users", status: "live", summary: "Find people and see their account." },
   { id: "money", label: "Money", to: "/owner/revenue", status: "live", summary: "Tip revenue and stopping tips for a creator." },
   { id: "invites", label: "Invites", to: "/owner/invites", status: "live", summary: "Invite codes." },
+  { id: "founding", label: "Founding Members", to: "/owner/founding", status: "live", summary: "Founding Member invites, members and feedback." },
   { id: "audit", label: "Audit log", to: "/owner/audit", status: "live", summary: "Every owner action, newest first." },
   { id: "wishlists", label: "Wishlists", to: "/owner/wishlists", status: "planned", summary: "Retailers, affiliate tags and wishlist moderation." },
   { id: "promotions", label: "Promotions", to: "/owner/promotions", status: "planned", summary: "House promotions shown across Yooits." },

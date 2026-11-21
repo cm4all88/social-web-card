@@ -16,6 +16,7 @@ import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
+import { BetaPanel } from "@/components/beta/BetaPanel";
 import { Gift, Shield } from "lucide-react";
 
 /** Creator dashboard: every signed-in user manages their own page here. */
@@ -338,6 +339,8 @@ function DashboardPage() {
               : "Your page is unpublished by Yooits, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
         )}
+
+        {userId && <BetaPanel userId={userId} />}
 
         <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
 
