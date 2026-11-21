@@ -17,6 +17,7 @@ import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Uploa
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
 import { BetaPanel } from "@/components/beta/BetaPanel";
+import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { Gift, Shield } from "lucide-react";
 
 /** Creator dashboard: every signed-in user manages their own page here. */
@@ -31,6 +32,7 @@ const SECTIONS = [
   { id: "wishlists", label: "Wishlists" },
   { id: "appearance", label: "Appearance" },
   { id: "links", label: "Links" },
+  { id: "account", label: "Account" },
 ] as const;
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -665,6 +667,12 @@ function DashboardPage() {
             </Select>
             <Button onClick={add}><Plus className="mr-2 h-4 w-4" /> Add</Button>
           </div>
+        </div>
+
+        {/* Account */}
+        <h2 id="account" className="mt-10 scroll-mt-20 text-xl font-bold">Account</h2>
+        <div className="mt-4">
+          {profile && <DeleteAccount username={profile.username} />}
         </div>
       </div>
     </div>
