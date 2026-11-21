@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Sparkles, ArrowRight } from "lucide-react";
 import logo from "@/assets/yooits-logo.png";
+import { LegalLinks } from "@/components/legal/LegalPage";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -58,6 +59,7 @@ function Home() {
         <p className="mt-4 text-xs text-muted-foreground">
           Free to join. Pick your username and go.
         </p>
+        <LegalLinks className="mt-10" />
       </main>
     </div>
   );
