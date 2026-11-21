@@ -85,6 +85,8 @@ const auditActions = async () =>
   ).map((r) => r.action);
 
 let bobsCode = "";
+// md5(pg_get_functiondef) of handle_new_user on the live database, read Nov 21.
+const PROD_SIGNUP_MD5 = "07e4effae502e4f979d405b0c4aabf27";
 
 beforeAll(async () => {
   db = new PGlite();
@@ -553,6 +555,69 @@ describe("applying the migration to a database that already has users and invite
       expect(
         (await fresh.query(`SELECT used_by FROM invites WHERE code = 'oldcode1'`)).rows,
       ).toEqual([{ used_by: ALICE }]);
+    } finally {
+      await fresh.close();
+    }
+  }, 60_000);
+  it("the rollback puts the schema and signup back exactly as they were", async () => {
+    const MIGRATIONS = join(__dirname, "..", "migrations");
+    const files = readdirSync(MIGRATIONS)
+      .filter((f) => f.endsWith(".sql"))
+      .sort();
+    const beta = files.findIndex((f) => f.startsWith("20261121230000"));
+    const snapshot = async (d: PGlite) =>
+      (
+        await d.query<{ item: string }>(`
+          SELECT 'col ' || table_name || '.' || column_name || ' ' || data_type AS item
+            FROM information_schema.columns WHERE table_schema = 'public'
+          UNION ALL
+          SELECT 'fn ' || p.oid::regprocedure::text || ' ' || md5(pg_get_functiondef(p.oid))
+            FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+           WHERE n.nspname = 'public' AND p.prokind = 'f'
+          UNION ALL
+          SELECT 'policy ' || tablename || ' ' || policyname FROM pg_policies WHERE schemaname = 'public'
+          UNION ALL
+          SELECT 'trigger ' || tgrelid::regclass::text || ' ' || tgname FROM pg_trigger WHERE NOT tgisinternal
+          UNION ALL
+          SELECT 'index ' || indexname FROM pg_indexes WHERE schemaname = 'public'
+          ORDER BY 1`)
+      ).rows.map((r) => r.item);
+    const fresh = new PGlite();
+    try {
+      await fresh.exec(SUPABASE_STUBS);
+      await fresh.exec(
+        `ALTER TABLE auth.users ADD COLUMN last_sign_in_at timestamptz, ADD COLUMN email_confirmed_at timestamptz`,
+      );
+      for (const f of files.slice(0, beta))
+        await fresh.exec(readFileSync(join(MIGRATIONS, f), "utf8"));
+      await fresh.exec(SUPABASE_GRANTS);
+      await fresh.query(
+        `INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ($1, 'o@x.test', '{"username":"boss"}')`,
+        [OWNER],
+      );
+      await fresh.query(`INSERT INTO invites (code, created_by) VALUES ('plaincode', $1)`, [OWNER]);
+      const before = await snapshot(fresh);
+      await fresh.exec(readFileSync(join(MIGRATIONS, files[beta]), "utf8"));
+      await fresh.exec(SUPABASE_GRANTS);
+      expect(await snapshot(fresh)).not.toEqual(before);
+      await fresh.exec(
+        readFileSync(
+          join(__dirname, "..", "rollbacks", files[beta].replace(".sql", ".down.sql")),
+          "utf8",
+        ),
+      );
+      // The signup function comes back as production has it today (the phase0
+      // logic without its comments), checked by its exact definition.
+      const isSignup = (x: string) => x.startsWith("fn handle_new_user() ");
+      const after = await snapshot(fresh);
+      expect(after.filter((x) => !isSignup(x))).toEqual(before.filter((x) => !isSignup(x)));
+      expect(after.find(isSignup)).toBe(`fn handle_new_user() ${PROD_SIGNUP_MD5}`);
+      await fresh.query(
+        `INSERT INTO auth.users (id, email, raw_user_meta_data) VALUES ($1, 'a@x.test', '{"username":"newbie","invite_code":"plaincode"}')`,
+        [ALICE],
+      );
+      expect((await fresh.query(`SELECT used_by FROM invites`)).rows).toEqual([{ used_by: ALICE }]);
+      expect((await fresh.query(`SELECT code FROM invites`)).rows).toEqual([{ code: "plaincode" }]);
     } finally {
       await fresh.close();
     }
