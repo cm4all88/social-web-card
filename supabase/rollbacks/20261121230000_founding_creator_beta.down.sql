@@ -5,6 +5,8 @@
 -- wishlist and tip are untouched.
 -- Deploy code without the Founding Members page first (or right after):
 -- the old owner Invites page doesn't filter on invites.program.
+-- It also undoes 20261121231000_founding_members_search_path.sql, since the
+-- functions that migration touches are dropped here.
 BEGIN;
 
 -- Signup goes back to the version from 20261118200000_phase0_security_hardening.
