@@ -1,6 +1,7 @@
 # Deploys Yooits with deploy/deploy.sh. Setup: deploy/README.md
-#   preview:    every push to preview/yooits, once the repository variable
-#               PREVIEW_DEPLOY is "on". Uses the "preview" GitHub environment.
+#   preview:    every push to preview/yooits. Uses the "preview" GitHub
+#               environment, and does nothing until its secrets are added.
+#               After deploying, the end-to-end tests in e2e/ check the site.
 #   production: NOT IN USE YET. Only by hand ("Run workflow"), only from main,
 #               only once PRODUCTION_DEPLOY is "on" and the repository is
 #               private. Uses the "production" GitHub environment, which
@@ -24,7 +25,7 @@ concurrency:
 jobs:
   deploy:
     if: >-
-      ((inputs.environment || 'preview') == 'preview' && vars.PREVIEW_DEPLOY == 'on') ||
+      ((inputs.environment || 'preview') == 'preview' && vars.PREVIEW_DEPLOY != 'off') ||
       (inputs.environment == 'production' && vars.PRODUCTION_DEPLOY == 'on'
         && github.ref == 'refs/heads/main' && github.event.repository.private)
     runs-on: ubuntu-latest
@@ -33,16 +34,30 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Check the secrets are in place
+        id: ready
+        env:
+          HAVE: >-
+            ${{ secrets.VERCEL_TOKEN != '' && secrets.SUPABASE_URL != '' && secrets.SUPABASE_PUBLISHABLE_KEY != ''
+            && secrets.SUPABASE_SECRET_KEY != '' && secrets.SUPABASE_DB_URL != '' }}
+        run: |
+          if [ "$HAVE" = true ]; then echo "go=yes" >> "$GITHUB_OUTPUT"
+          else echo "Skipped: add this environment's secrets first (deploy/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"; fi
       - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'yes'
       - uses: actions/setup-node@v4
+        if: steps.ready.outputs.go == 'yes'
         with:
           node-version: 22
       - name: Install
+        if: steps.ready.outputs.go == 'yes'
         run: npm install --legacy-peer-deps --no-audit --no-fund
       - name: Tests
+        if: steps.ready.outputs.go == 'yes'
         run: npx vitest run
       - name: Deploy
         id: deploy
+        if: steps.ready.outputs.go == 'yes'
         run: bash deploy/deploy.sh "${{ inputs.environment || 'preview' }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -54,6 +69,27 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_SCOPE: ${{ vars.VERCEL_SCOPE }}
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+      # Signs in as each test account and goes through the site, the creator
+      # dashboard and the owner console. Preview only: it uses the test data.
+      - name: End-to-end tests
+        if: steps.deploy.outputs.site != '' && (inputs.environment || 'preview') == 'preview'
+        run: |
+          npm install --no-save --legacy-peer-deps --no-audit --no-fund @playwright/test@1.56.1
+          npx playwright install --with-deps chromium
+          npx playwright test --config e2e/playwright.config.mjs
+        env:
+          SITE_URL: ${{ steps.deploy.outputs.site }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          TIPPING: ${{ secrets.STRIPE_SECRET_KEY != '' }}
+      - name: Keep the test report
+        if: ${{ always() && hashFiles('e2e/report/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.run_id }}
+          path: e2e/report/**/*.png
+          retention-days: 14
       # Production takes an encrypted backup before migrating; keep it.
       - name: Keep the pre-deploy backup
         if: ${{ always() && hashFiles('backups/*.gpg') != '' }}

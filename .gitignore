@@ -40,3 +40,4 @@ backups/
 
 # Vercel (build output and project link)
 .vercel/
+e2e/report/

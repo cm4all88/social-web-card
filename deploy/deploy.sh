@@ -13,7 +13,7 @@
 # Secrets come from the GitHub environment of the same name, or for local
 # runs from deploy/environments/<env>.secrets.local (never committed):
 #   SUPABASE_URL  SUPABASE_PUBLISHABLE_KEY  SUPABASE_SECRET_KEY  SUPABASE_DB_URL
-#   STRIPE_SECRET_KEY  SITE_PASSWORD (preview)  VERCEL_TOKEN  (VERCEL_SCOPE: team accounts only)
+#   SITE_PASSWORD (preview)  STRIPE_SECRET_KEY (optional; tipping off without it)  VERCEL_TOKEN  (VERCEL_SCOPE: team accounts only)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -29,7 +29,7 @@ export YOOITS_ENV=$ENV_NAME
 say() { echo "deploy $ENV_NAME: $*"; }
 need() { [ -n "${!1:-}" ] || fail "$1 is not set (see deploy/README.md)"; }
 
-for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SUPABASE_DB_URL STRIPE_SECRET_KEY \
+for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SUPABASE_DB_URL \
          VERCEL_TOKEN PROJECT_NAME BUILD_MODE; do need "$v"; done
 if [ "$PASSWORD_PROTECT" = yes ]; then need SITE_PASSWORD; fi
 [[ "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "PROJECT_NAME should be lowercase letters, numbers and dashes"
@@ -52,8 +52,11 @@ done
 REF=$(printf '%s' "$SUPABASE_URL" | sed -n 's#^https://\([a-z0-9]*\)\.supabase\.co/*$#\1#p')
 [ -n "$REF" ] || fail "SUPABASE_URL should look like https://<project>.supabase.co"
 case "$SUPABASE_DB_URL" in *"$REF"*) ;; *) fail "SUPABASE_DB_URL isn't for the same project as SUPABASE_URL";; esac
+# Stripe is optional: without a key the site runs with tipping switched off.
 STRIPE_MODE=test
-if [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_live_ ]]; then
+if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
+  STRIPE_MODE="off (no STRIPE_SECRET_KEY, tipping switched off)"
+elif [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_live_ ]]; then
   [ "${ALLOW_STRIPE_LIVE:-no}" = yes ] || fail "STRIPE_SECRET_KEY is a LIVE key. Live payments aren't approved for $ENV_NAME."
   STRIPE_MODE=LIVE
 else
@@ -62,7 +65,7 @@ fi
 if [ "$PASSWORD_PROTECT" = yes ] && [ ${#SITE_PASSWORD} -lt 12 ]; then fail "SITE_PASSWORD must be at least 12 characters."; fi
 if [ "$SEED_TEST_DATA" = yes ] && [ "$ENV_NAME" != preview ]; then fail "test data is only allowed in the preview."; fi
 unset STRIPE_LIVE_MODE_APPROVED
-say "Supabase project $REF, Vercel project $PROJECT_NAME, Stripe $STRIPE_MODE mode"
+say "Supabase project $REF, Vercel project $PROJECT_NAME, Stripe: $STRIPE_MODE"
 
 # --- 2. Backup, then database migrations ------------------------------------------------
 # (DRY_RUN=1 checks the settings and builds, but changes nothing anywhere.)
@@ -108,10 +111,10 @@ settings() { # prints this environment's settings as JSON for deploy/vercel-env.
       SUPABASE_URL: e.SUPABASE_URL,
       SUPABASE_PUBLISHABLE_KEY: e.SUPABASE_PUBLISHABLE_KEY,
       SUPABASE_SERVICE_ROLE_KEY: e.SUPABASE_SECRET_KEY,
-      STRIPE_SECRET_KEY: e.STRIPE_SECRET_KEY,
-      TIPPING_ENABLED: "true",
+      TIPPING_ENABLED: e.STRIPE_SECRET_KEY ? "true" : "false",
       PUBLIC_SITE_URL: e.SITE,
     };
+    if (e.STRIPE_SECRET_KEY) s.STRIPE_SECRET_KEY = e.STRIPE_SECRET_KEY;
     if (e.PASSWORD_PROTECT === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
     process.stdout.write(JSON.stringify(s));'
 }
@@ -140,7 +143,7 @@ fi
 say "settings stored"
 
 # --- 6. Stripe webhooks (first deploy only) ------------------------------------------------------
-if ! vc env ls 2>/dev/null | grep -q STRIPE_WEBHOOK_SECRET; then
+if [ -n "${STRIPE_SECRET_KEY:-}" ] && ! vc env ls 2>/dev/null | grep -q STRIPE_WEBHOOK_SECRET; then
   SITE_URL="$SITE" node deploy/stripe-webhooks.mjs | node deploy/vercel-env.mjs
   say "Stripe test webhooks connected"
   REDEPLOY=yes
@@ -155,4 +158,5 @@ if [ "$SEED_TEST_DATA" = yes ]; then
   echo "Test sign-ins (same password): owner@example.com (admin), alice@example.com, bob@example.com, casey@example.com"
 fi
 if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then echo "Yooits $ENV_NAME: $SITE" >> "$GITHUB_STEP_SUMMARY"; fi
+if [ -n "${GITHUB_OUTPUT:-}" ]; then echo "site=$SITE" >> "$GITHUB_OUTPUT"; fi
 exit 0

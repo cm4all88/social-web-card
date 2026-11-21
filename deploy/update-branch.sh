@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Brings preview/yooits up to date with the latest commits on every branch in
 # deploy/branches.txt, runs the tests, and pushes. The push redeploys the
-# preview through GitHub Actions (once PREVIEW_DEPLOY is on). Never touches main.
+# preview through GitHub Actions (once the preview secrets are in). Never touches main.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [ "$(git branch --show-current)" = "preview/yooits" ] || { echo "Switch to preview/yooits first." >&2; exit 1; }
