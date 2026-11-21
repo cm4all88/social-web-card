@@ -31,8 +31,11 @@ describe("preview gate", () => {
     expect(suppliedPassword(`Basic ${btoa("nocolon")}`)).toBeNull();
   });
 
-  it("leaves Stripe's webhook open (Stripe signs it)", () => {
-    expect(previewGate(req("/api/stripe/webhook"), "s3cret-pass")).toBeNull();
+  it("lets only Stripe's webhook POST through (Stripe signs it)", () => {
+    const post = (path: string) => new Request(`https://yooits-preview.vercel.app${path}`, { method: "POST", body: "{}" });
+    expect(previewGate(post("/api/stripe/webhook"), "s3cret-pass")).toBeNull();
+    expect(previewGate(req("/api/stripe/webhook"), "s3cret-pass")?.status).toBe(401);
+    expect(previewGate(post("/api/stripe/webhook2"), "s3cret-pass")?.status).toBe(401);
     expect(previewGate(req("/api/stripe/webhook2"), "s3cret-pass")?.status).toBe(401);
   });
 });

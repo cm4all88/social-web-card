@@ -1,8 +1,8 @@
 /**
  * Preview-only password gate (exists only on the preview/yooits branch).
  * When SITE_PASSWORD is set on the server, every page asks for it with the
- * browser's own sign-in box. Stripe's webhook is let through because Stripe
- * signs those requests itself. Without SITE_PASSWORD it does nothing.
+ * browser's own sign-in box. Stripe's webhook POSTs are let through because
+ * Stripe signs those requests itself. Without SITE_PASSWORD it does nothing.
  */
 const OPEN_PATHS = new Set(["/api/stripe/webhook"]);
 
@@ -28,7 +28,8 @@ export function suppliedPassword(header: string | null): string | null {
 /** Returns a 401 response when the request must be refused, otherwise null. */
 export function previewGate(request: Request, password: string | undefined): Response | null {
   if (!password) return null;
-  if (OPEN_PATHS.has(new URL(request.url).pathname)) return null;
+  // Only Stripe's POST gets through; opening the address in a browser still asks.
+  if (request.method === "POST" && OPEN_PATHS.has(new URL(request.url).pathname)) return null;
   const given = suppliedPassword(request.headers.get("authorization"));
   if (given !== null && safeEqual(given, password)) return null;
   return new Response("This Yooits preview is private.", {
