@@ -1,6 +1,7 @@
-// End-to-end tests for a deployed Yooits preview. Run by .github/workflows/deploy.yml
-// right after each preview deploy. Needs SITE_URL, SITE_PASSWORD, SUPABASE_URL and
-// SUPABASE_SECRET_KEY (to remove the account the sign-up test creates).
+// End-to-end tests for a deployed Yooits preview. Run by .github/workflows/e2e.yml
+// each time Vercel finishes deploying preview/yooits. Needs SITE_URL and
+// SITE_PASSWORD. With SUPABASE_URL and SUPABASE_SECRET_KEY it also removes the
+// account the sign-up test makes (otherwise the next preview build does).
 // Only failure screenshots are kept: traces would include the site password.
 import { defineConfig } from "@playwright/test";
 

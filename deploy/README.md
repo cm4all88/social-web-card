@@ -18,16 +18,25 @@ How the live site would later move off Lovable: `deploy/MIGRATION.md`.
   - `bob@example.com`: creator with a private wishlist
   - `casey@example.com`: an account to try suspend and unpublish on
 
-Everything runs in accounts you already have: your Vercel account, your
-Supabase account (free project), Stripe test mode and GitHub Actions (free for
-public repositories). No new accounts and no Namecheap/DNS changes: the
-preview uses a `vercel.app` address.
+Everything runs in accounts you already have: your Vercel account (through
+the Vercel GitHub app that already has access to this repository, so no token),
+your Supabase account (one new free project), and GitHub Actions for the
+tests. No new accounts and no Namecheap/DNS changes: the preview uses a
+`vercel.app` address. Stripe is optional (tipping stays off without it).
 
-**Why a token and not "Import Git Repository":** the Vercel and Supabase GitHub
-apps already have access to this repository, but importing it in Vercel would
-build `main` and every PR branch automatically, with Lovable's build setup and
-no database migrations. The token lets GitHub Actions deploy only
-`preview/yooits`, run the migrations and test the result.
+**What the live site uses today** (from the repository): one Supabase project,
+`oaeakgchijurkssjdxui`, for the database, sign-in (email and password) and file
+storage (one public bucket, `avatars`, for profile photos). It was created by
+Lovable and is most likely Lovable Cloud rather than a project in your own
+Supabase account. The preview never uses it: the build refuses that project.
+
+**How deploys work:** Vercel builds only `preview/yooits`. Its build command
+(`deploy/vercel-build.sh`, set in `vercel.json` and in the project settings)
+migrates the preview database, loads the test accounts and builds Yooits
+without Lovable. `main` and the PR branches don't have that script, so they
+can't build there, and the Ignored Build Step skips them anyway. After each
+deploy, GitHub Actions runs the end-to-end tests (`.github/workflows/e2e.yml`).
+`deploy/deploy.sh` can also deploy with a Vercel token instead (kept for later).
 
 **About Vercel's free plan:** Vercel's terms limit the free Hobby plan to
 "personal or non-commercial use". Yooits takes payments, so production on
@@ -39,55 +48,46 @@ from the start avoids the question. Your choice; the setup is the same.
 Pick one long password (12+ characters) for the preview first. It opens the
 site and signs in to the test accounts.
 
-### 1. Vercel: a token
-In your existing Vercel account: Account Settings, **Tokens**, create a token
-(e.g. "Yooits deploys"), scope it to the team your other projects are in, set
-an expiry if you like, and copy it. Vercel shows it once. The deploy creates a
-project called `yooits-preview` and changes nothing else in your account.
-If the first deploy reports a scope error, add a repository variable
-`VERCEL_SCOPE` with that team's slug (the name in its Vercel URL).
+### 1. Supabase: a new free project
+In your Supabase dashboard:
+1. New project, name `yooits-preview`. Free organizations allow two active
+   projects; if you're at the limit, pause one you don't use.
+2. Copy: the Project URL, the publishable key (or `anon`), the secret key (or
+   `service_role`) from Project Settings, API Keys; and the **Session pooler**
+   connection string from the Connect button, with the database password in it.
+3. Authentication, Sign In / Providers, Email: turn **Confirm email** off.
 
-### 2. Supabase: a new free project
-In your existing Supabase account:
-1. Create a new project called `yooits-preview`. Free organizations allow two
-   active projects; if you're at the limit, pause one you don't use.
-2. Copy these (Project Settings, then API Keys, plus the Connect button):
-   - Project URL, e.g. `https://abcd1234.supabase.co`
-   - Publishable key (or legacy `anon` key)
-   - Secret key (or legacy `service_role` key)
-   - Connection string: **Session pooler** (works from GitHub), with the
-     database password filled in
-3. Authentication, Sign In / Providers, Email: turn **Confirm email** off
-   (for this project only; the sign-up test needs it). Optionally, URL
-   Configuration: Site URL `https://yooits-preview.vercel.app` and Redirect
-   URL `https://yooits-preview*.vercel.app/**` (password reset links).
+### 2. Vercel: import the repository
+1. In Vercel, Add New, Project, and import `cm4all88/social-web-card`.
+2. Project name `yooits-preview`. Under Build and Output Settings, override
+   **Build Command** with `bash deploy/vercel-build.sh`.
+3. Environment Variables: paste this block with your values filled in:
+   ```
+   SUPABASE_URL=
+   SUPABASE_PUBLISHABLE_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   SUPABASE_DB_URL=
+   SITE_PASSWORD=
+   ```
+4. Click Deploy. This first deploy is of `main` and **fails on purpose**
+   ("only preview/yooits deploys to this project"), so nothing goes live.
+5. Project Settings, **Environments**, Production, Branch Tracking: change the
+   branch to `preview/yooits` and save.
+6. Project Settings, **Build and Deployment**, Ignored Build Step: choose
+   **Only build production**, so `main` and the PR branches are skipped.
 
-### 3. Stripe (optional, for tipping)
-Without a Stripe key the preview runs with tipping switched off; add it any
-time later. In Stripe **Test mode**: Developers, API keys, copy the secret key
-(`sk_test_...`; anything else is refused). If Connect isn't set up in test
-mode, click Get started there. The webhooks are created automatically.
+### 3. GitHub: the password for the tests
+Repository Settings, Secrets and variables, Actions, New repository secret:
+`SITE_PASSWORD` = your preview password.
 
-### 4. GitHub: store the settings
-Repository Settings, **Environments**, New environment `preview`, then
-**Environment secrets**:
+Then tell Claude it's done. The next push to `preview/yooits` deploys the
+preview and runs the tests. If Vercel gave the project another address than
+`https://yooits-preview.vercel.app`, add a repository variable `PREVIEW_URL`
+with it (Claude can tell you).
 
-| Name | Value |
-|---|---|
-| `SUPABASE_URL` | Supabase project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | publishable or anon key |
-| `SUPABASE_SECRET_KEY` | secret or service_role key |
-| `SUPABASE_DB_URL` | Session pooler connection string |
-| `SITE_PASSWORD` | your preview password |
-| `VERCEL_TOKEN` | Vercel token |
-| `STRIPE_SECRET_KEY` | optional: `sk_test_...` key |
-| `BACKUP_PASSPHRASE` | optional: a long passphrase (16+ characters) that encrypts backups. Keep a copy somewhere safe. |
-
-Then tell Claude the secrets are in. Each push to `preview/yooits` migrates
-the test database, deploys, and runs the end-to-end tests in `e2e/` (sign-up,
-public pages, creator dashboard, owner console and account controls). The
-Actions run summary shows the address. To pause deploys, add a repository
-variable `PREVIEW_DEPLOY` = `off`.
+Tipping later: add `STRIPE_SECRET_KEY` (an `sk_test_` key) and
+`TIPPING_ENABLED=true` in Vercel's Environment Variables; the Stripe webhooks
+then need one more step.
 
 ## Using it
 - Open the address, enter the site password, then sign in with a test account.

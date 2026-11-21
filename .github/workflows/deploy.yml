@@ -1,7 +1,8 @@
 # Deploys Yooits with deploy/deploy.sh. Setup: deploy/README.md
-#   preview:    every push to preview/yooits. Uses the "preview" GitHub
-#               environment, and does nothing until its secrets are added.
-#               After deploying, the end-to-end tests in e2e/ check the site.
+#   preview:    the preview normally deploys through Vercel's GitHub
+#               integration instead (deploy/vercel-build.sh, tested by
+#               e2e.yml). This token-based route is kept for running by hand
+#               ("Run workflow") with a VERCEL_TOKEN in the "preview" environment.
 #   production: NOT IN USE YET. Only by hand ("Run workflow"), only from main,
 #               only once PRODUCTION_DEPLOY is "on" and the repository is
 #               private. Uses the "production" GitHub environment, which
@@ -10,8 +11,6 @@
 # Neither can reach the Lovable-hosted live site: deploy.sh refuses its database.
 name: Deploy Yooits
 on:
-  push:
-    branches: [preview/yooits]
   workflow_dispatch:
     inputs:
       environment:

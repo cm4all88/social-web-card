@@ -1,0 +1,57 @@
+# Tests the Yooits preview each time Vercel finishes deploying preview/yooits:
+# the password gate, public pages, sign-up, the creator dashboard and the owner
+# console with its account controls (e2e/preview.e2e.mjs). Read-only apart from
+# the test accounts' own data, which the tests put back.
+# Needs the repository secret SITE_PASSWORD (the preview password). The address
+# is https://yooits-preview.vercel.app unless the repository variable
+# PREVIEW_URL says otherwise.
+name: Test Yooits preview
+on:
+  deployment_status:
+  workflow_dispatch:
+concurrency:
+  group: e2e-preview
+  cancel-in-progress: true
+jobs:
+  e2e:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+        (github.event.deployment.ref == 'preview/yooits' || contains(github.event.deployment.environment, 'yooits-preview')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check the password is in place
+        id: ready
+        env:
+          HAVE: ${{ secrets.SITE_PASSWORD != '' }}
+        run: |
+          if [ "$HAVE" = true ]; then echo "go=yes" >> "$GITHUB_OUTPUT"
+          else echo "Skipped: add the repository secret SITE_PASSWORD (deploy/README.md)." | tee -a "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/checkout@v4
+        if: steps.ready.outputs.go == 'yes'
+      - uses: actions/setup-node@v4
+        if: steps.ready.outputs.go == 'yes'
+        with:
+          node-version: 22
+      - name: Install
+        if: steps.ready.outputs.go == 'yes'
+        run: |
+          npm install --no-save --legacy-peer-deps --no-audit --no-fund @playwright/test@1.56.1 @supabase/supabase-js
+          npx playwright install --with-deps chromium
+      - name: End-to-end tests
+        if: steps.ready.outputs.go == 'yes'
+        run: npx playwright test --config e2e/playwright.config.mjs
+        env:
+          SITE_URL: ${{ vars.PREVIEW_URL || 'https://yooits-preview.vercel.app' }}
+          SITE_PASSWORD: ${{ secrets.SITE_PASSWORD }}
+          TIPPING: ${{ vars.PREVIEW_TIPPING == 'on' }}
+      - name: Keep failure screenshots
+        if: ${{ always() && hashFiles('e2e/report/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ github.run_id }}
+          path: e2e/report/**/*.png
+          retention-days: 14

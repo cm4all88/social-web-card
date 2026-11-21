@@ -66,6 +66,14 @@ async function ensureUser(p) {
   return data.user.id;
 }
 
+// Accounts the end-to-end sign-up test made on earlier runs.
+async function removeTestSignups() {
+  const data = await must("list users", db.auth.admin.listUsers({ page: 1, perPage: 200 }));
+  for (const u of data.users) {
+    if (/^e2e-\d+@example\.com$/.test(u.email ?? "")) await must(`remove ${u.email}`, db.auth.admin.deleteUser(u.id));
+  }
+}
+
 async function count(table, filter) {
   let q = db.from(table).select("id", { count: "exact", head: true });
   for (const [k, v] of Object.entries(filter)) q = q.eq(k, v);
@@ -135,6 +143,8 @@ await ensureWishlist(
   { slug: "kitchen", title: "Kitchen upgrades", visibility: "private", show_on_profile: false },
   [{ name: "Cast iron pan", price_text: "$40" }],
 );
+
+await removeTestSignups();
 
 // Alice is ready to connect Stripe (test mode) from her dashboard; tips stay off until she does.
 await must(

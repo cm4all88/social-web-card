@@ -26,11 +26,20 @@ set -a
 [ -f "deploy/environments/$ENV_NAME.secrets.local" ] && . "deploy/environments/$ENV_NAME.secrets.local"
 set +a
 export YOOITS_ENV=$ENV_NAME
+# On Vercel (Git integration, VERCEL=1) Vercel itself deploys what this script
+# builds, so no Vercel token is needed, and the settings come from the Vercel
+# project, where the secret key is stored as SUPABASE_SERVICE_ROLE_KEY.
+ON_VERCEL=no
+if [ "${VERCEL:-}" = 1 ]; then
+  ON_VERCEL=yes
+  export SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-}}
+fi
 say() { echo "deploy $ENV_NAME: $*"; }
 need() { [ -n "${!1:-}" ] || fail "$1 is not set (see deploy/README.md)"; }
 
 for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SUPABASE_DB_URL \
-         VERCEL_TOKEN PROJECT_NAME BUILD_MODE; do need "$v"; done
+         PROJECT_NAME BUILD_MODE; do need "$v"; done
+if [ "$ON_VERCEL" = no ] && [ "${DRY_RUN:-}" != 1 ]; then need VERCEL_TOKEN; fi
 if [ "$PASSWORD_PROTECT" = yes ]; then need SITE_PASSWORD; fi
 [[ "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "PROJECT_NAME should be lowercase letters, numbers and dashes"
 export VERCEL_TOKEN VERCEL_SCOPE
@@ -91,6 +100,11 @@ OUTPUT=.vercel/output
 if grep -rq "$LOVABLE_REF" "$OUTPUT"; then fail "the build still contains the Lovable database's id; not deploying"; fi
 grep -rq "$REF" "$OUTPUT/static" || fail "the build doesn't use this environment's database; not deploying"
 if [ "${DRY_RUN:-}" = 1 ]; then say "dry run: built and checked, not deployed"; exit 0; fi
+if [ "$ON_VERCEL" = yes ]; then
+  trap - EXIT; rm -f ".env.$BUILD_MODE.local"
+  say "built and checked; Vercel deploys it now"
+  exit 0
+fi
 
 # --- 5. Deploy to this environment's Vercel project --------------------------------------
 # Each environment is its own Vercel project (PROJECT_NAME), so preview and
