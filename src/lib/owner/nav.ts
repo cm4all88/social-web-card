@@ -19,6 +19,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
   { id: "invites", label: "Invites", to: "/owner/invites", status: "live", summary: "Invite codes." },
   { id: "founding", label: "Founding Members", to: "/owner/founding", status: "live", summary: "Founding Member invites, members and feedback." },
   { id: "reports", label: "Reports", to: "/owner/reports", status: "live", summary: "Pages and wishlists people have reported." },
+  { id: "blocked-sites", label: "Blocked sites", to: "/owner/blocked-sites", status: "live", summary: "Sites links may not point to, and exceptions for mistakes." },
   { id: "audit", label: "Audit log", to: "/owner/audit", status: "live", summary: "Every owner action, newest first." },
   { id: "wishlists", label: "Wishlists", to: "/owner/wishlists", status: "planned", summary: "Retailers, affiliate tags and wishlist moderation." },
   { id: "promotions", label: "Promotions", to: "/owner/promotions", status: "planned", summary: "House promotions shown across Yooits." },
