@@ -23,14 +23,15 @@ export const LEGAL_DRAFT_NOTICE =
 export const LEGAL_LAST_UPDATED = "November 21, 2026";
 
 /** Filled in before publication. Shown as-is on the draft pages. */
-export const LEGAL_PLACEHOLDERS = {
-  operator: "[company that operates Yooits]",
-  contact: "[contact email]",
-  governingLaw: "[state]",
+/** Details Chris gave on Nov 21, 2026. The pages stay marked as drafts until an attorney reviews them. */
+export const LEGAL_DETAILS = {
+  operator: "Tahoma Systems LLC",
+  contact: "admin@tahomaindustries.com",
+  governingLaw: "the State of Washington",
   minimumAge: "13",
 } as const;
 
-const P = LEGAL_PLACEHOLDERS;
+const P = LEGAL_DETAILS;
 
 const terms: LegalDocument = {
   slug: "terms",
@@ -147,7 +148,7 @@ const privacy: LegalDocument = {
     {
       heading: "Children",
       paragraphs: [
-        `Yooits is not for children under ${P.minimumAge}. If you believe a child under ${P.minimumAge} has an account, contact us and we will remove it.`,
+        `Yooits is not for children under ${P.minimumAge}. If you believe a child under ${P.minimumAge} has an account, email ${P.contact} and we will remove it.`,
       ],
     },
     {
@@ -187,7 +188,7 @@ const acceptableUse: LegalDocument = {
     {
       heading: "What happens if you break these rules",
       paragraphs: [
-        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a profile or a wishlist, contact ${P.contact}.`,
+        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a profile or a wishlist, email ${P.contact} with its address and what is wrong. We review every report.`,
       ],
     },
   ],

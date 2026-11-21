@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLegalDocument, LEGAL_DOCUMENTS, LEGAL_DRAFT_NOTICE } from "./documents";
+import { getLegalDocument, LEGAL_DETAILS, LEGAL_DOCUMENTS, LEGAL_DRAFT_NOTICE } from "./documents";
 import { PLATFORM_FEE_CENTS, MIN_TIP_CENTS, MAX_TIP_CENTS } from "@/lib/tipping/money";
 import { RESERVED_USERNAMES } from "@/lib/username";
 
@@ -39,5 +39,16 @@ describe("legal drafts", () => {
 
   it("lives under reserved usernames, so no profile can take its address", () => {
     for (const name of ["legal", "terms", "privacy"]) expect(RESERVED_USERNAMES.has(name)).toBe(true);
+  });
+
+  it("has no placeholders left and names the operator, contact and state", () => {
+    for (const d of LEGAL_DOCUMENTS) expect(text(d.slug)).not.toMatch(/\[[a-z][a-z ]*\]/);
+    expect(text("terms")).toContain("operated by Tahoma Systems LLC");
+    expect(text("terms")).toContain("laws of the State of Washington, United States");
+    expect(LEGAL_DETAILS.minimumAge).toBe("13");
+  });
+
+  it("gives a working email for reports", () => {
+    expect(text("acceptable-use")).toContain("To report a profile or a wishlist, email admin@tahomaindustries.com");
   });
 });
