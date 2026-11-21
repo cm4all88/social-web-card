@@ -30,6 +30,13 @@ set -a
 [ -f "deploy/environments/$ENV_NAME.secrets.local" ] && . "deploy/environments/$ENV_NAME.secrets.local"
 set +a
 export YOOITS_ENV=$ENV_NAME
+if [ "${SEED_TEST_ACCOUNTS:-}" = true ]; then SEED_TEST_DATA=yes; fi
+GATE=no
+case "${PASSWORD_PROTECT:-no}" in
+  yes) GATE=yes ;;
+  if-set) sp=${SITE_PASSWORD:-}; if [ -n "${sp//[[:space:]]/}" ]; then GATE=yes; fi ;;
+esac
+export GATE
 # On Vercel (Git integration, VERCEL=1) Vercel itself deploys what this script
 # builds, so no Vercel token is needed, and the settings come from the Vercel project.
 ON_VERCEL=no
@@ -73,7 +80,7 @@ for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY PROJECT_NAME 
   [ -n "${!v:-}" ] || missing+=("$(shown "$v")")
 done
 if [ "$MIGRATE" = yes ] && [ -z "${SUPABASE_DB_URL:-}${POSTGRES_URL_NON_POOLING:-}${POSTGRES_URL:-}" ]; then missing+=(SUPABASE_DB_URL); fi
-if [ "$PASSWORD_PROTECT" = yes ] && [ -z "${SITE_PASSWORD:-}" ]; then missing+=(SITE_PASSWORD); fi
+if { [ "$PASSWORD_PROTECT" = yes ] || [ "$SEED_TEST_DATA" = yes ]; } && [ -z "${SITE_PASSWORD:-}" ]; then missing+=(SITE_PASSWORD); fi
 if [ "$ON_VERCEL" = no ] && [ "${DRY_RUN:-}" != 1 ] && [ -z "${VERCEL_TOKEN:-}" ]; then missing+=(VERCEL_TOKEN); fi
 if [ ${#missing[@]} -gt 0 ]; then
   if [ "$ON_VERCEL" = yes ]; then
@@ -112,10 +119,12 @@ elif [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_live_ ]]; then
 else
   [[ "$STRIPE_SECRET_KEY" =~ ^(sk|rk)_test_ ]] || fail "STRIPE_SECRET_KEY doesn't look like a Stripe secret key."
 fi
-if [ "$PASSWORD_PROTECT" = yes ] && [ ${#SITE_PASSWORD} -lt 12 ]; then fail "SITE_PASSWORD must be at least 12 characters."; fi
+if [ "$GATE" = yes ] && [ ${#SITE_PASSWORD} -lt 12 ]; then fail "SITE_PASSWORD must be at least 12 characters."; fi
 if [ "$SEED_TEST_DATA" = yes ] && [ "$ENV_NAME" != preview ]; then fail "test data is only allowed in the preview."; fi
 unset STRIPE_LIVE_MODE_APPROVED
 say "Supabase project $REF, Vercel project $PROJECT_NAME, Stripe: $STRIPE_MODE"
+if [ "$GATE" = yes ]; then say "site password: on"; else say "site password: off (the site is public)"; fi
+if [ "$SEED_TEST_DATA" = yes ]; then say "test accounts: loading"; else say "test accounts: not loaded (set SEED_TEST_ACCOUNTS=true to load them)"; fi
 
 # Checks the keys against Supabase and finds a database connection that works
 # (repairing how the string was pasted); stops with what to fix otherwise.
@@ -191,11 +200,11 @@ settings() { # prints this environment's settings as JSON for deploy/vercel-env.
       PUBLIC_SITE_URL: e.SITE,
     };
     if (e.STRIPE_SECRET_KEY) s.STRIPE_SECRET_KEY = e.STRIPE_SECRET_KEY;
-    if (e.PASSWORD_PROTECT === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
+    if (e.GATE === "yes") s.SITE_PASSWORD = e.SITE_PASSWORD;
     process.stdout.write(JSON.stringify(s));'
 }
 settings | node deploy/vercel-env.mjs
-if [ "$PASSWORD_PROTECT" != yes ]; then
+if [ "$GATE" != yes ]; then
   vc env remove SITE_PASSWORD --environment production --yes >/dev/null 2>&1 || true
 fi
 
@@ -229,7 +238,7 @@ if [ "$REDEPLOY" = yes ]; then deploy_once; fi
 
 echo
 echo "Yooits $ENV_NAME is live at $SITE"
-if [ "$PASSWORD_PROTECT" = yes ]; then echo "Site password: the SITE_PASSWORD you chose (any user name)."; fi
+if [ "$GATE" = yes ]; then echo "Site password: the SITE_PASSWORD you chose (any user name)."; fi
 if [ "$SEED_TEST_DATA" = yes ]; then
   echo "Test sign-ins (same password): owner@example.com (admin), alice@example.com, bob@example.com, casey@example.com"
 fi

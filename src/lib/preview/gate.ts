@@ -6,6 +6,13 @@
  */
 const OPEN_PATHS = new Set(["/api/stripe/webhook"]);
 
+/** Drops spaces, line breaks and one pair of quotes pasted around a value. */
+function bare(value: string): string {
+  const v = value.trim();
+  const quoted = v.match(/^(['"])([\s\S]*)\1$/);
+  return quoted ? quoted[2].trim() : v;
+}
+
 function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -30,13 +37,13 @@ export function suppliedPassword(header: string | null): string | null {
 
 /** Returns a 401 response when the request must be refused, otherwise null. */
 export function previewGate(request: Request, password: string | undefined): Response | null {
-  // Spaces or line breaks pasted around the stored password don't count.
-  password = password?.trim();
+  // Spaces, line breaks or quotes pasted around either copy don't count.
+  password = password === undefined ? undefined : bare(password);
   if (!password) return null;
   // Only Stripe's POST gets through; opening the address in a browser still asks.
   if (request.method === "POST" && OPEN_PATHS.has(new URL(request.url).pathname)) return null;
   const given = suppliedPassword(request.headers.get("authorization"));
-  if (given !== null && safeEqual(given.trim(), password)) return null;
+  if (given !== null && safeEqual(bare(given), password)) return null;
   return new Response("This Yooits preview is private.", {
     status: 401,
     headers: {

@@ -29,6 +29,8 @@ describe("preview gate", () => {
     expect(previewGate(req("/", utf8("x", "pässwörd-ñ-12")), "pässwörd-ñ-12")).toBeNull();
     expect(previewGate(req("/", basic("x", "s3cret-pass")), " s3cret-pass\n")).toBeNull();
     expect(previewGate(req("/", basic("x", "s3cret-pass ")), "s3cret-pass")).toBeNull();
+    expect(previewGate(req("/", basic("x", '"s3cret-pass"')), "s3cret-pass")).toBeNull();
+    expect(previewGate(req("/", basic("x", "s3cret-pass")), "'s3cret-pass'")).toBeNull();
     expect(previewGate(req("/", basic("x", "s3cret")), "s3cret-pass")?.status).toBe(401);
   });
 

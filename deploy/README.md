@@ -46,6 +46,13 @@ deploy, GitHub Actions runs the end-to-end tests (`.github/workflows/e2e.yml`).
 Vercel needs a paid plan (Pro). The terms don't mention testing; using Pro
 from the start avoids the question. Your choice; the setup is the same.
 
+**Site password and test accounts (from 2026-11-21):** this Vercel project
+now also serves yooits.me. The site password is on only while `SITE_PASSWORD`
+is set in Vercel; remove it to open the site. The example.com test accounts
+load only when Vercel has `SEED_TEST_ACCOUNTS=true` (which also needs
+`SITE_PASSWORD`, their password). The end-to-end tests run only when started
+by hand in GitHub Actions.
+
 ## One-time setup (about 10 minutes)
 
 Pick one long password (12+ characters) for the preview first. It opens the

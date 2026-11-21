@@ -1,5 +1,7 @@
-# Tests the Yooits preview after each push to preview/yooits, once Vercel has
-# finished deploying that commit:
+# Tests the deployed Yooits site when started by hand (Actions > Test Yooits
+# preview > Run workflow). It no longer runs on every push: this Vercel project
+# now serves yooits.me, and the tests need the example.com test accounts.
+# What it checks:
 # the password gate, public pages, sign-up, the creator dashboard and the owner
 # console with its account controls (e2e/preview.e2e.mjs). Read-only apart from
 # the test accounts' own data, which the tests put back.
@@ -8,8 +10,6 @@
 # PREVIEW_URL says otherwise.
 name: Test Yooits preview
 on:
-  push:
-    branches: [preview/yooits]
   workflow_dispatch:
 concurrency:
   group: e2e-preview
