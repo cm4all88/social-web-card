@@ -1,5 +1,9 @@
 import { createMiddleware, createStart } from "@tanstack/react-start";
 import { previewGate } from "@/lib/preview/gate";
+import { applySupabaseEnvFallbacks } from "@/lib/preview/env-fallbacks";
+
+// Accept the Supabase–Vercel integration's variable names too (server only).
+if (typeof process !== "undefined" && process.env) applySupabaseEnvFallbacks(process.env);
 
 // Preview branch only: password-protect the preview site (see src/lib/preview/gate.ts).
 const previewPassword = createMiddleware({ type: "request" }).server(async ({ request, next }) => {

@@ -14,6 +14,10 @@
 # runs from deploy/environments/<env>.secrets.local (never committed):
 #   SUPABASE_URL  SUPABASE_PUBLISHABLE_KEY  SUPABASE_SECRET_KEY  SUPABASE_DB_URL
 #   SITE_PASSWORD (preview)  STRIPE_SECRET_KEY (optional; tipping off without it)  VERCEL_TOKEN  (VERCEL_SCOPE: team accounts only)
+# The names the Supabase-Vercel integration sets work too (SUPABASE_ANON_KEY,
+# SUPABASE_SERVICE_ROLE_KEY, POSTGRES_URL_NON_POOLING ...). deploy/check-config.mjs
+# checks every value before anything changes and repairs a badly pasted
+# database connection string; nothing it prints holds a value.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -27,20 +31,56 @@ set -a
 set +a
 export YOOITS_ENV=$ENV_NAME
 # On Vercel (Git integration, VERCEL=1) Vercel itself deploys what this script
-# builds, so no Vercel token is needed, and the settings come from the Vercel
-# project, where the secret key is stored as SUPABASE_SERVICE_ROLE_KEY.
+# builds, so no Vercel token is needed, and the settings come from the Vercel project.
 ON_VERCEL=no
-if [ "${VERCEL:-}" = 1 ]; then
-  ON_VERCEL=yes
-  export SUPABASE_SECRET_KEY=${SUPABASE_SECRET_KEY:-${SUPABASE_SERVICE_ROLE_KEY:-}}
-fi
+if [ "${VERCEL:-}" = 1 ]; then ON_VERCEL=yes; fi
+# Vercel builds never touch the database: migrations are applied to the
+# project separately (Supabase connector or a local/GitHub run of this script),
+# so a Vercel build needs only the public URL and keys, the secret key (test
+# accounts are loaded through Supabase's API) and SITE_PASSWORD.
+MIGRATE=yes
+if [ "$ON_VERCEL" = yes ]; then MIGRATE=no; fi
 say() { echo "deploy $ENV_NAME: $*"; }
-need() { [ -n "${!1:-}" ] || fail "$1 is not set (see deploy/README.md)"; }
 
-for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SUPABASE_DB_URL \
-         PROJECT_NAME BUILD_MODE; do need "$v"; done
-if [ "$ON_VERCEL" = no ] && [ "${DRY_RUN:-}" != 1 ]; then need VERCEL_TOKEN; fi
-if [ "$PASSWORD_PROTECT" = yes ]; then need SITE_PASSWORD; fi
+clean() { # trims spaces, line breaks and surrounding quotes from the variable named $1
+  local v=${!1:-}
+  v="${v#"${v%%[![:space:]]*}"}"; v="${v%"${v##*[![:space:]]}"}"
+  if [ ${#v} -ge 2 ] && { [[ $v == \"*\" ]] || [[ $v == \'*\' ]]; }; then v=${v:1:${#v}-2}; fi
+  printf -v "$1" '%s' "$v"
+}
+use_first() { # sets $1 from the first of its names (itself, then the others) that has a value
+  local target=$1 n
+  for n in "$@"; do
+    clean "$n"
+    if [ -n "${!n:-}" ]; then
+      if [ "$n" != "$target" ]; then printf -v "$target" '%s' "${!n}"; say "using $n as $target"; fi
+      export "$target"; return 0
+    fi
+  done
+}
+use_first SUPABASE_URL NEXT_PUBLIC_SUPABASE_URL VITE_SUPABASE_URL
+use_first SUPABASE_PUBLISHABLE_KEY SUPABASE_ANON_KEY NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY VITE_SUPABASE_PUBLISHABLE_KEY
+# On Vercel the secret key is stored as SUPABASE_SERVICE_ROLE_KEY (the name the app reads).
+use_first SUPABASE_SECRET_KEY SUPABASE_SERVICE_ROLE_KEY
+while [ "${SUPABASE_URL%/}" != "$SUPABASE_URL" ]; do SUPABASE_URL=${SUPABASE_URL%/}; done
+
+# Every missing setting is named at once, with the name to use where it's set.
+shown() { if [ "$ON_VERCEL" = yes ] && [ "$1" = SUPABASE_SECRET_KEY ]; then echo SUPABASE_SERVICE_ROLE_KEY; else echo "$1"; fi; }
+missing=()
+for v in SUPABASE_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY PROJECT_NAME BUILD_MODE; do
+  [ -n "${!v:-}" ] || missing+=("$(shown "$v")")
+done
+if [ "$MIGRATE" = yes ] && [ -z "${SUPABASE_DB_URL:-}${POSTGRES_URL_NON_POOLING:-}${POSTGRES_URL:-}" ]; then missing+=(SUPABASE_DB_URL); fi
+if [ "$PASSWORD_PROTECT" = yes ] && [ -z "${SITE_PASSWORD:-}" ]; then missing+=(SITE_PASSWORD); fi
+if [ "$ON_VERCEL" = no ] && [ "${DRY_RUN:-}" != 1 ] && [ -z "${VERCEL_TOKEN:-}" ]; then missing+=(VERCEL_TOKEN); fi
+if [ ${#missing[@]} -gt 0 ]; then
+  if [ "$ON_VERCEL" = yes ]; then
+    target=Preview; [ "${VERCEL_ENV:-}" = production ] && target=Production
+    fail "missing: ${missing[*]}. Add them in Vercel project ${PROJECT_NAME:-?} > Settings > Environment Variables, ticked for $target (this is a $target deployment), then redeploy."
+  fi
+  fail "missing: ${missing[*]} (see deploy/README.md)"
+fi
+if [ "$ON_VERCEL" = yes ]; then sha=${VERCEL_GIT_COMMIT_SHA:-unknown}; say "Vercel ${VERCEL_ENV:-?} deployment of ${VERCEL_GIT_COMMIT_REF:-?} at ${sha:0:7}"; fi
 [[ "$PROJECT_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]] || fail "PROJECT_NAME should be lowercase letters, numbers and dashes"
 export VERCEL_TOKEN VERCEL_SCOPE
 
@@ -52,15 +92,14 @@ jwt_ref() { # prints the "ref" inside a legacy Supabase JWT key, if any
   local p; p=$(printf '%s' "$1" | cut -d. -f2 | tr '_-' '/+'); while [ $(( ${#p} % 4 )) -ne 0 ]; do p="$p="; done
   printf '%s' "$p" | base64 -d 2>/dev/null | sed -n 's/.*"ref":"\([^"]*\)".*/\1/p'
 }
-for v in SUPABASE_URL SUPABASE_DB_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
-  case "${!v}" in *"$LOVABLE_REF"*) fail "$v points at the Supabase project Lovable runs the live site on. Use this environment's own project.";; esac
+for v in SUPABASE_URL SUPABASE_DB_URL POSTGRES_URL_NON_POOLING POSTGRES_URL SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
+  case "${!v:-}" in *"$LOVABLE_REF"*) fail "$v points at the Supabase project Lovable runs the live site on. Use this environment's own project.";; esac
 done
 for v in SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY; do
   [ "$(jwt_ref "${!v}")" != "$LOVABLE_REF" ] || fail "$v belongs to the Supabase project Lovable runs the live site on."
 done
 REF=$(printf '%s' "$SUPABASE_URL" | sed -n 's#^https://\([a-z0-9]*\)\.supabase\.co/*$#\1#p')
 [ -n "$REF" ] || fail "SUPABASE_URL should look like https://<project>.supabase.co"
-case "$SUPABASE_DB_URL" in *"$REF"*) ;; *) fail "SUPABASE_DB_URL isn't for the same project as SUPABASE_URL";; esac
 # Stripe is optional: without a key the site runs with tipping switched off.
 STRIPE_MODE=test
 if [ -z "${STRIPE_SECRET_KEY:-}" ]; then
@@ -76,15 +115,36 @@ if [ "$SEED_TEST_DATA" = yes ] && [ "$ENV_NAME" != preview ]; then fail "test da
 unset STRIPE_LIVE_MODE_APPROVED
 say "Supabase project $REF, Vercel project $PROJECT_NAME, Stripe: $STRIPE_MODE"
 
+# Checks the keys against Supabase and finds a database connection that works
+# (repairing how the string was pasted); stops with what to fix otherwise.
+DB_FILE=$(mktemp); chmod 600 "$DB_FILE"
+CHECK=(--db-out "$DB_FILE")
+if [ "$MIGRATE" = no ]; then
+  CHECK=(--no-db); [ "${DRY_RUN:-}" = 1 ] && CHECK+=(--offline)
+elif [ "${DRY_RUN:-}" = 1 ]; then
+  CHECK+=(--offline)
+else
+  PG_MODULE_DIR=$(mktemp -d); export PG_MODULE_DIR
+  npm install --prefix "$PG_MODULE_DIR" --no-audit --no-fund --no-package-lock --loglevel=error pg@8.13.1 >/dev/null \
+    || fail "couldn't download the database checker (npm package pg)"
+fi
+node deploy/check-config.mjs "${CHECK[@]}" || { rm -f "$DB_FILE"; exit 1; }
+if [ "$MIGRATE" = yes ]; then SUPABASE_DB_URL=$(cat "$DB_FILE"); export SUPABASE_DB_URL; fi
+rm -f "$DB_FILE"
+
 # --- 2. Backup, then database migrations ------------------------------------------------
 # (DRY_RUN=1 checks the settings and builds, but changes nothing anywhere.)
-if [ "${DRY_RUN:-}" != 1 ]; then
+if [ "$MIGRATE" = no ]; then
+  say "database migrations: not run in this build (apply supabase/migrations to project $REF first)"
+elif [ "${DRY_RUN:-}" != 1 ]; then
   if [ "${BACKUP_BEFORE_MIGRATE:-no}" = yes ]; then bash deploy/backup.sh "$ENV_NAME"; fi
   npx -y supabase@2 db push --db-url "$SUPABASE_DB_URL" --yes
 fi
 
 # --- 3. Test accounts and content (preview only) ------------------------------------------
-if [ "$SEED_TEST_DATA" = yes ] && [ "${DRY_RUN:-}" != 1 ]; then node deploy/seed.mjs; fi
+if [ "$SEED_TEST_DATA" = yes ] && [ "${DRY_RUN:-}" != 1 ]; then
+  node deploy/seed.mjs || fail "loading the test accounts failed (above). If it names a missing table, the migrations in supabase/migrations aren't applied to project $REF yet."
+fi
 
 # --- 4. Build for this environment, without Lovable ----------------------------------------
 cat > ".env.$BUILD_MODE.local" <<ENV

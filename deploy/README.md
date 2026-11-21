@@ -32,8 +32,11 @@ Supabase account. The preview never uses it: the build refuses that project.
 
 **How deploys work:** Vercel builds only `preview/yooits`. Its build command
 (`deploy/vercel-build.sh`, set in `vercel.json` and in the project settings)
-migrates the preview database, loads the test accounts and builds Yooits
-without Lovable. `main` and the PR branches don't have that script, so they
+checks the settings, loads the test accounts through Supabase's API and builds
+Yooits without Lovable. It never connects to the database, so it needs no
+database connection string: the migrations in `supabase/migrations` are applied
+to the preview project separately (by Claude through the Supabase connector, or
+with `bash deploy/deploy.sh preview` and `SUPABASE_DB_URL` from a computer). `main` and the PR branches don't have that script, so they
 can't build there, and the Ignored Build Step skips them anyway. After each
 deploy, GitHub Actions runs the end-to-end tests (`.github/workflows/e2e.yml`).
 `deploy/deploy.sh` can also deploy with a Vercel token instead (kept for later).
@@ -66,9 +69,12 @@ In your Supabase dashboard:
    SUPABASE_URL=
    SUPABASE_PUBLISHABLE_KEY=
    SUPABASE_SERVICE_ROLE_KEY=
-   SUPABASE_DB_URL=
    SITE_PASSWORD=
    ```
+   Every value is checked at the start of the build, and the build stops with
+   the name of anything missing or wrong (never its value). The names the
+   Supabase–Vercel integration sets (`SUPABASE_ANON_KEY`,
+   `NEXT_PUBLIC_SUPABASE_URL`, ...) work too.
 4. Click Deploy. This first deploy is of `main` and **fails on purpose**
    ("only preview/yooits deploys to this project"), so nothing goes live.
 5. Project Settings, **Environments**, Production, Branch Tracking: change the
@@ -104,7 +110,7 @@ then need one more step.
 ## Keeping it up to date
 Ask Claude to "update the preview". That merges the latest PR branches into
 `preview/yooits` (`deploy/update-branch.sh`), runs the tests and pushes;
-GitHub Actions then migrates the test database and redeploys. New PR branches
+new migrations are applied to the preview project, then Vercel redeploys. New PR branches
 go in `deploy/branches.txt`.
 
 ## Backups
