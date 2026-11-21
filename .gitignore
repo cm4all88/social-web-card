@@ -30,3 +30,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Supabase CLI
+supabase/.temp/
+
+# Deploy secrets and backups (never commit)
+deploy/environments/*.secrets.local
+backups/
+
+# Vercel (build output and project link)
+.vercel/
+e2e/report/
