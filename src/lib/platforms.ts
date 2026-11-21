@@ -49,7 +49,7 @@ export const PLATFORMS: Record<string, PlatformMeta> = {
   paypal: { label: "PayPal", icon: Wallet, color: "from-blue-400 to-indigo-700", hint: "https://paypal.me/yourhandle" },
   venmo: { label: "Venmo", icon: DollarSign, color: "from-sky-400 to-sky-700", hint: "https://venmo.com/yourhandle" },
   zelle: { label: "Zelle", icon: DollarSign, color: "from-purple-500 to-violet-700", hint: "your@email.com" },
-  amazon: { label: "Amazon", icon: ShoppingCart, color: "from-orange-400 to-yellow-600", hint: "https://amazon.com/wishlist/yourid" },
+  amazon: { label: "Amazon", icon: ShoppingCart, color: "from-orange-400 to-yellow-600", hint: "https://www.amazon.com/hz/wishlist/ls/yourlist" },
   applepay: { label: "Apple Pay", icon: CreditCard, color: "from-zinc-700 to-black", hint: "https://cash.me/yourhandle" },
   googlepay: { label: "Google Pay", icon: CreditCard, color: "from-blue-400 via-red-400 to-yellow-400", hint: "your@email.com" },
   stripe: { label: "Stripe", icon: CreditCard, color: "from-indigo-500 to-purple-700", hint: "https://buy.stripe.com/yourlink" },
@@ -77,11 +77,36 @@ export function getPlatform(key: string): PlatformMeta {
 
 export const PLATFORM_KEYS = Object.keys(PLATFORMS);
 
+/**
+ * The presets offered when someone adds a link.
+ *
+ * Product decision, 21 Nov 2026: Yooits never presents itself as a way to
+ * send money, so there is no "Payments" category, and there is no OnlyFans
+ * preset while Stripe reviews the tipping model. A payment or creator
+ * platform's address can still be added as an ordinary Website link.
+ * Amazon store and wishlist links are allowed.
+ *
+ * The older keys stay in PLATFORMS above only so that a link saved with one
+ * of them still shows its name and icon; they are never offered here.
+ */
 export const PLATFORM_CATEGORIES: { label: string; keys: string[] }[] = [
   { label: "Social", keys: ["instagram", "tiktok", "snapchat", "facebook", "twitter", "youtube", "twitch", "linkedin", "pinterest"] },
   { label: "Messaging", keys: ["whatsapp", "telegram", "discord", "gmail", "phone"] },
-  { label: "Payments", keys: ["cashapp", "paypal", "venmo", "zelle", "applepay", "googlepay", "stripe"] },
-  { label: "Shopping & Support", keys: ["amazon", "buymeacoffee", "patreon", "onlyfans"] },
+  { label: "Shopping & creators", keys: ["amazon", "patreon", "buymeacoffee"] },
   { label: "Music", keys: ["spotify", "applemusic", "soundcloud"] },
   { label: "Other", keys: ["github", "website"] },
 ];
+
+/** Keys that are no longer offered as presets (see PLATFORM_CATEGORIES). */
+export const RETIRED_PLATFORM_KEYS = [
+  "cashapp",
+  "paypal",
+  "venmo",
+  "zelle",
+  "applepay",
+  "googlepay",
+  "stripe",
+  "onlyfans",
+] as const;
+
+export const PICKABLE_PLATFORM_KEYS: string[] = PLATFORM_CATEGORIES.flatMap((c) => c.keys);
