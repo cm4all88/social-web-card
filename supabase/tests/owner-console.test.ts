@@ -47,7 +47,7 @@ beforeAll(async () => {
   await svc(`INSERT INTO user_roles (user_id, role) VALUES ($1, 'admin')`, [OWNER]);
   await svc(`INSERT INTO social_links (platform, url, user_id) VALUES ('website', 'https://alice.example', $1)`, [ALICE]);
   await svc(
-    `INSERT INTO creator_payment_accounts (user_id, stripe_account_id, status, charges_enabled) VALUES ($1, 'acct_a', 'connected', true)`,
+    `INSERT INTO creator_payment_accounts (user_id, stripe_account_id, status, charges_enabled, livemode) VALUES ($1, 'acct_a', 'connected', true, true)`,
     [ALICE],
   );
 }, 60_000);
@@ -84,6 +84,7 @@ describe("owner functions", () => {
       profiles_with_links: 1,
       admins: 1,
       connected_creators: 1,
+      test_connected_creators: 0,
       tipping_suspended: 0,
     });
   });

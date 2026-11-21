@@ -63,14 +63,14 @@ beforeAll(async () => {
 
   // Alice is a connected creator with two tips (one partly refunded, fee refunded).
   await svc(
-    `INSERT INTO creator_payment_accounts (user_id, stripe_account_id, status, charges_enabled, details_submitted)
-     VALUES ($1, 'acct_alice', 'connected', true, true), ($2, 'acct_bob', 'pending', false, false)`,
+    `INSERT INTO creator_payment_accounts (user_id, stripe_account_id, status, charges_enabled, details_submitted, livemode)
+     VALUES ($1, 'acct_alice', 'connected', true, true, true), ($2, 'acct_bob', 'pending', false, false, true)`,
     [ALICE, BOB],
   );
   await svc(
-    `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at, application_fee_cents)
-     VALUES ($1, 'acct_alice', 1000, 50, 1050, 'succeeded', now(), 50),
-            ($1, 'acct_alice', 2000, 50, 2050, 'succeeded', now(), 50)`,
+    `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at, application_fee_cents, livemode)
+     VALUES ($1, 'acct_alice', 1000, 50, 1050, 'succeeded', now(), 50, true),
+            ($1, 'acct_alice', 2000, 50, 2050, 'succeeded', now(), 50, true)`,
     [ALICE],
   );
   await svc(
@@ -244,8 +244,8 @@ describe("admin revenue report", () => {
     const {
       rows: [{ id }],
     } = await svc<{ id: string }>(
-      `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at)
-       VALUES ($1, 'acct_alice', 500, 50, 550, 'succeeded', now()) RETURNING id`,
+      `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at, livemode)
+       VALUES ($1, 'acct_alice', 500, 50, 550, 'succeeded', now(), true) RETURNING id`,
       [ALICE],
     );
     let r = await report();
@@ -265,6 +265,33 @@ describe("admin revenue report", () => {
     expect(r.net_platform_fee_cents).toBe(75);
     expect(r.unconfirmed_fee_tips).toBe(0);
     await svc(`DELETE FROM tips WHERE id = $1`, [id]);
+  });
+
+  it("keeps Stripe test-mode tips and accounts out of the real totals, and shows them apart", async () => {
+    const report = async () =>
+      (await as<{ admin_tip_report: Record<string, unknown> }>(ADMIN, `SELECT public.admin_tip_report()`))[0]
+        .admin_tip_report;
+    const before = await report();
+    await svc(
+      `INSERT INTO creator_payment_accounts (user_id, stripe_account_id, status, charges_enabled, livemode)
+       VALUES ($1, 'acct_test_admin', 'connected', true, false)`,
+      [ADMIN],
+    );
+    const {
+      rows: [{ id }],
+    } = await svc<{ id: string }>(
+      `INSERT INTO tips (creator_user_id, stripe_account_id, tip_amount_cents, platform_fee_cents, total_cents, status, paid_at, application_fee_cents, livemode)
+       VALUES ($1, 'acct_test_admin', 500, 50, 550, 'succeeded', now(), 50, false) RETURNING id`,
+      [ADMIN],
+    );
+    const after = await report();
+    const { test_mode: tmBefore, ...realBefore } = before;
+    const { test_mode: tm, ...realAfter } = after;
+    expect(realAfter).toEqual(realBefore);
+    expect(tmBefore).toMatchObject({ successful_tips: 0, connected_accounts: 0 });
+    expect(tm).toMatchObject({ successful_tips: 1, gross_tip_volume_cents: 500, net_platform_fee_cents: 50, connected_accounts: 1 });
+    await svc(`DELETE FROM tips WHERE id = $1`, [id]);
+    await svc(`DELETE FROM creator_payment_accounts WHERE user_id = $1`, [ADMIN]);
   });
 });
 

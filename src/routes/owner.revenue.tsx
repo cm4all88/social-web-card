@@ -36,6 +36,14 @@ type Report = {
   unconfirmed_fee_tips: number;
   unconfirmed_fee_cents: number;
   fee_mismatch_tips: number;
+  // Stripe test-mode activity, kept out of every number above (added Nov 21).
+  test_mode?: {
+    successful_tips: number;
+    gross_tip_volume_cents: number;
+    net_platform_fee_cents: number;
+    refunded_tips: number;
+    connected_accounts: number;
+  };
 };
 
 const PERIODS = [
@@ -163,6 +171,16 @@ function RevenuePage() {
             ))}
           </div>
         )}
+        {state === "ready" &&
+          report?.test_mode &&
+          report.test_mode.successful_tips + report.test_mode.connected_accounts > 0 && (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Stripe test mode, not counted above: {report.test_mode.successful_tips} test tip
+              {report.test_mode.successful_tips === 1 ? "" : "s"} ({report.test_mode.refunded_tips}{" "}
+              refunded), {report.test_mode.connected_accounts} test account
+              {report.test_mode.connected_accounts === 1 ? "" : "s"}. No real money.
+            </p>
+          )}
         {state === "ready" && <TipApprovals />}
         {state === "ready" && <SuspendCreator />}
       </div>
