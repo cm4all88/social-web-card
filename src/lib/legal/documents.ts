@@ -23,9 +23,16 @@ export const LEGAL_DRAFT_NOTICE =
 export const LEGAL_LAST_UPDATED = "November 21, 2026";
 
 /** Filled in before publication. Shown as-is on the draft pages. */
-/** Details Chris gave on Nov 21, 2026. The pages stay marked as drafts until an attorney reviews them. */
+/**
+ * Who runs Yooits. Yooits is the product and public brand; the legal owner and
+ * operator is the company below. Change the legal name here only: every page
+ * reads it from this one place. (Owner's correction, Nov 21, 2026.)
+ * The pages stay marked as drafts until an attorney reviews them.
+ */
 export const LEGAL_DETAILS = {
-  operator: "Tahoma Systems LLC",
+  brand: "Yooits",
+  site: "yooits.me",
+  operator: "Tahoma Industries LLC",
   contact: "admin@tahomaindustries.com",
   governingLaw: "the State of Washington",
   minimumAge: "13",
@@ -41,7 +48,7 @@ const terms: LegalDocument = {
     {
       heading: "Who we are",
       paragraphs: [
-        `Yooits (yooits.me) is operated by ${P.operator} ("Yooits", "we"). By creating an account or using the site you agree to these terms, the Privacy Policy and the Acceptable Use Policy.`,
+        `${P.brand} (${P.site}) is owned and operated by ${P.operator}, a Washington company ("Yooits", "we"). By creating an account or using the site you agree to these terms, the Privacy Policy and the Acceptable Use Policy.`,
       ],
     },
     {
@@ -112,6 +119,12 @@ const privacy: LegalDocument = {
   title: "Privacy Policy",
   summary: "What Yooits collects, why, and your choices.",
   sections: [
+    {
+      heading: "Who we are",
+      paragraphs: [
+        `${P.brand} (${P.site}) is owned and operated by ${P.operator}, which is responsible for the information described here. Contact: ${P.contact}.`,
+      ],
+    },
     {
       heading: "What we collect",
       paragraphs: [
@@ -220,7 +233,7 @@ const creatorPaymentTerms: LegalDocument = {
     {
       heading: "Amounts and fees",
       paragraphs: [
-        "Tips are in US dollars, from $5 to $500. The supporter pays a flat $0.50 Yooits service fee on top of the tip, shown separately at checkout. Yooits takes no percentage of the tip. Stripe's processing fees are deducted from the payment to your Stripe account.",
+        `Tips are in US dollars, from $5 to $500. The supporter pays a flat $0.50 Yooits service fee on top of the tip, shown separately at checkout and collected by ${P.operator}. Yooits takes no percentage of the tip. Stripe's processing fees are deducted from the payment to your Stripe account.`,
       ],
     },
     {

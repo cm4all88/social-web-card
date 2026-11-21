@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  LEGAL_DETAILS,
   LEGAL_DOCUMENTS,
   LEGAL_DRAFT_NOTICE,
   LEGAL_LAST_UPDATED,
@@ -44,6 +45,9 @@ export function LegalLinks({ className = "" }: { className?: string }) {
           {d.title}
         </Link>
       ))}
+      <span className="basis-full text-center">
+        {LEGAL_DETAILS.brand} is owned and operated by {LEGAL_DETAILS.operator}.
+      </span>
     </nav>
   );
 }

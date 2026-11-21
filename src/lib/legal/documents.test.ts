@@ -43,7 +43,9 @@ describe("legal drafts", () => {
 
   it("has no placeholders left and names the operator, contact and state", () => {
     for (const d of LEGAL_DOCUMENTS) expect(text(d.slug)).not.toMatch(/\[[a-z][a-z ]*\]/);
-    expect(text("terms")).toContain("operated by Tahoma Systems LLC");
+    expect(text("terms")).toContain("Yooits (yooits.me) is owned and operated by Tahoma Industries LLC");
+    expect(text("privacy")).toContain("owned and operated by Tahoma Industries LLC");
+    for (const d of LEGAL_DOCUMENTS) expect(text(d.slug)).not.toMatch(/Tahoma Systems/);
     expect(text("terms")).toContain("laws of the State of Washington, United States");
     expect(LEGAL_DETAILS.minimumAge).toBe("13");
   });
