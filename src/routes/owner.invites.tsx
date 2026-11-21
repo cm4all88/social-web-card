@@ -19,6 +19,8 @@ function InvitesPage() {
     supabase
       .from("invites")
       .select("*")
+      // Founding beta codes live on their own page (/owner/beta).
+      .is("program" as never, null)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
@@ -54,7 +56,8 @@ function InvitesPage() {
     <div className="max-w-2xl">
       <h1 className="text-3xl font-bold">Invites</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Sign-up is open, so codes are optional. Create one to track who joined from it.
+        Sign-up is open, so codes are optional. Create one to track who joined from it. Founding Creator
+        Beta codes are on the Founding beta page.
       </p>
       <div className="mt-4">
         <Button onClick={createInvite}>

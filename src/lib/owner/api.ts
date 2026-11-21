@@ -140,6 +140,10 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "account.republished": "Page republished",
   "account.suspended": "Account suspended",
   "account.reactivated": "Account reactivated",
+  "beta.codes_created": "Founding beta invites created",
+  "beta.code_revoked": "Founding beta invite revoked",
+  "beta.redeemed": "Joined the Founding beta",
+  "beta.grant_revoked": "Founding Plus ended early",
 };
 
 export function auditLabel(action: string): string {
