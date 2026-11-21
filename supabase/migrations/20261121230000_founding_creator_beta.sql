@@ -11,7 +11,7 @@
 --   when ends_at passes, current_plan() simply reads 'free' again. Nothing here
 --   gates any feature or caps links; Plus entitlements aren't final yet.
 -- * beta_feedback holds short feedback from signed-in creators.
--- * owner_beta_* functions are what /owner/beta uses. Each checks
+-- * owner_beta_* functions are what /owner/founding uses. Each checks
 --   has_role(admin) inside the database and writes admin_audit_log.
 --
 -- Seats: 50 = active Plus grants + beta codes still waiting to be used.
@@ -370,7 +370,7 @@ AS $$
   END
 $$;
 
--- Numbers for the top of /owner/beta.
+-- Numbers for the top of /owner/founding.
 CREATE OR REPLACE FUNCTION public.owner_beta_overview()
 RETURNS jsonb
 LANGUAGE plpgsql
