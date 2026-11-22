@@ -91,9 +91,9 @@ describe("Plus price and plan rules", () => {
   });
 
   it("premium theme keys match the database and fall back when not on Plus", () => {
-    const sql = readFileSync(new URL("../../../supabase/migrations/20261122120000_plus_billing.sql", import.meta.url), "utf8");
+    const sql = readFileSync(new URL("../../../supabase/migrations/20261122125000_seasonal_themes_rewards.sql", import.meta.url), "utf8");
     const m = sql.match(/_key IN \(([^)]*)\)/);
-    expect(m![1].match(/'([a-z]+)'/g)!.map((x) => x.slice(1, -1))).toEqual([...PREMIUM_THEME_KEYS]);
+    expect(m![1].match(/'([a-z_]+)'/g)!.map((x) => x.slice(1, -1))).toEqual([...PREMIUM_THEME_KEYS]);
     // No premium key reuses a free theme's key.
     for (const k of PREMIUM_THEME_KEYS) expect(THEME_PRESETS.some((p) => p.key === k)).toBe(false);
     expect(isPremiumTheme("aurora")).toBe(true);

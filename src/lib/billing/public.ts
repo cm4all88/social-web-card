@@ -17,3 +17,20 @@ export async function loadPublicPlus(userId: string): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Whether a creator has earned the earned theme they picked. Any failure reads
+ * as "not earned", so the page falls back to the default free theme.
+ */
+export async function loadPublicThemeUnlocked(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await (
+      supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+      }
+    ).rpc("public_profile_theme_unlocked", { _user_id: userId });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}

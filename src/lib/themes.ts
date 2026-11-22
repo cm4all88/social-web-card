@@ -19,6 +19,10 @@ export type ThemePreset = {
   tokens: ThemeTokens;
   /** Plus-only. Mirrors public.theme_is_premium() in the database. */
   premium?: boolean;
+  /** Seasonal: can be picked only between these month-day dates (UTC, inclusive, may wrap the new year). */
+  season?: { from: string; to: string };
+  /** Earned: unlocked by this reward (or included with Plus). Mirrors public.theme_reward_key(). */
+  reward?: string;
 };
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -305,7 +309,234 @@ export const PREMIUM_THEME_PRESETS: ThemePreset[] = [
   },
 ];
 
-export const PREMIUM_THEME_KEYS: readonly string[] = PREMIUM_THEME_PRESETS.map((p) => p.key);
+/**
+ * Seasonal themes. Each can be picked only while in season (dates are
+ * month-day, UTC, inclusive). A creator who picked one keeps it after the
+ * season ends. Holiday Lights is also Plus-only. Mirrors
+ * public.theme_season() in the database.
+ */
+export const SEASONAL_THEME_PRESETS: ThemePreset[] = [
+  {
+    key: "snowfall",
+    label: "Snowfall",
+    season: { from: "11-20", to: "02-28" },
+    preview: "linear-gradient(135deg, #e0f2fe, #93c5fd, #1e3a8a)",
+    tokens: {
+      background:
+        "radial-gradient(2px 2px at 20% 15%, #ffffffcc, transparent 60%), radial-gradient(2px 2px at 70% 30%, #ffffffaa, transparent 60%), radial-gradient(3px 3px at 40% 70%, #ffffff99, transparent 60%), radial-gradient(2px 2px at 85% 80%, #ffffffbb, transparent 60%), linear-gradient(180deg, #1e3a8a, #3b82f6 55%, #bfdbfe)",
+      foreground: "#f8fafc",
+      card: "rgba(255,255,255,0.16)",
+      cardForeground: "#f8fafc",
+      border: "rgba(255,255,255,0.4)",
+      accent: "#e0f2fe",
+      buttonStyle: "pill",
+      font: "sans",
+    },
+  },
+  {
+    key: "holiday_lights",
+    label: "Holiday Lights",
+    premium: true,
+    season: { from: "11-20", to: "01-06" },
+    preview: "linear-gradient(135deg, #052e16, #b91c1c, #facc15)",
+    tokens: {
+      background:
+        "radial-gradient(6px 6px at 10% 8%, #ef4444, transparent 70%), radial-gradient(6px 6px at 30% 5%, #facc15, transparent 70%), radial-gradient(6px 6px at 50% 9%, #22c55e, transparent 70%), radial-gradient(6px 6px at 70% 5%, #3b82f6, transparent 70%), radial-gradient(6px 6px at 90% 8%, #f97316, transparent 70%), linear-gradient(180deg, #052e16, #0b3d1f 60%, #14532d)",
+      foreground: "#fef9c3",
+      card: "rgba(127,29,29,0.55)",
+      cardForeground: "#fef9c3",
+      border: "rgba(250,204,21,0.45)",
+      accent: "#facc15",
+      buttonStyle: "rounded",
+      font: "serif",
+    },
+  },
+  {
+    key: "sweetheart",
+    label: "Sweetheart",
+    season: { from: "02-01", to: "02-15" },
+    preview: "linear-gradient(135deg, #fff1f2, #fb7185, #be123c)",
+    tokens: {
+      background: "linear-gradient(160deg, #fff1f2, #fecdd3 55%, #fda4af)",
+      foreground: "#881337",
+      card: "rgba(255,255,255,0.7)",
+      cardForeground: "#881337",
+      border: "rgba(190,18,60,0.25)",
+      accent: "#e11d48",
+      buttonStyle: "pill",
+      font: "display",
+    },
+  },
+  {
+    key: "spring_bloom",
+    label: "Spring Bloom",
+    season: { from: "03-15", to: "05-31" },
+    preview: "linear-gradient(135deg, #ecfccb, #86efac, #f9a8d4)",
+    tokens: {
+      background: "linear-gradient(170deg, #f7fee7, #dcfce7 50%, #fce7f3)",
+      foreground: "#14532d",
+      card: "rgba(255,255,255,0.75)",
+      cardForeground: "#14532d",
+      border: "rgba(22,163,74,0.25)",
+      accent: "#db2777",
+      buttonStyle: "soft",
+      font: "serif",
+    },
+  },
+  {
+    key: "summer_sun",
+    label: "Summer Sun",
+    season: { from: "06-01", to: "08-31" },
+    preview: "linear-gradient(135deg, #fde047, #fb923c, #06b6d4)",
+    tokens: {
+      background: "linear-gradient(180deg, #fde68a, #fdba74 45%, #67e8f9)",
+      foreground: "#422006",
+      card: "rgba(255,255,255,0.55)",
+      cardForeground: "#422006",
+      border: "rgba(66,32,6,0.18)",
+      accent: "#ea580c",
+      buttonStyle: "pill",
+      font: "sans",
+    },
+  },
+  {
+    key: "harvest",
+    label: "Harvest",
+    season: { from: "09-15", to: "11-19" },
+    preview: "linear-gradient(135deg, #7c2d12, #ea580c, #facc15)",
+    tokens: {
+      background: "linear-gradient(170deg, #431407, #7c2d12 55%, #9a3412)",
+      foreground: "#ffedd5",
+      card: "rgba(255,237,213,0.1)",
+      cardForeground: "#ffedd5",
+      border: "rgba(251,146,60,0.4)",
+      accent: "#fb923c",
+      buttonStyle: "rounded",
+      font: "serif",
+    },
+  },
+];
+
+/**
+ * Earned themes. Each one unlocks with a reward (see src/lib/rewards.ts) and
+ * is included with Plus. Mirrors public.theme_reward_key() in the database.
+ */
+export const REWARD_THEME_PRESETS: ThemePreset[] = [
+  {
+    key: "starlight",
+    label: "Starlight",
+    reward: "profile_complete",
+    preview: "linear-gradient(135deg, #0f172a, #4338ca, #fde68a)",
+    tokens: {
+      background:
+        "radial-gradient(1.5px 1.5px at 15% 20%, #fff, transparent 60%), radial-gradient(1.5px 1.5px at 60% 12%, #fff, transparent 60%), radial-gradient(2px 2px at 80% 45%, #fde68a, transparent 60%), radial-gradient(1.5px 1.5px at 30% 65%, #fff, transparent 60%), linear-gradient(180deg, #0f172a, #1e1b4b 60%, #312e81)",
+      foreground: "#eef2ff",
+      card: "rgba(49,46,129,0.55)",
+      cardForeground: "#eef2ff",
+      border: "rgba(253,230,138,0.35)",
+      accent: "#fde68a",
+      buttonStyle: "pill",
+      font: "display",
+    },
+  },
+  {
+    key: "prism",
+    label: "Prism",
+    reward: "five_links",
+    preview: "linear-gradient(135deg, #f43f5e, #f59e0b, #22c55e, #3b82f6, #a855f7)",
+    tokens: {
+      background: "linear-gradient(135deg, #fecdd3, #fde68a 25%, #bbf7d0 50%, #bfdbfe 75%, #e9d5ff)",
+      foreground: "#1e1b4b",
+      card: "rgba(255,255,255,0.7)",
+      cardForeground: "#1e1b4b",
+      border: "rgba(30,27,75,0.15)",
+      accent: "#7c3aed",
+      buttonStyle: "rounded",
+      font: "sans",
+    },
+  },
+  {
+    key: "confetti",
+    label: "Confetti",
+    reward: "first_share",
+    preview: "linear-gradient(135deg, #fef3c7, #f472b6, #38bdf8)",
+    tokens: {
+      background:
+        "radial-gradient(4px 4px at 12% 18%, #f472b6, transparent 70%), radial-gradient(4px 4px at 78% 12%, #38bdf8, transparent 70%), radial-gradient(4px 4px at 40% 40%, #facc15, transparent 70%), radial-gradient(4px 4px at 88% 60%, #34d399, transparent 70%), radial-gradient(4px 4px at 20% 82%, #a78bfa, transparent 70%), #fffbeb",
+      foreground: "#3f1d38",
+      card: "rgba(255,255,255,0.85)",
+      cardForeground: "#3f1d38",
+      border: "rgba(244,114,182,0.35)",
+      accent: "#db2777",
+      buttonStyle: "pill",
+      font: "display",
+    },
+  },
+  {
+    key: "lagoon",
+    label: "Lagoon",
+    reward: "first_wishlist",
+    preview: "linear-gradient(135deg, #042f2e, #0d9488, #99f6e4)",
+    tokens: {
+      background: "linear-gradient(180deg, #042f2e, #115e59 55%, #0f766e)",
+      foreground: "#f0fdfa",
+      card: "rgba(153,246,228,0.12)",
+      cardForeground: "#f0fdfa",
+      border: "rgba(153,246,228,0.35)",
+      accent: "#5eead4",
+      buttonStyle: "soft",
+      font: "sans",
+    },
+  },
+  {
+    key: "golden_hour",
+    label: "Golden Hour",
+    reward: "one_week",
+    preview: "linear-gradient(135deg, #451a03, #d97706, #fef3c7)",
+    tokens: {
+      background: "linear-gradient(180deg, #78350f, #b45309 45%, #fbbf24)",
+      foreground: "#fffbeb",
+      card: "rgba(69,26,3,0.45)",
+      cardForeground: "#fffbeb",
+      border: "rgba(254,243,199,0.4)",
+      accent: "#fde68a",
+      buttonStyle: "rounded",
+      font: "serif",
+    },
+  },
+];
+
+const monthDay = (d: Date) =>
+  `${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+
+/** Whether a seasonal window (month-day, inclusive, may wrap the new year) contains this date. */
+export function inSeasonWindow(season: { from: string; to: string }, at: Date = new Date()): boolean {
+  const md = monthDay(at);
+  return season.from <= season.to ? md >= season.from && md <= season.to : md >= season.from || md <= season.to;
+}
+
+export function seasonalThemesInSeason(at: Date = new Date()): ThemePreset[] {
+  return SEASONAL_THEME_PRESETS.filter((t) => t.season && inSeasonWindow(t.season, at));
+}
+
+export function findThemePreset(key: string | null | undefined): ThemePreset | undefined {
+  if (!key) return undefined;
+  return (
+    THEME_PRESETS.find((p) => p.key === key) ??
+    PREMIUM_THEME_PRESETS.find((p) => p.key === key) ??
+    SEASONAL_THEME_PRESETS.find((p) => p.key === key) ??
+    REWARD_THEME_PRESETS.find((p) => p.key === key)
+  );
+}
+
+export function isRewardTheme(key: string | null | undefined): boolean {
+  return !!key && REWARD_THEME_PRESETS.some((p) => p.key === key);
+}
+
+export const PREMIUM_THEME_KEYS: readonly string[] = [
+  ...PREMIUM_THEME_PRESETS.map((p) => p.key),
+  ...SEASONAL_THEME_PRESETS.filter((p) => p.premium).map((p) => p.key),
+];
 
 export function isPremiumTheme(key: string | null | undefined): boolean {
   return !!key && PREMIUM_THEME_KEYS.includes(key);
@@ -314,7 +545,7 @@ export function isPremiumTheme(key: string | null | undefined): boolean {
 export function getTheme(
   key: string | null | undefined,
   custom: Partial<ThemeTokens> | null | undefined,
-  opts: { plus?: boolean } = {},
+  opts: { plus?: boolean; unlocked?: boolean } = {},
 ): ThemeTokens {
   if (key === "custom" && custom) {
     const base = THEME_PRESETS[0].tokens;
@@ -323,10 +554,16 @@ export function getTheme(
   // A premium theme shows only while its creator is on Plus; otherwise the
   // page falls back to the default free theme (the setting itself is kept).
   if (isPremiumTheme(key)) {
-    if (opts.plus) return PREMIUM_THEME_PRESETS.find((p) => p.key === key)!.tokens;
+    if (opts.plus) return findThemePreset(key)!.tokens;
     return THEME_PRESETS[0].tokens;
   }
-  const preset = THEME_PRESETS.find((p) => p.key === key) ?? THEME_PRESETS[0];
+  // An earned theme shows once its reward is unlocked, or with Plus.
+  if (isRewardTheme(key)) {
+    if (opts.plus || opts.unlocked) return findThemePreset(key)!.tokens;
+    return THEME_PRESETS[0].tokens;
+  }
+  // Free seasonal themes keep showing after their season ends.
+  const preset = findThemePreset(key) ?? THEME_PRESETS[0];
   return preset.tokens;
 }
 

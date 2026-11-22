@@ -13,7 +13,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
 import { normalizeLinkValue } from "@/lib/safe-url";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
-import { PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
+import { findThemePreset, PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
@@ -21,6 +21,7 @@ import { BetaPanel } from "@/components/beta/BetaPanel";
 import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { MyAnalytics } from "@/components/analytics/MyAnalytics";
+import { ThemeRewardsPicker, useThemeRewards } from "@/components/rewards/ThemeRewards";
 import { Gift, Shield } from "lucide-react";
 import { DashboardAnnouncements, NotificationBell } from "@/components/notifications/DashboardNotices";
 
@@ -77,6 +78,7 @@ function DashboardPage() {
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
   const { plus, reload: reloadPlus } = useMyPlus();
   const isPlus = plus?.plan === "plus";
+  const rewards = useThemeRewards();
 
   useEffect(() => {
     const init = async () => {
@@ -149,6 +151,7 @@ function DashboardPage() {
     }
     setProfile({ ...profile, username });
     toast.success("Profile saved");
+    rewards.refresh();
   };
 
   const uploadAvatar = async (file: File) => {
@@ -185,6 +188,7 @@ function DashboardPage() {
     else {
       setProfile({ ...profile, avatar_url: url });
       toast.success("Profile picture updated");
+      rewards.refresh();
     }
   };
 
@@ -209,9 +213,17 @@ function DashboardPage() {
       .update({ theme: themeKey })
       .eq("user_id", profile.user_id);
     if (error) {
-      toast.error(/part of Plus/i.test(error.message) ? "That theme is part of Plus." : error.message);
+      toast.error(
+        /part of Plus/i.test(error.message)
+          ? "That theme is part of Plus."
+          : /out of season/i.test(error.message)
+            ? "That seasonal theme is out of season."
+            : /Earn this theme/i.test(error.message)
+              ? "Earn that theme first."
+              : error.message,
+      );
       setProfile((p) => (p ? { ...p, theme: profile.theme } : p));
-    } else toast.success(`Theme set to ${themeKey}`);
+    } else toast.success(`Theme set to ${findThemePreset(themeKey)?.label ?? themeKey}`);
   };
 
   const updateCustomTheme = (patch: Partial<ThemeTokens>) => {
@@ -253,6 +265,7 @@ function DashboardPage() {
     else {
       updateLink(link.id, { url });
       toast.success("Saved");
+      rewards.refresh();
     }
   };
 
@@ -282,6 +295,7 @@ function DashboardPage() {
     const url = `${window.location.origin}/${profile.username}`;
     navigator.clipboard.writeText(url);
     toast.success("Link copied!");
+    rewards.recordShare();
   };
 
   const signOut = async () => {
@@ -570,6 +584,16 @@ function DashboardPage() {
                 {!isPlus && <p className="mt-2 text-xs text-muted-foreground">Part of Plus.</p>}
               </div>
             )}
+
+            <ThemeRewardsPicker
+              enabled={rewards.enabled}
+              unlocked={rewards.unlocked}
+              currentTheme={profile.theme}
+              isPlus={isPlus}
+              plusAvailable={!!plus?.checkoutAvailable}
+              progress={{ displayName: profile.display_name, bio: profile.bio, avatarUrl: profile.avatar_url, links }}
+              onPick={setTheme}
+            />
 
             {profile.theme === "custom" && (
               <div className="mt-6 grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">

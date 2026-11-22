@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getTheme, type ThemeTokens } from "@/lib/themes";
-import { loadPublicPlus } from "@/lib/billing/public";
+import { getTheme, isRewardTheme, type ThemeTokens } from "@/lib/themes";
+import { loadPublicPlus, loadPublicThemeUnlocked } from "@/lib/billing/public";
 
 export type PublicProfile = {
   user_id: string;
@@ -17,6 +17,7 @@ export function usePublicProfile(username: string) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
   const [plus, setPlus] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -29,9 +30,14 @@ export function usePublicProfile(username: string) {
       .then(async ({ data }) => {
         if (cancelled) return;
         if (!data) return setState("missing");
-        const isPlus = await loadPublicPlus((data as PublicProfile).user_id);
+        const p = data as PublicProfile;
+        const [isPlus, isUnlocked] = await Promise.all([
+          loadPublicPlus(p.user_id),
+          isRewardTheme(p.theme) ? loadPublicThemeUnlocked(p.user_id) : Promise.resolve(false),
+        ]);
         if (cancelled) return;
         setPlus(isPlus);
+        setUnlocked(isUnlocked);
         setProfile(data as PublicProfile);
         setState("ready");
       });
@@ -40,7 +46,7 @@ export function usePublicProfile(username: string) {
     };
   }, [username]);
 
-  const theme = getTheme(profile?.theme, profile?.custom_theme, { plus });
+  const theme = getTheme(profile?.theme, profile?.custom_theme, { plus, unlocked });
   const name = profile?.display_name || profile?.username || username;
   return { profile, state, theme, name };
 }

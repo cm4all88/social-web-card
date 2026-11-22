@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPlatform } from "@/lib/platforms";
 import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
-import { getTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
+import { getTheme, isRewardTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { Gift, Heart, UserPlus } from "lucide-react";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
 import { readableTextOn } from "@/lib/contrast";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
-import { loadPublicPlus } from "@/lib/billing/public";
+import { loadPublicPlus, loadPublicThemeUnlocked } from "@/lib/billing/public";
 import { trackVisit } from "@/lib/analytics/track";
 
 export const Route = createFileRoute("/$username")({
@@ -58,6 +58,7 @@ function ProfilePage() {
   const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
   // Plus settings (premium theme, hidden branding) count only while on Plus.
   const [plus, setPlus] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -71,7 +72,7 @@ function ProfilePage() {
         setLoading(false);
         return;
       }
-      const [{ data: l }, isPlus] = await Promise.all([
+      const [{ data: l }, isPlus, isUnlocked] = await Promise.all([
         supabase
           .from("social_links")
           .select("*")
@@ -79,8 +80,10 @@ function ProfilePage() {
           .eq("enabled", true)
           .order("display_order", { ascending: true }),
         loadPublicPlus(prof.user_id),
+        isRewardTheme(prof.theme) ? loadPublicThemeUnlocked(prof.user_id) : Promise.resolve(false),
       ]);
       setPlus(isPlus);
+      setUnlocked(isUnlocked);
       setProfile(prof as Profile);
       setLinks((l ?? []) as SocialLink[]);
       setLoading(false);
@@ -108,7 +111,7 @@ function ProfilePage() {
 
   const visible = links.filter((l) => l.url.trim().length > 0);
   const name = profile?.display_name || profile?.username || username;
-  const theme = getTheme(profile?.theme, profile?.custom_theme, { plus });
+  const theme = getTheme(profile?.theme, profile?.custom_theme, { plus, unlocked });
   const showBranding = !(plus && profile?.hide_branding);
   const radius = buttonRadiusFor(theme.buttonStyle);
   const font = fontFamilyFor(theme.font);
