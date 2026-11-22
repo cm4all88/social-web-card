@@ -33,6 +33,7 @@ import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
 import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
+import { Route as ApiStripeBillingWebhookRouteImport } from './routes/api/stripe/billing-webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as OwnerUsersUserIdRouteImport } from './routes/owner.users_.$userId'
 
@@ -156,6 +157,11 @@ const UsernameWishlistSlugRoute = UsernameWishlistSlugRouteImport.update({
   path: '/$username/wishlist/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStripeBillingWebhookRoute = ApiStripeBillingWebhookRouteImport.update({
+  id: '/api/stripe/billing-webhook',
+  path: '/api/stripe/billing-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
   path: '/api/stripe/webhook',
@@ -192,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
 }
@@ -219,6 +226,7 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalIndexRoute
   '/owner': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
 }
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username_/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users_/$userId': typeof OwnerUsersUserIdRoute
 }
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/legal/'
     | '/owner/'
     | '/$username/wishlist/$slug'
+    | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
   fileRoutesByTo: FileRoutesByTo
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/owner'
     | '/$username/wishlist/$slug'
+    | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
   id:
@@ -333,6 +344,7 @@ export interface FileRouteTypes {
     | '/legal/'
     | '/owner/'
     | '/$username_/wishlist/$slug'
+    | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users_/$userId'
   fileRoutesById: FileRoutesById
@@ -353,6 +365,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   LegalIndexRoute: typeof LegalIndexRoute
   UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
+  ApiStripeBillingWebhookRoute: typeof ApiStripeBillingWebhookRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
@@ -526,6 +539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameWishlistSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stripe/billing-webhook': {
+      id: '/api/stripe/billing-webhook'
+      path: '/api/stripe/billing-webhook'
+      fullPath: '/api/stripe/billing-webhook'
+      preLoaderRoute: typeof ApiStripeBillingWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
       path: '/api/stripe/webhook'
@@ -587,6 +607,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   LegalIndexRoute: LegalIndexRoute,
   UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,
+  ApiStripeBillingWebhookRoute: ApiStripeBillingWebhookRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport

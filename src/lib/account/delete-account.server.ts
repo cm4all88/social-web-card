@@ -6,6 +6,8 @@
  * Kept on purpose:
  *  - tips and creator_payment_accounts: payment records that tax and payment
  *    rules require us to keep (see the Privacy Policy draft);
+ *  - plus_subscriptions and billing_customers: Plus payment records, kept
+ *    with no account attached (their user_id is cleared by foreign key);
  *  - admin_audit_log: append-only by design.
  * Admin accounts and suspended accounts can't delete themselves here: an admin
  * must hand over admin first, and a suspension is resolved with Yooits.
@@ -24,20 +26,34 @@ export const DELETED_TABLES = [
   "profiles",
 ] as const;
 
-export const KEPT_TABLES = ["tips", "creator_payment_accounts", "admin_audit_log"] as const;
+export const KEPT_TABLES = [
+  "tips",
+  "creator_payment_accounts",
+  "plus_subscriptions",
+  "billing_customers",
+  "admin_audit_log",
+] as const;
+
+/** Subscription states that are still running (or could still charge). */
+const RUNNING = ["trialing", "active", "past_due", "unpaid", "incomplete", "paused"];
 
 export async function deleteAccount(
   admin: SupabaseClient,
   userId: string,
   confirmUsername: string,
 ): Promise<void> {
-  const [{ data: profile, error: pErr }, { data: roles, error: rErr }, { data: status, error: sErr }] =
-    await Promise.all([
-      admin.from("profiles").select("username").eq("user_id", userId).maybeSingle(),
-      admin.from("user_roles").select("role").eq("user_id", userId),
-      admin.from("account_status").select("suspended_at").eq("user_id", userId).maybeSingle(),
-    ]);
-  if (pErr || rErr || sErr) throw pErr ?? rErr ?? sErr;
+  const [
+    { data: profile, error: pErr },
+    { data: roles, error: rErr },
+    { data: status, error: sErr },
+    { data: subs, error: bErr },
+  ] = await Promise.all([
+    admin.from("profiles").select("username").eq("user_id", userId).maybeSingle(),
+    admin.from("user_roles").select("role").eq("user_id", userId),
+    admin.from("account_status").select("suspended_at").eq("user_id", userId).maybeSingle(),
+    admin.from("plus_subscriptions").select("status").eq("user_id", userId),
+  ]);
+  if (pErr || rErr || sErr || bErr) throw pErr ?? rErr ?? sErr ?? bErr;
 
   // With no profile left (an earlier attempt stopped part-way), there is no
   // username to type, so any confirmation finishes the job.
@@ -56,6 +72,12 @@ export async function deleteAccount(
   }
   if ((status as { suspended_at?: string | null } | null)?.suspended_at) {
     throw new AccountDeletionRefused("This account is suspended. Contact Yooits to close it.");
+  }
+
+  if ((subs as { status: string }[] | null)?.some((x) => RUNNING.includes(x.status))) {
+    throw new AccountDeletionRefused(
+      "You still have a Plus subscription. Cancel Plus first; you can delete your account once it has ended.",
+    );
   }
 
   // Avatar files live under "<userId>/" in the avatars bucket.

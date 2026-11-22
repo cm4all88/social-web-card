@@ -17,6 +17,8 @@ export type ThemePreset = {
   label: string;
   preview: string; // gradient string for the preview chip
   tokens: ThemeTokens;
+  /** Plus-only. Mirrors public.theme_is_premium() in the database. */
+  premium?: boolean;
 };
 
 export const THEME_PRESETS: ThemePreset[] = [
@@ -202,13 +204,127 @@ export const THEME_PRESETS: ThemePreset[] = [
   },
 ];
 
+/** Plus-only themes. The free themes and custom colors above stay free. */
+export const PREMIUM_THEME_PRESETS: ThemePreset[] = [
+  {
+    key: "aurora",
+    label: "Aurora",
+    premium: true,
+    preview: "linear-gradient(135deg, #022c22, #10b981, #6366f1, #ec4899)",
+    tokens: {
+      background:
+        "radial-gradient(120% 80% at 10% 0%, #10b98155, transparent 60%), radial-gradient(120% 80% at 90% 10%, #6366f155, transparent 60%), radial-gradient(120% 90% at 50% 100%, #ec489944, transparent 60%), #020617",
+      foreground: "#f0fdfa",
+      card: "rgba(15,23,42,0.6)",
+      cardForeground: "#f0fdfa",
+      border: "rgba(94,234,212,0.35)",
+      accent: "#5eead4",
+      buttonStyle: "pill",
+      font: "display",
+    },
+  },
+  {
+    key: "obsidian",
+    label: "Obsidian",
+    premium: true,
+    preview: "linear-gradient(135deg, #09090b, #27272a, #a1a1aa)",
+    tokens: {
+      background: "linear-gradient(180deg, #18181b, #09090b 70%)",
+      foreground: "#fafafa",
+      card: "linear-gradient(180deg, #27272a, #18181b)",
+      cardForeground: "#fafafa",
+      border: "rgba(212,212,216,0.18)",
+      accent: "#e4e4e7",
+      buttonStyle: "soft",
+      font: "sans",
+    },
+  },
+  {
+    key: "sakura",
+    label: "Sakura",
+    premium: true,
+    preview: "linear-gradient(135deg, #fff1f2, #fda4af, #f9a8d4)",
+    tokens: {
+      background: "radial-gradient(100% 70% at 50% 0%, #ffe4e6, #fff1f2 60%, #fdf2f8)",
+      foreground: "#4c0519",
+      card: "rgba(255,255,255,0.8)",
+      cardForeground: "#4c0519",
+      border: "rgba(244,63,94,0.2)",
+      accent: "#e11d48",
+      buttonStyle: "pill",
+      font: "serif",
+    },
+  },
+  {
+    key: "glacier",
+    label: "Glacier",
+    premium: true,
+    preview: "linear-gradient(135deg, #f0f9ff, #bae6fd, #7dd3fc)",
+    tokens: {
+      background: "linear-gradient(170deg, #f8fafc, #e0f2fe 55%, #bae6fd)",
+      foreground: "#0c4a6e",
+      card: "rgba(255,255,255,0.6)",
+      cardForeground: "#0c4a6e",
+      border: "rgba(14,165,233,0.25)",
+      accent: "#0284c7",
+      buttonStyle: "soft",
+      font: "sans",
+    },
+  },
+  {
+    key: "ember",
+    label: "Ember",
+    premium: true,
+    preview: "linear-gradient(135deg, #1c0a00, #9a3412, #f59e0b)",
+    tokens: {
+      background: "radial-gradient(120% 70% at 50% 110%, #c2410c99, transparent 60%), linear-gradient(180deg, #1c0a00, #0c0400)",
+      foreground: "#fff7ed",
+      card: "rgba(67,20,7,0.65)",
+      cardForeground: "#fff7ed",
+      border: "rgba(251,146,60,0.4)",
+      accent: "#fb923c",
+      buttonStyle: "rounded",
+      font: "display",
+    },
+  },
+  {
+    key: "gilded",
+    label: "Gilded",
+    premium: true,
+    preview: "linear-gradient(135deg, #0a0a0a, #a16207, #fde68a)",
+    tokens: {
+      background: "linear-gradient(160deg, #0a0a0a, #1c1917 60%, #292524)",
+      foreground: "#fef3c7",
+      card: "rgba(28,25,23,0.9)",
+      cardForeground: "#fde68a",
+      border: "rgba(253,230,138,0.45)",
+      accent: "#facc15",
+      buttonStyle: "outline",
+      font: "serif",
+    },
+  },
+];
+
+export const PREMIUM_THEME_KEYS: readonly string[] = PREMIUM_THEME_PRESETS.map((p) => p.key);
+
+export function isPremiumTheme(key: string | null | undefined): boolean {
+  return !!key && PREMIUM_THEME_KEYS.includes(key);
+}
+
 export function getTheme(
   key: string | null | undefined,
   custom: Partial<ThemeTokens> | null | undefined,
+  opts: { plus?: boolean } = {},
 ): ThemeTokens {
   if (key === "custom" && custom) {
     const base = THEME_PRESETS[0].tokens;
     return { ...base, ...sanitizeCustomTheme(custom) };
+  }
+  // A premium theme shows only while its creator is on Plus; otherwise the
+  // page falls back to the default free theme (the setting itself is kept).
+  if (isPremiumTheme(key)) {
+    if (opts.plus) return PREMIUM_THEME_PRESETS.find((p) => p.key === key)!.tokens;
+    return THEME_PRESETS[0].tokens;
   }
   const preset = THEME_PRESETS.find((p) => p.key === key) ?? THEME_PRESETS[0];
   return preset.tokens;

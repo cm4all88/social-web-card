@@ -12,11 +12,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
 import { normalizeLinkValue } from "@/lib/safe-url";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
-import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
+import { PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
 import { BetaPanel } from "@/components/beta/BetaPanel";
+import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { Gift, Shield } from "lucide-react";
 
@@ -56,6 +57,7 @@ type Profile = {
   avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
+  hide_branding?: boolean | null;
 };
 
 function DashboardPage() {
@@ -70,6 +72,8 @@ function DashboardPage() {
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
+  const { plus, reload: reloadPlus } = useMyPlus();
+  const isPlus = plus?.plan === "plus";
 
   useEffect(() => {
     const init = async () => {
@@ -201,8 +205,10 @@ function DashboardPage() {
       .from("profiles")
       .update({ theme: themeKey })
       .eq("user_id", profile.user_id);
-    if (error) toast.error(error.message);
-    else toast.success(`Theme set to ${themeKey}`);
+    if (error) {
+      toast.error(/part of Plus/i.test(error.message) ? "That theme is part of Plus." : error.message);
+      setProfile((p) => (p ? { ...p, theme: profile.theme } : p));
+    } else toast.success(`Theme set to ${themeKey}`);
   };
 
   const updateCustomTheme = (patch: Partial<ThemeTokens>) => {
@@ -344,6 +350,16 @@ function DashboardPage() {
 
         {userId && <BetaPanel userId={userId} />}
 
+        {userId && profile && (
+          <PlusPanel
+            plus={plus}
+            reload={reloadPlus}
+            userId={userId}
+            hideBranding={!!profile.hide_branding}
+            onHideBrandingChange={(v) => setProfile((p) => (p ? { ...p, hide_branding: v } : p))}
+          />
+        )}
+
         <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
 
         {/* Section shortcuts: scrolls on small screens, sticks while you scroll */}
@@ -351,7 +367,7 @@ function DashboardPage() {
           aria-label="Dashboard sections"
           className="sticky top-0 z-20 -mx-4 mt-4 flex gap-2 overflow-x-auto bg-background/90 px-4 py-3 backdrop-blur"
         >
-          {SECTIONS.map((sec) => (
+          {[...SECTIONS, ...(plusPanelVisible(plus) ? [{ id: "plus", label: "Plus" }] : [])].map((sec) => (
             <a
               key={sec.id}
               href={`#${sec.id}`}
@@ -512,6 +528,39 @@ function DashboardPage() {
                 </div>
               </button>
             </div>
+
+            {(isPlus || plus?.checkoutAvailable) && (
+              <div className="mt-6">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                  Plus themes {!isPlus && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                </div>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                  {PREMIUM_THEME_PRESETS.map((t) => {
+                    const active = profile.theme === t.key;
+                    return (
+                      <button
+                        key={t.key}
+                        onClick={() => {
+                          if (isPlus) setTheme(t.key);
+                          else document.getElementById("plus")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        aria-label={isPlus ? t.label : `${t.label} (Plus)`}
+                        className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
+                          active ? "border-primary ring-2 ring-primary" : "border-border"
+                        } ${isPlus ? "" : "opacity-70"}`}
+                      >
+                        <div className="h-20 rounded-lg" style={{ background: t.preview }} />
+                        <div className="mt-2 flex items-center justify-between">
+                          <span className="text-sm font-medium">{t.label}</span>
+                          {active ? <Check className="h-4 w-4 text-primary" /> : !isPlus && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {!isPlus && <p className="mt-2 text-xs text-muted-foreground">Part of Plus.</p>}
+              </div>
+            )}
 
             {profile.theme === "custom" && (
               <div className="mt-6 grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">

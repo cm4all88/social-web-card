@@ -45,3 +45,18 @@ test("target defaults to production and accepts only production or preview", () 
   assert.equal(vercelTarget({ VERCEL_ENV_TARGET: "preview" }), "preview");
   assert.throws(() => vercelTarget({ VERCEL_ENV_TARGET: "development" }));
 });
+
+test("a deploy never switches Plus billing or paid checkout on, whatever the environment holds", () => {
+  const e = {
+    ...base,
+    STRIPE_SECRET_KEY: LIVE,
+    TIPPING_ENABLED: "true",
+    PLUS_BILLING_ENABLED: "true",
+    PLUS_CHECKOUT_ENABLED: "true",
+    PLUS_LIVE_MODE_APPROVED: "true",
+  };
+  for (const env of [e, { ...e, STRIPE_SECRET_KEY: TEST }]) {
+    const s = vercelSettings(env);
+    for (const k of Object.keys(s)) assert.equal(k.startsWith("PLUS_"), false, k);
+  }
+});

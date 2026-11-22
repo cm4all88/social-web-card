@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AccountDeletionRefused, deleteAccount, DELETED_TABLES, KEPT_TABLES } from "./delete-account.server";
 
-type Opts = { username?: string | null; admin?: boolean; suspended?: boolean; files?: string[] };
+type Opts = { username?: string | null; admin?: boolean; suspended?: boolean; files?: string[]; plus?: string };
 
 function fakeAdmin(opts: Opts = {}) {
   const log: string[] = [];
@@ -15,7 +15,13 @@ function fakeAdmin(opts: Opts = {}) {
     select: () => ({
       eq: () => {
         const rows =
-          table === "user_roles" ? (opts.admin ? [{ role: "admin" }] : [{ role: "user" }]) : [];
+          table === "user_roles"
+            ? opts.admin
+              ? [{ role: "admin" }]
+              : [{ role: "user" }]
+            : table === "plus_subscriptions" && opts.plus
+              ? [{ status: opts.plus }]
+              : [];
         const p = Promise.resolve({ data: rows, error: null });
         return Object.assign(p, {
           maybeSingle: async () => ({ data: single(table), error: null }),
@@ -89,5 +95,17 @@ describe("deleteAccount", () => {
     const { client, log } = fakeAdmin({ username: null });
     await deleteAccount(client, "u1", "maya");
     expect(log.at(-1)).toBe("deleteUser u1");
+  });
+
+  it("refuses while a Plus subscription is still running, and allows it once it has ended", async () => {
+    for (const status of ["active", "trialing", "past_due", "unpaid"]) {
+      const { client, log } = fakeAdmin({ plus: status });
+      await expect(deleteAccount(client, "u1", "maya")).rejects.toThrow(/Cancel Plus first/);
+      expect(log).toEqual([]);
+    }
+    const { client, log } = fakeAdmin({ plus: "canceled" });
+    await deleteAccount(client, "u1", "maya");
+    expect(log.at(-1)).toBe("deleteUser u1");
+    expect(log.some((l) => l.includes("plus_subscriptions") || l.includes("billing_customers"))).toBe(false);
   });
 });

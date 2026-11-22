@@ -1,0 +1,19 @@
+import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * Whether a creator's Plus settings (premium theme, hidden branding) should
+ * show on their public page. Any failure reads as "not Plus", so the page
+ * falls back to the free look and the Yooits line, never the other way round.
+ */
+export async function loadPublicPlus(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await (
+      supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+      }
+    ).rpc("public_profile_is_plus", { _user_id: userId });
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}

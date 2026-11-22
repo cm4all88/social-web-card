@@ -149,7 +149,8 @@ describe("account deletion against the real schema", () => {
       `SELECT table_name FROM information_schema.columns
         WHERE table_schema = 'public' AND column_name = 'user_id'`,
     );
-    const kept = new Set(["creator_payment_accounts", "checkout_attempts"]);
+    // Payment records: tips accounts, and Plus billing (user_id is set to NULL by foreign key).
+    const kept = new Set(["creator_payment_accounts", "checkout_attempts", "plus_subscriptions", "billing_customers"]);
     // Removed with the sign-in itself, by ON DELETE CASCADE on auth.users.
     const cascaded = (
       await svc<{ t: string }>(

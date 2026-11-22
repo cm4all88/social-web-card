@@ -10,6 +10,7 @@ import { readableTextOn } from "@/lib/contrast";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
+import { loadPublicPlus } from "@/lib/billing/public";
 
 export const Route = createFileRoute("/$username")({
   component: ProfilePage,
@@ -39,6 +40,7 @@ type Profile = {
   avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
+  hide_branding?: boolean | null;
 };
 type SocialLink = { id: string; platform: string; url: string; display_order: number; enabled: boolean };
 type WishlistSummary = { id: string; slug: string; title: string; occasion: string | null };
@@ -52,6 +54,8 @@ function ProfilePage() {
   const [tipConfig, setTipConfig] = useState<PublicTipConfig | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
   const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
+  // Plus settings (premium theme, hidden branding) count only while on Plus.
+  const [plus, setPlus] = useState(false);
 
   useEffect(() => {
     const run = async () => {
@@ -65,13 +69,17 @@ function ProfilePage() {
         setLoading(false);
         return;
       }
+      const [{ data: l }, isPlus] = await Promise.all([
+        supabase
+          .from("social_links")
+          .select("*")
+          .eq("user_id", prof.user_id)
+          .eq("enabled", true)
+          .order("display_order", { ascending: true }),
+        loadPublicPlus(prof.user_id),
+      ]);
+      setPlus(isPlus);
       setProfile(prof as Profile);
-      const { data: l } = await supabase
-        .from("social_links")
-        .select("*")
-        .eq("user_id", prof.user_id)
-        .eq("enabled", true)
-        .order("display_order", { ascending: true });
       setLinks((l ?? []) as SocialLink[]);
       setLoading(false);
 
@@ -97,7 +105,8 @@ function ProfilePage() {
 
   const visible = links.filter((l) => l.url.trim().length > 0);
   const name = profile?.display_name || profile?.username || username;
-  const theme = getTheme(profile?.theme, profile?.custom_theme);
+  const theme = getTheme(profile?.theme, profile?.custom_theme, { plus });
+  const showBranding = !(plus && profile?.hide_branding);
   const radius = buttonRadiusFor(theme.buttonStyle);
   const font = fontFamilyFor(theme.font);
 
@@ -232,11 +241,13 @@ function ProfilePage() {
           </section>
         )}
 
-        <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
-          <UserPlus className="h-3 w-3" /> Get your own Yooits
-        </Link>
+        {showBranding && (
+          <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
+            <UserPlus className="h-3 w-3" /> Get your own Yooits
+          </Link>
+        )}
         {profile && (
-          <div className="mt-3">
+          <div className={showBranding ? "mt-3" : "mt-10"}>
             <ReportLink username={profile.username} color={theme.foreground} />
           </div>
         )}

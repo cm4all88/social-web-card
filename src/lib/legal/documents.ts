@@ -20,7 +20,7 @@ export type LegalDocument = {
 export const LEGAL_DRAFT_NOTICE =
   "Draft. This page has not been reviewed by an attorney and may change before Yooits relies on it.";
 
-export const LEGAL_LAST_UPDATED = "November 21, 2026";
+export const LEGAL_LAST_UPDATED = "November 22, 2026";
 
 /** Filled in before publication. Shown as-is on the draft pages. */
 /**
@@ -85,6 +85,15 @@ const terms: LegalDocument = {
       ],
     },
     {
+      heading: "Yooits Plus",
+      paragraphs: [
+        "Yooits Plus is an optional plan with extra profile features, such as premium themes and the option to hide the Yooits line on your page. Links stay free and unlimited on every plan.",
+        "When Plus is offered for sale it costs $4.99 a month in US dollars, charged through Stripe. It renews automatically each month until you cancel. You can cancel at any time from your dashboard; Plus then stays on until the end of the month you have paid for and doesn't renew. We don't give refunds for part of a month unless the law requires it.",
+        "If we change the price, we will tell you before it applies to you, and you can cancel before then. Founding Members' free months of Plus need no card, don't renew and never turn into a paid plan by themselves. A Founding Member can choose to keep Plus after the free months; the first charge is then made when the free months end.",
+        "When Plus ends, your page goes back to the free look. Nothing you made is deleted, and your Plus settings come back if you return to Plus.",
+      ],
+    },
+    {
       heading: "Our rights",
       paragraphs: [
         "We may hide, unpublish or remove content, stop tips, or suspend or close an account that breaks these terms or the Acceptable Use Policy, or that puts users, Yooits or our payment partners at risk. Where we can, we will tell you why.",
@@ -132,13 +141,14 @@ const privacy: LegalDocument = {
         "Profile content: your avatar, links, theme and wishlists. Anything you publish on your profile or a public wishlist is visible to anyone. Private wishlists are visible only to you.",
         "Tips, once available: the amount, the Yooits fee, the supporter's optional name and message, and payment references from Stripe. Card details are entered on Stripe's pages and never reach Yooits.",
         "Reports: if you report a page or wishlist, we keep the reason, what you write, and your email if you choose to give it. The person you report doesn't see who sent it.",
+        "Plus billing, if you pay for Plus: your Stripe customer and subscription references, the plan's status and renewal date. Card details are entered on Stripe's pages and never reach Yooits.",
         "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout or send a report, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
       ],
     },
     {
       heading: "How we use it",
       paragraphs: [
-        "To run your account and public pages, to process and report tips, to prevent fraud and abuse, to answer you, and to meet legal duties. We don't sell your personal information and we don't show third-party advertising on profiles.",
+        "To run your account and public pages, to process and report tips and Plus payments, to prevent fraud and abuse, to answer you, and to meet legal duties. We don't sell your personal information and we don't show third-party advertising on profiles.",
       ],
     },
     {
@@ -156,7 +166,7 @@ const privacy: LegalDocument = {
     {
       heading: "Keeping and deleting data",
       paragraphs: [
-        `We keep your information while your account is open. You can edit or remove your profile content at any time. You can delete your account from the Account section of your dashboard; that removes your profile, links, wishlists and sign-in. To ask for a copy of your information, contact us at ${P.contact}. We keep tip and payment records for as long as tax and payment rules require.`,
+        `We keep your information while your account is open. You can edit or remove your profile content at any time. You can delete your account from the Account section of your dashboard; that removes your profile, links, wishlists and sign-in. To ask for a copy of your information, contact us at ${P.contact}. We keep tip, Plus billing and other payment records for as long as tax and payment rules require; if you delete your account they are kept without your account attached.`,
       ],
     },
     {
