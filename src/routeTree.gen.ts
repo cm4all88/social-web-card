@@ -36,6 +36,7 @@ import { Route as OwnerCreatorsRouteImport } from './routes/owner.creators'
 import { Route as OwnerEmailRouteImport } from './routes/owner.email'
 import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
+import { Route as OwnerMailRouteImport } from './routes/owner.mail'
 import { Route as OwnerMessagingRouteImport } from './routes/owner.messaging'
 import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
@@ -47,6 +48,8 @@ import { Route as ApiEmailUnsubscribeRouteImport } from './routes/api/email/unsu
 import { Route as ApiStripeBillingWebhookRouteImport } from './routes/api/stripe/billing-webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as OwnerUsersUserIdRouteImport } from './routes/owner.users_.$userId'
+import { Route as ApiOwnerMailAttachmentRouteImport } from './routes/api/owner/mail/attachment'
+import { Route as ApiOwnerMailCallbackRouteImport } from './routes/api/owner/mail/callback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -183,6 +186,11 @@ const OwnerInvitesRoute = OwnerInvitesRouteImport.update({
   path: '/invites',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerMailRoute = OwnerMailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerMessagingRoute = OwnerMessagingRouteImport.update({
   id: '/messaging',
   path: '/messaging',
@@ -238,6 +246,16 @@ const OwnerUsersUserIdRoute = OwnerUsersUserIdRouteImport.update({
   path: '/users/$userId',
   getParentRoute: () => OwnerRoute,
 } as any)
+const ApiOwnerMailAttachmentRoute = ApiOwnerMailAttachmentRouteImport.update({
+  id: '/api/owner/mail/attachment',
+  path: '/api/owner/mail/attachment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiOwnerMailCallbackRoute = ApiOwnerMailCallbackRouteImport.update({
+  id: '/api/owner/mail/callback',
+  path: '/api/owner/mail/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -264,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
@@ -278,6 +297,8 @@ export interface FileRoutesByFullPath {
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
+  '/api/owner/mail/attachment': typeof ApiOwnerMailAttachmentRoute
+  '/api/owner/mail/callback': typeof ApiOwnerMailCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -303,6 +324,7 @@ export interface FileRoutesByTo {
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
@@ -317,6 +339,8 @@ export interface FileRoutesByTo {
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
+  '/api/owner/mail/attachment': typeof ApiOwnerMailAttachmentRoute
+  '/api/owner/mail/callback': typeof ApiOwnerMailCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -344,6 +368,7 @@ export interface FileRoutesById {
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
@@ -358,6 +383,8 @@ export interface FileRoutesById {
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users_/$userId': typeof OwnerUsersUserIdRoute
+  '/api/owner/mail/attachment': typeof ApiOwnerMailAttachmentRoute
+  '/api/owner/mail/callback': typeof ApiOwnerMailCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -386,6 +413,7 @@ export interface FileRouteTypes {
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/mail'
     | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
@@ -400,6 +428,8 @@ export interface FileRouteTypes {
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
+    | '/api/owner/mail/attachment'
+    | '/api/owner/mail/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -425,6 +455,7 @@ export interface FileRouteTypes {
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/mail'
     | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
@@ -439,6 +470,8 @@ export interface FileRouteTypes {
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
+    | '/api/owner/mail/attachment'
+    | '/api/owner/mail/callback'
   id:
     | '__root__'
     | '/'
@@ -465,6 +498,7 @@ export interface FileRouteTypes {
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/mail'
     | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
@@ -479,6 +513,8 @@ export interface FileRouteTypes {
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users_/$userId'
+    | '/api/owner/mail/attachment'
+    | '/api/owner/mail/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -505,6 +541,8 @@ export interface RootRouteChildren {
   ApiEmailUnsubscribeRoute: typeof ApiEmailUnsubscribeRoute
   ApiStripeBillingWebhookRoute: typeof ApiStripeBillingWebhookRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
+  ApiOwnerMailAttachmentRoute: typeof ApiOwnerMailAttachmentRoute
+  ApiOwnerMailCallbackRoute: typeof ApiOwnerMailCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -698,6 +736,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerInvitesRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/mail': {
+      id: '/owner/mail'
+      path: '/mail'
+      fullPath: '/owner/mail'
+      preLoaderRoute: typeof OwnerMailRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/messaging': {
       id: '/owner/messaging'
       path: '/messaging'
@@ -775,6 +820,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerUsersUserIdRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/api/owner/mail/attachment': {
+      id: '/api/owner/mail/attachment'
+      path: '/api/owner/mail/attachment'
+      fullPath: '/api/owner/mail/attachment'
+      preLoaderRoute: typeof ApiOwnerMailAttachmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/owner/mail/callback': {
+      id: '/api/owner/mail/callback'
+      path: '/api/owner/mail/callback'
+      fullPath: '/api/owner/mail/callback'
+      preLoaderRoute: typeof ApiOwnerMailCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -788,6 +847,7 @@ interface OwnerRouteChildren {
   OwnerEmailRoute: typeof OwnerEmailRoute
   OwnerFoundingRoute: typeof OwnerFoundingRoute
   OwnerInvitesRoute: typeof OwnerInvitesRoute
+  OwnerMailRoute: typeof OwnerMailRoute
   OwnerMessagingRoute: typeof OwnerMessagingRoute
   OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
@@ -806,6 +866,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerEmailRoute: OwnerEmailRoute,
   OwnerFoundingRoute: OwnerFoundingRoute,
   OwnerInvitesRoute: OwnerInvitesRoute,
+  OwnerMailRoute: OwnerMailRoute,
   OwnerMessagingRoute: OwnerMessagingRoute,
   OwnerReportsRoute: OwnerReportsRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
@@ -840,6 +901,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiEmailUnsubscribeRoute: ApiEmailUnsubscribeRoute,
   ApiStripeBillingWebhookRoute: ApiStripeBillingWebhookRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
+  ApiOwnerMailAttachmentRoute: ApiOwnerMailAttachmentRoute,
+  ApiOwnerMailCallbackRoute: ApiOwnerMailCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

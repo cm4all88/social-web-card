@@ -19,6 +19,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
   { id: "invites", label: "Invites", to: "/owner/invites", status: "live", summary: "Invite codes." },
   { id: "founding", label: "Founding Members", to: "/owner/founding", status: "live", summary: "Founding Member invites, members and feedback." },
   { id: "reports", label: "Reports", to: "/owner/reports", status: "live", summary: "Pages, wishlists and messages people have reported." },
+  { id: "mail", label: "Mail", to: "/owner/mail", status: "live", summary: "Your Gmail inbox: read, search, reply and send, plus system email delivery." },
   { id: "email", label: "Email", to: "/owner/email", status: "live", summary: "Email templates, test sends, announcements and delivery." },
   { id: "messaging", label: "Messages", to: "/owner/messaging", status: "live", summary: "Turn direct messages on or off and see how they're used." },
   { id: "blocked-sites", label: "Blocked sites", to: "/owner/blocked-sites", status: "live", summary: "Sites links may not point to, and exceptions for mistakes." },
