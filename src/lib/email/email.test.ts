@@ -100,7 +100,7 @@ describe("email templates", () => {
       renderEmail("admin_new_report", TEMPLATES.find((t) => t.id === "admin_new_report")!.sample)
         .replyTo,
     ).toBeNull();
-    expect(renderEmail("welcome", { username: "maya" }).replyTo).toBe("admin@tahomaindustries.com");
+    expect(renderEmail("welcome", { username: "maya" }).replyTo).toBe("admin@yooits.me");
   });
 });
 

@@ -56,4 +56,4 @@ export const SENDERS = {
 } as const;
 
 /** Replies go to a mailbox someone reads. */
-export const REPLY_TO = LEGAL_DETAILS.contact;
+export const REPLY_TO = "admin@yooits.me";
