@@ -18,3 +18,19 @@ export async function tipsAllowed(userId: string): Promise<boolean> {
   }
   return data === true;
 }
+
+/**
+ * Has a Yooits admin approved this creator for tips? (Chris, 21 Nov: owner
+ * approval first.) Fails closed like tipsAllowed.
+ */
+export async function tipsApproved(userId: string): Promise<boolean> {
+  const client = supabaseAdmin as unknown as {
+    rpc: (fn: string, args: object) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await client.rpc("tips_approved", { _user_id: userId });
+  if (error) {
+    console.error("[account-status] tips_approved", error.message);
+    return false;
+  }
+  return data === true;
+}

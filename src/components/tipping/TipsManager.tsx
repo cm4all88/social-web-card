@@ -59,6 +59,7 @@ type TipRow = {
   dispute_status: string | null;
   supporter_name: string | null;
   supporter_message: string | null;
+  livemode: boolean;
 };
 
 const STATUS_COPY: Record<PaymentAccountStatus, { label: string; tone: string; help: string }> = {
@@ -104,38 +105,48 @@ export function TipsManager({ userId, username }: { userId: string; username: st
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [tips, setTips] = useState<TipRow[]>([]);
   const [linkCount, setLinkCount] = useState(0);
+  const [approved, setApproved] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [{ data: acct }, { data: s }, { data: t }, { count: links }] = await Promise.all([
-      supabase
-        .from("creator_payment_accounts")
-        .select(
-          "status, charges_enabled, payouts_enabled, requirements_due_count, disabled_reason, tipping_suspended_at",
-        )
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("tip_settings")
-        .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("tips")
-        .select(
-          "id, created_at, paid_at, tip_amount_cents, amount_refunded_cents, status, dispute_status, supporter_name, supporter_message",
-        )
-        .eq("creator_user_id", userId)
-        .in("status", ["succeeded", "needs_review"])
-        .order("created_at", { ascending: false })
-        .limit(100),
-      supabase
-        .from("social_links")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("enabled", true)
-        .neq("url", ""),
-    ]);
+    const [{ data: acct }, { data: s }, { data: t }, { count: links }, { data: st }] =
+      await Promise.all([
+        supabase
+          .from("creator_payment_accounts")
+          .select(
+            "status, charges_enabled, payouts_enabled, requirements_due_count, disabled_reason, tipping_suspended_at",
+          )
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("tip_settings")
+          .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("tips")
+          .select(
+            "id, created_at, paid_at, tip_amount_cents, amount_refunded_cents, status, dispute_status, supporter_name, supporter_message, livemode",
+          )
+          .eq("creator_user_id", userId)
+          .in("status", ["succeeded", "needs_review"])
+          .order("created_at", { ascending: false })
+          .limit(100),
+        supabase
+          .from("social_links")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("enabled", true)
+          .neq("url", ""),
+        // Owner approval (the server checks it too; this only explains it).
+        // (Not in the generated types yet; called as a method so the client keeps its `this`.)
+        (supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> })
+          .from("account_status")
+          .select("tips_approved_at")
+          .eq("user_id", userId)
+          .maybeSingle(),
+      ]);
+    setApproved(!!(st as { tips_approved_at: string | null } | null)?.tips_approved_at);
     setLinkCount(links ?? 0);
     setAccount((acct as AccountRow | null) ?? null);
     setSettings((s as Settings | null) ?? DEFAULT_SETTINGS);
@@ -236,8 +247,13 @@ export function TipsManager({ userId, username }: { userId: string; username: st
       await load();
     });
 
+  // Stripe test-mode tips never count toward real earnings; they're labelled Test.
+  const net = (list: TipRow[]) =>
+    list.reduce((sum, t) => sum + t.tip_amount_cents - t.amount_refunded_cents, 0);
   const received = tips.filter((t) => t.status === "succeeded");
-  const earned = received.reduce((sum, t) => sum + t.tip_amount_cents - t.amount_refunded_cents, 0);
+  const earned = net(received.filter((t) => t.livemode));
+  const testEarned = net(received.filter((t) => !t.livemode));
+  const hasTestTips = tips.some((t) => !t.livemode);
 
   return (
     <div
@@ -257,6 +273,13 @@ export function TipsManager({ userId, username }: { userId: string; username: st
       {status === "restricted" && account?.disabled_reason && (
         <p className="mt-2 text-sm text-red-600">
           Stripe says: {account.disabled_reason.replaceAll("_", " ")}
+        </p>
+      )}
+
+      {!suspended && !approved && (
+        <p className="mt-3 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+          Tips go live once Yooits approves your page. You can describe your work and connect Stripe
+          now; your tip button appears after approval.
         </p>
       )}
 
@@ -490,11 +513,18 @@ export function TipsManager({ userId, username }: { userId: string; username: st
           <div className="flex items-baseline justify-between">
             <div className="text-sm font-medium">Tips received</div>
             <div className="text-sm text-muted-foreground">
-              {received.length} tip{received.length === 1 ? "" : "s"} ·{" "}
+              {received.filter((t) => t.livemode).length} tip
+              {received.filter((t) => t.livemode).length === 1 ? "" : "s"} ·{" "}
               <span className="font-semibold text-foreground">{formatUsd(earned)}</span> before
               Stripe fees
             </div>
           </div>
+          {hasTestTips && (
+            <div className="mt-1 text-xs text-muted-foreground">
+              Test tips ({formatUsd(testEarned)}) are Stripe test-mode payments. No real money moved
+              and they aren't counted above.
+            </div>
+          )}
           {tips.length === 0 ? (
             <div className="mt-3 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
               No tips yet. Share your tip link to get started.
@@ -512,6 +542,11 @@ export function TipsManager({ userId, username }: { userId: string; username: st
                       <div className="font-medium">
                         {formatUsd(t.tip_amount_cents)}
                         {t.supporter_name ? ` from ${t.supporter_name}` : ""}
+                        {!t.livemode && (
+                          <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                            Test
+                          </span>
+                        )}
                       </div>
                       {t.supporter_message && (
                         <div className="mt-0.5 break-words text-muted-foreground">

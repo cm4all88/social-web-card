@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ownerRpc, type OwnerUserDetail } from "@/lib/owner/api";
 
-type ControlId = "unpublish" | "suspend" | "tips";
+type ControlId = "unpublish" | "suspend" | "tips" | "approval";
 
 /** What each switch does, in the words the confirmation shows. */
 const CONTROLS: Record<
@@ -57,10 +57,21 @@ const CONTROLS: Record<
       "They can take tips again once they switch tips on and their Stripe account is ready.",
     restoreTitle: "Turn tips back on?",
   },
+  approval: {
+    title: "Tips approval",
+    offLabel: "Approve for tips",
+    onLabel: "Withdraw approval",
+    effectOn:
+      "Their tip button and checkout can go live (once tips are on site-wide, their Stripe account is ready and they switch tips on). Check their page fits Stripe's rules first: tips are for content or a service, not personal transfers.",
+    effectOff:
+      "New tips stop for this creator straight away, checked on the server at checkout. Past tips are unaffected.",
+    restoreTitle: "Withdraw tips approval?",
+  },
 };
 
 function isOn(user: OwnerUserDetail, id: ControlId) {
   const s = user.status;
+  if (id === "approval") return !!s?.tips_approved_at;
   if (id === "unpublish") return !!s?.unpublished_at;
   if (id === "suspend") return !!s?.suspended_at;
   return !!s?.tips_disabled_at || !!user.tipping?.suspended_at;
@@ -68,6 +79,10 @@ function isOn(user: OwnerUserDetail, id: ControlId) {
 
 function since(user: OwnerUserDetail, id: ControlId) {
   const s = user.status;
+  if (id === "approval") {
+    if (!s?.tips_approved_at) return null;
+    return `Approved ${new Date(s.tips_approved_at).toLocaleString()}${s.tips_approved_by ? ` by @${s.tips_approved_by}` : ""}${s.tips_approval_note ? `: ${s.tips_approval_note}` : ""}`;
+  }
   const at = id === "unpublish" ? s?.unpublished_at : id === "suspend" ? s?.suspended_at : s?.tips_disabled_at;
   const by = id === "unpublish" ? s?.unpublished_by : id === "suspend" ? s?.suspended_by : s?.tips_disabled_by;
   const why =
@@ -95,13 +110,16 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
     if (!open) return;
     setBusy(true);
     try {
-      const r = turningOn ? reason.trim() : null;
+      const r = turningOn ? reason.trim() : null; // approval uses its own note below
       if (open === "unpublish") {
         await ownerRpc("owner_set_unpublished", { _user_id: user.user_id, _unpublished: turningOn, _reason: r });
       } else if (open === "suspend") {
         await ownerRpc("owner_set_suspended", { _user_id: user.user_id, _suspended: turningOn, _reason: r });
-      } else {
+      } else if (open === "tips") {
         await ownerRpc("owner_set_tips_disabled", { _user_id: user.user_id, _disabled: turningOn, _reason: r });
+      } else {
+        // Approving and withdrawing both need a note for the audit log.
+        await ownerRpc("owner_set_tips_approved", { _user_id: user.user_id, _approved: turningOn, _note: reason.trim() });
       }
       toast.success("Done. It's in the audit log.");
       setOpen(null);
@@ -118,7 +136,7 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
     <section className="mt-4 rounded-2xl border border-border p-4">
       <h2 className="font-semibold">Account controls</h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        Three separate switches. Each one asks you to confirm, needs a reason, and is recorded in the audit log.
+        Four separate switches. Each one asks you to confirm, needs a reason, and is recorded in the audit log.
       </p>
       <div className="mt-3 divide-y divide-border">
         {(Object.keys(CONTROLS) as ControlId[]).map((id) => {
@@ -130,8 +148,14 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
               <div className="min-w-0">
                 <div className="text-sm font-medium">
                   {c.title}:{" "}
-                  <span className={on ? "text-destructive" : "text-muted-foreground"}>
-                    {id === "unpublish" ? (on ? "Unpublished" : "Published") : id === "suspend" ? (on ? "Suspended" : "Active") : on ? "Off" : "Allowed"}
+                  <span className={(id === "approval" ? !on : on) ? "text-destructive" : "text-muted-foreground"}>
+                    {id === "unpublish"
+                      ? on ? "Unpublished" : "Published"
+                      : id === "suspend"
+                        ? on ? "Suspended" : "Active"
+                        : id === "approval"
+                          ? on ? "Approved" : "Not approved"
+                          : on ? "Off" : "Allowed"}
                   </span>
                 </div>
                 {on && <div className="break-words text-xs text-muted-foreground">{since(user, id)}</div>}
@@ -139,7 +163,7 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
               </div>
               <Button
                 size="sm"
-                variant={on ? "secondary" : "destructive"}
+                variant={id === "approval" ? (on ? "destructive" : "default") : on ? "secondary" : "destructive"}
                 disabled={!!blocked}
                 onClick={() => {
                   setReason("");
@@ -165,9 +189,9 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
                 </AlertDialogTitle>
                 <AlertDialogDescription>{turningOn ? current.effectOn : current.effectOff}</AlertDialogDescription>
               </AlertDialogHeader>
-              {turningOn && (
+              {(turningOn || open === "approval") && (
                 <div className="space-y-2">
-                  <Label htmlFor="reason">Reason (kept in the audit log, not shown to them)</Label>
+                  <Label htmlFor="reason">{open === "approval" ? "Note" : "Reason"} (kept in the audit log, not shown to them)</Label>
                   <Textarea
                     id="reason"
                     value={reason}
@@ -182,7 +206,7 @@ export function AccountControls({ user, onChanged }: { user: OwnerUserDetail; on
                 <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
                 <Button
                   variant={turningOn ? "destructive" : "default"}
-                  disabled={busy || (turningOn && reason.trim().length < 3)}
+                  disabled={busy || ((turningOn || open === "approval") && reason.trim().length < 3)}
                   onClick={confirm}
                 >
                   {busy ? "Saving…" : turningOn ? current.offLabel : current.onLabel}

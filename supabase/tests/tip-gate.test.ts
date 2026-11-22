@@ -65,8 +65,86 @@ beforeAll(async () => {
 
 afterAll(() => db?.close());
 
+describe("owner approval (default not approved)", () => {
+  it("a new creator is not approved, so no tips, even when everything else is ready", async () => {
+    const c = await loadCreatorByUsername("alice");
+    expect(c?.approved).toBe(false);
+    expect(c?.eligible).toBe(false);
+  });
+
+  it("only an admin can approve", async () => {
+    await db.exec(`SET request.jwt.claim.sub = '${ALICE}'; SET ROLE authenticated;`);
+    try {
+      await expect(db.query(`SELECT public.owner_set_tips_approved($1, true, 'Self approve')`, [ALICE])).rejects.toThrow(
+        /Not authorized/,
+      );
+      // ...and the creator can't write the column directly either.
+      // (No write policy: an UPDATE touches nothing, an INSERT is refused.)
+      await db.query(`UPDATE account_status SET tips_approved_at = now() WHERE user_id = $1`, [ALICE]);
+      await expect(
+        db.query(`INSERT INTO account_status (user_id, tips_approved_at) VALUES ($1, now())`, [ALICE]),
+      ).rejects.toThrow();
+      // tips_approved itself is server-only.
+      await expect(db.query(`SELECT public.tips_approved($1)`, [ALICE])).rejects.toThrow();
+    } finally {
+      await db.exec("RESET ROLE; RESET request.jwt.claim.sub;");
+    }
+    expect(await eligible()).toBe(false);
+  });
+
+  it("approval needs a note, is audit-logged, and opens tips", async () => {
+    await expect(asOwner(`SELECT public.owner_set_tips_approved($1, true, '')`, [ALICE])).rejects.toThrow(/reason/);
+    await asOwner(`SELECT public.owner_set_tips_approved($1, true, 'Original prints, page checked')`, [ALICE]);
+    expect(await eligible()).toBe(true);
+    const { rows } = await db.query<{ action: string; details: { note: string } }>(
+      `SELECT action, details FROM admin_audit_log WHERE target_id = $1 ORDER BY id DESC LIMIT 1`,
+      [ALICE],
+    );
+    expect(rows[0]).toMatchObject({ action: "tipping.approved", details: { note: "Original prints, page checked" } });
+  });
+
+  it("withdrawing approval stops tips at once and is audit-logged", async () => {
+    await asOwner(`SELECT public.owner_set_tips_approved($1, false, 'Re-checking page')`, [ALICE]);
+    expect(await eligible()).toBe(false);
+    const { rows } = await db.query<{ action: string }>(
+      `SELECT action FROM admin_audit_log WHERE target_id = $1 ORDER BY id DESC LIMIT 1`,
+      [ALICE],
+    );
+    expect(rows[0].action).toBe("tipping.approval_revoked");
+    await asOwner(`SELECT public.owner_set_tips_approved($1, true, 'Checked again')`, [ALICE]);
+    expect(await eligible()).toBe(true);
+  });
+
+  it("the owner sees approval in the user detail and the approvals list", async () => {
+    await db.exec(`SET request.jwt.claim.sub = '${OWNER}'; SET ROLE authenticated;`);
+    try {
+      const { rows } = await db.query<{ d: { status: { tips_approved_at: string | null; tips_approved_by: string } } }>(
+        `SELECT public.owner_get_user($1) AS d`,
+        [ALICE],
+      );
+      expect(rows[0].d.status.tips_approved_at).not.toBeNull();
+      expect(rows[0].d.status.tips_approved_by).toBe("boss");
+      const list = await db.query<{ username: string; approved_at: string | null }>(
+        `SELECT username, approved_at FROM public.owner_list_tip_approvals()`,
+      );
+      expect(list.rows.find((r) => r.username === "alice")?.approved_at).not.toBeNull();
+    } finally {
+      await db.exec("RESET ROLE; RESET request.jwt.claim.sub;");
+    }
+  });
+
+  it("a non-admin can't list approvals", async () => {
+    await db.exec(`SET request.jwt.claim.sub = '${ALICE}'; SET ROLE authenticated;`);
+    try {
+      await expect(db.query(`SELECT * FROM public.owner_list_tip_approvals()`)).rejects.toThrow(/Not authorized/);
+    } finally {
+      await db.exec("RESET ROLE; RESET request.jwt.claim.sub;");
+    }
+  });
+});
+
 describe("server-side tip gate", () => {
-  it("allows an eligible creator", async () => {
+  it("allows an eligible, approved creator", async () => {
     expect(await eligible()).toBe(true);
   });
 

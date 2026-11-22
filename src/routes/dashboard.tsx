@@ -16,6 +16,8 @@ import { THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
+import { BetaPanel } from "@/components/beta/BetaPanel";
+import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { Gift, Shield } from "lucide-react";
 
 /** Creator dashboard: every signed-in user manages their own page here. */
@@ -30,6 +32,7 @@ const SECTIONS = [
   { id: "wishlists", label: "Wishlists" },
   { id: "appearance", label: "Appearance" },
   { id: "links", label: "Links" },
+  { id: "account", label: "Account" },
 ] as const;
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
@@ -228,7 +231,7 @@ function DashboardPage() {
   const save = async (link: SocialLink) => {
     const url = normalizeLinkValue(link.url);
     if (url === null) {
-      toast.error("Links must start with https://, mailto:, tel: or sms:");
+      toast.error("Links must be a plain web address (https://...), mailto:, tel: or sms:");
       return;
     }
     setSavingId(link.id);
@@ -338,6 +341,8 @@ function DashboardPage() {
               : "Your page is unpublished by Yooits, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
         )}
+
+        {userId && <BetaPanel userId={userId} />}
 
         <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
 
@@ -662,6 +667,12 @@ function DashboardPage() {
             </Select>
             <Button onClick={add}><Plus className="mr-2 h-4 w-4" /> Add</Button>
           </div>
+        </div>
+
+        {/* Account */}
+        <h2 id="account" className="mt-10 scroll-mt-20 text-xl font-bold">Account</h2>
+        <div className="mt-4">
+          {profile && <DeleteAccount username={profile.username} />}
         </div>
       </div>
     </div>

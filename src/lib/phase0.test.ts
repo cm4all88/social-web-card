@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedLinkValue, normalizeLinkValue, safeLinkHref } from "./safe-url";
+import { isAllowedLinkValue, linkDisplayHost, normalizeLinkValue, safeLinkHref } from "./safe-url";
 import { usernameError } from "./username";
 import { sanitizeCustomTheme } from "./themes";
 
@@ -11,6 +11,27 @@ describe("link values", () => {
       expect(isAllowedLinkValue(v)).toBe(false);
     },
   );
+
+  it.each([
+    "https://paypal.com@evil.example/login",
+    "http://user:pw@evil.example",
+    "https://x.com%40@evil.example",
+  ])("refuses web links that hide their real host: %j", (v) => {
+    expect(safeLinkHref(v)).toBeUndefined();
+    expect(normalizeLinkValue(v)).toBeNull();
+    expect(isAllowedLinkValue(v)).toBe(false);
+  });
+
+  it("shows the real site of a web link", () => {
+    expect(linkDisplayHost(safeLinkHref("https://www.instagram.com/me"))).toBe("instagram.com");
+    expect(linkDisplayHost(safeLinkHref("evil.example/paypal"))).toBe("evil.example");
+    expect(linkDisplayHost(safeLinkHref("me@example.com"))).toBeUndefined();
+    expect(linkDisplayHost(safeLinkHref("tel:+15555555555"))).toBeUndefined();
+  });
+
+  it("still allows an @ in a link's path", () => {
+    expect(safeLinkHref("https://www.tiktok.com/@me")).toBe("https://www.tiktok.com/@me");
+  });
 
   it("renders allowed schemes, emails and bare domains as links", () => {
     expect(safeLinkHref("https://x.com/me")).toBe("https://x.com/me");

@@ -22,7 +22,7 @@ import { buildTipCheckoutParams } from "./checkout-params";
 import { isCreatorType, stripeProductDescription, tipEligibility } from "./eligibility";
 import { checkAndRecordAttempt, hashIp } from "./rate-limit.server";
 import { getStripe } from "./stripe.server";
-import { tipsAllowed } from "@/lib/owner/restrictions.server";
+import { tipsAllowed, tipsApproved } from "@/lib/owner/restrictions.server";
 
 const usernameSchema = z
   .string()
@@ -69,7 +69,7 @@ export async function loadCreatorByUsername(username: string) {
     .maybeSingle();
   if (error) throw error;
   if (!profile) return null;
-  const [{ data: settings }, { data: account }, publicLinkCount, allowed] = await Promise.all([
+  const [{ data: settings }, { data: account }, publicLinkCount, allowed, approved] = await Promise.all([
     supabaseAdmin
       .from("tip_settings")
       .select("enabled, show_on_profile, button_text, creator_type, offering, attested_at")
@@ -83,15 +83,19 @@ export async function loadCreatorByUsername(username: string) {
     countPublicLinks(profile.user_id),
     // Owner switches: page unpublished, account suspended or tips turned off.
     tipsAllowed(profile.user_id),
+    // Owner approval: no tips until a Yooits admin approves the creator.
+    tipsApproved(profile.user_id),
   ]);
-  const eligible = tipEligibility({
-    creatorType: settings?.creator_type,
-    offering: settings?.offering,
-    attestedAt: settings?.attested_at,
-    publicLinkCount,
-    suspended: !!account?.tipping_suspended_at || !allowed,
-  }).ok;
-  return { profile, settings, account, eligible };
+  const eligible =
+    approved &&
+    tipEligibility({
+      creatorType: settings?.creator_type,
+      offering: settings?.offering,
+      attestedAt: settings?.attested_at,
+      publicLinkCount,
+      suspended: !!account?.tipping_suspended_at || !allowed,
+    }).ok;
+  return { profile, settings, account, eligible, approved };
 }
 
 // ---------------------------------------------------------------------------

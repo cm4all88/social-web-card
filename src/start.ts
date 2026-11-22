@@ -10,6 +10,15 @@ const previewPassword = createMiddleware({ type: "request" }).server(async ({ re
   const refused = previewGate(request, process.env.SITE_PASSWORD);
   if (refused) return refused;
   const result = await next();
+  try {
+    // Stop other sites framing Yooits pages (clickjacking) or the browser
+    // guessing content types; keep the full URL out of outbound referrers.
+    result.response.headers.set("X-Frame-Options", "SAMEORIGIN");
+    result.response.headers.set("X-Content-Type-Options", "nosniff");
+    result.response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  } catch {
+    // Read-only headers on some responses; nothing to add there.
+  }
   if (process.env.SITE_PASSWORD) {
     try {
       result.response.headers.set("X-Robots-Tag", "noindex, nofollow");

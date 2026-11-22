@@ -34,6 +34,9 @@ export type AccountStatus = {
   tips_disabled_at: string | null;
   tips_disabled_reason: string | null;
   tips_disabled_by: string | null;
+  tips_approved_at?: string | null;
+  tips_approval_note?: string | null;
+  tips_approved_by?: string | null;
 };
 
 export type OwnerUserRow = {
@@ -91,6 +94,24 @@ export type AuditEntry = {
   details: Record<string, unknown>;
 };
 
+export type AbuseReport = {
+  id: string;
+  created_at: string;
+  status: "open" | "resolved" | "dismissed";
+  reason: string;
+  details: string | null;
+  target_kind: "profile" | "wishlist";
+  target_user_id: string;
+  target_username: string | null;
+  wishlist_slug: string | null;
+  wishlist_title: string | null;
+  reporter_user_id: string | null;
+  reporter_username: string | null;
+  reporter_contact: string | null;
+  resolution_note: string | null;
+  resolved_at: string | null;
+};
+
 type OwnerFunctions = {
   owner_overview: { args: Record<string, never>; result: OwnerOverview };
   owner_list_users: {
@@ -102,6 +123,13 @@ type OwnerFunctions = {
   owner_set_unpublished: { args: { _user_id: string; _unpublished: boolean; _reason?: string | null }; result: boolean };
   owner_set_suspended: { args: { _user_id: string; _suspended: boolean; _reason?: string | null }; result: boolean };
   owner_set_tips_disabled: { args: { _user_id: string; _disabled: boolean; _reason?: string | null }; result: boolean };
+  owner_set_tips_approved: { args: { _user_id: string; _approved: boolean; _note?: string | null }; result: boolean };
+  owner_list_reports: { args: { _status?: "open" | "resolved" | "dismissed" | "all" }; result: AbuseReport[] };
+  owner_resolve_report: {
+    args: { _id: string; _status: "open" | "resolved" | "dismissed"; _note?: string | null };
+    result: string;
+  };
+  owner_open_report_count: { args: Record<string, never>; result: number };
 };
 
 export class OwnerAccessError extends Error {}
@@ -136,10 +164,21 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "invite.revoked": "Invite code revoked",
   "tipping.suspended": "Tips stopped",
   "tipping.restored": "Tips restored",
+  "tipping.approved": "Tips approved",
+  "tipping.approval_revoked": "Tips approval withdrawn",
   "account.unpublished": "Page unpublished",
   "account.republished": "Page republished",
   "account.suspended": "Account suspended",
   "account.reactivated": "Account reactivated",
+  "beta.codes_created": "Founding Member invites created",
+  "beta.code_revoked": "Founding Member invite revoked",
+  "beta.redeemed": "Became a Founding Member",
+  "beta.program_opened": "Founding Member invites turned on",
+  "beta.program_closed": "Founding Member invites turned off",
+  "beta.grant_revoked": "Founding Plus ended early",
+  "report.resolved": "Report resolved",
+  "report.dismissed": "Report dismissed",
+  "report.reopened": "Report reopened",
 };
 
 export function auditLabel(action: string): string {

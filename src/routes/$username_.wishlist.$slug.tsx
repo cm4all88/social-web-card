@@ -4,6 +4,8 @@ import { ExternalLink, Gift, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buttonRadiusFor, fontFamilyFor } from "@/lib/themes";
 import { usePublicProfile } from "@/lib/use-public-profile";
+import { ReportLink } from "@/components/reports/ReportLink";
+import { Toaster } from "@/components/ui/sonner";
 import { hostOf, isSafeExternalUrl, type Wishlist, type WishlistItem } from "@/lib/wishlists";
 
 /** Public wishlist: yooits.me/<username>/wishlist/<slug>. Link-out only; nothing is sold here. */
@@ -168,8 +170,14 @@ function WishlistPage() {
               Links go to other stores. Yooits doesn&apos;t sell these items or handle these
               purchases.
             </p>
+            {profile && list && (
+              <div className="mt-3 text-center">
+                <ReportLink username={profile.username} wishlistSlug={list.slug} color={theme.foreground} />
+              </div>
+            )}
           </>
         )}
+        <Toaster />
       </main>
     </div>
   );
