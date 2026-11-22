@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Vercel's build command for the Yooits preview (Vercel Git integration).
-# Set as the project's Build Command in Vercel, so only branches that have this
-# file can build: main and the PR branches don't, and stop here.
+# Vercel's build command for Yooits (Vercel Git integration). yooits.me is built
+# from main; preview/yooits still builds so production can be switched back to it.
+# Other branches stop here.
 # Migrates the preview database, loads the test accounts and builds; Vercel
 # then deploys the result. Refuses the live database (see deploy.sh).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 BRANCH=${VERCEL_GIT_COMMIT_REF:-}
-if [ "$BRANCH" != preview/yooits ]; then
-  echo "vercel-build: only preview/yooits deploys to this project (this is '${BRANCH:-unknown}'); not building." >&2
-  exit 1
-fi
+case "$BRANCH" in
+  main|preview/yooits) ;;
+  *) echo "vercel-build: only main (or preview/yooits, for rollback) deploys to this project (this is '${BRANCH:-unknown}'); not building." >&2
+     exit 1 ;;
+esac
 exec bash deploy/deploy.sh preview
