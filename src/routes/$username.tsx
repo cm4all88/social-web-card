@@ -8,6 +8,7 @@ import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
 import { getTheme, isRewardTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { Gift, Heart, UserPlus } from "lucide-react";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
+import { CreatorPosts } from "@/components/creator/CreatorPosts";
 import { readableTextOn } from "@/lib/contrast";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
@@ -302,6 +303,15 @@ function ProfilePage() {
               </Link>
             ))}
           </section>
+        )}
+
+        {profile && (
+          <CreatorPosts
+            username={profile.username}
+            theme={theme}
+            radius={radius}
+            outline={theme.buttonStyle === "outline"}
+          />
         )}
 
         {showBranding && (

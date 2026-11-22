@@ -41,6 +41,11 @@ import { LinkManager } from "@/components/dashboard/LinkManager";
 import { AppearanceSection } from "@/components/dashboard/AppearanceSection";
 import { CreatorEarningsSection } from "@/components/dashboard/CreatorEarningsSection";
 import { loadMyCreatorEarnings, type CreatorEarnings } from "@/lib/creator/earnings";
+import { CreatorSubscriptionsSection } from "@/components/dashboard/CreatorSubscriptionsSection";
+import {
+  loadMyCreatorSubscriptions,
+  type MyCreatorSubscriptions,
+} from "@/lib/creator/subscriptions";
 import { markCreatorPresence } from "@/lib/analytics/functions";
 import { PagePreview } from "@/components/dashboard/PagePreview";
 import { loadLinkClicks, loadSections, type LinkClicks, type ManagedLink } from "@/lib/links/api";
@@ -97,6 +102,12 @@ function DashboardPage() {
   const [tippingOn, setTippingOn] = useState(false);
   // Creator tab: shown to admins now, everyone once the owner turns it on.
   const [creator, setCreator] = useState<CreatorEarnings>({ visible: false });
+  const [creatorSubs, setCreatorSubs] = useState<MyCreatorSubscriptions>({ visible: false });
+  const reloadCreatorSubs = useCallback(() => {
+    loadMyCreatorSubscriptions()
+      .then(setCreatorSubs)
+      .catch(() => setCreatorSubs({ visible: false }));
+  }, []);
 
   useEffect(() => {
     getTippingAvailability()
@@ -105,19 +116,20 @@ function DashboardPage() {
     loadMyCreatorEarnings()
       .then(setCreator)
       .catch(() => setCreator({ visible: false }));
+    reloadCreatorSubs();
     // So a signed-out look at your own page from this browser isn't counted as a visitor.
     void markCreatorPresence().catch(() => {});
     dm("dm_my_settings", {}).then(
       (s) => setMessagesOn(!!s.available),
       () => setMessagesOn(false),
     );
-  }, []);
+  }, [reloadCreatorSubs]);
 
   const tabs = DASHBOARD_TABS.filter(
     (t) =>
       (t.id !== "support" || tippingOn) &&
       (t.id !== "messages" || messagesOn) &&
-      (t.id !== "creator" || creator.visible),
+      (t.id !== "creator" || creator.visible || creatorSubs.visible),
   );
 
   const setTab = useCallback((id: TabId) => {
@@ -497,10 +509,15 @@ function DashboardPage() {
             </div>
           )}
 
-          {activeTab === "creator" && creator.visible && (
+          {activeTab === "creator" && (creator.visible || creatorSubs.visible) && (
             <div id="creator">
               <h2 className="text-xl font-bold">Creator earnings</h2>
               <CreatorEarningsSection data={creator} />
+              <CreatorSubscriptionsSection
+                data={creatorSubs}
+                userId={userId}
+                onChanged={reloadCreatorSubs}
+              />
             </div>
           )}
 

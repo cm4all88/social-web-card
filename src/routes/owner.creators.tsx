@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ownerRpc, type OwnerCreatorEarnings, type OwnerCreatorMilestone } from "@/lib/owner/api";
+import { CreatorSubscriptionsAdmin } from "@/components/owner/CreatorSubscriptionsAdmin";
 
 /**
  * Creator earnings, step 1: who has real visitors, the milestones they work
@@ -56,8 +57,7 @@ function CreatorsPage() {
         Qualifying visitors are people who viewed a creator's page, counted once a day each. The
         creator's own visits, repeat refreshes, bots and suspicious traffic are left out. Reaching a
         milestone unlocks only what it says; a milestone that isn't live unlocks nothing and shows
-        as coming later. Paid creator subscriptions aren't built yet, and no one can sell or pay
-        through this page.
+        as coming later. No one can sell or pay through this page.
       </p>
       {error && <p className="mt-6 text-muted-foreground">{error}</p>}
       {!data && !error && <Loader2 className="mt-8 h-6 w-6 animate-spin text-muted-foreground" />}
@@ -117,6 +117,7 @@ function CreatorsPage() {
           )}
         </>
       )}
+      <CreatorSubscriptionsAdmin />
     </div>
   );
 }

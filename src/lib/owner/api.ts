@@ -144,6 +144,69 @@ export type OwnerCreatorMilestone = {
   updated_at: string;
 };
 
+export type OwnerCreatorSubscriptionSettings = {
+  enabled: boolean;
+  checkout_enabled: boolean;
+  price_min_cents: number;
+  price_max_cents: number;
+  yooits_percent_bps: number | null;
+  yooits_fixed_cents: number | null;
+  stripe_percent_bps: number | null;
+  stripe_fixed_cents: number | null;
+  updated_at: string;
+};
+
+export type OwnerCreatorApplication = {
+  id: string;
+  user_id: string;
+  username: string | null;
+  status: "pending" | "approved" | "rejected" | "withdrawn";
+  about: string;
+  content_types: string[];
+  qualifying_visitors: number;
+  created_at: string;
+  decided_at: string | null;
+  decision_note: string | null;
+};
+
+export type OwnerCreatorSubscriptions = {
+  settings: OwnerCreatorSubscriptionSettings;
+  applications: OwnerCreatorApplication[];
+  creators: {
+    user_id: string;
+    username: string | null;
+    approved_at: string;
+    suspended: boolean;
+    suspended_reason: string | null;
+    posts: number;
+    subscribers: number;
+  }[];
+  offers: {
+    id: string;
+    user_id: string;
+    username: string | null;
+    version: number;
+    price_cents: number;
+    description: string;
+    status: "pending" | "approved" | "rejected";
+    created_at: string;
+    decision_note: string | null;
+  }[];
+  posts: {
+    id: string;
+    user_id: string;
+    username: string | null;
+    visibility: "public" | "subscribers";
+    title: string;
+    body: string;
+    preview: string | null;
+    media_count: number;
+    created_at: string;
+    removed: boolean;
+    removed_reason: string | null;
+  }[];
+};
+
 export type OwnerCreatorEarnings = {
   settings: {
     enabled: boolean;
@@ -192,6 +255,35 @@ type OwnerFunctions = {
   };
   owner_set_creator_milestone: {
     args: { _key: string; _threshold: number; _title: string; _unlocks: string; _live: boolean };
+    result: boolean;
+  };
+  owner_creator_subscriptions: { args: Record<string, never>; result: OwnerCreatorSubscriptions };
+  owner_set_creator_subscription_settings: {
+    args: {
+      _enabled: boolean | null;
+      _price_min_cents: number | null;
+      _price_max_cents: number | null;
+      _yooits_percent_bps: number | null;
+      _yooits_fixed_cents: number | null;
+      _stripe_percent_bps: number | null;
+      _stripe_fixed_cents: number | null;
+    };
+    result: OwnerCreatorSubscriptionSettings;
+  };
+  owner_decide_creator_application: {
+    args: { _id: string; _approve: boolean; _note?: string | null };
+    result: string;
+  };
+  owner_decide_creator_offer: {
+    args: { _id: string; _approve: boolean; _note?: string | null };
+    result: string;
+  };
+  owner_set_creator_monetization_suspended: {
+    args: { _user_id: string; _suspended: boolean; _reason?: string | null };
+    result: boolean;
+  };
+  owner_remove_creator_post: {
+    args: { _id: string; _removed: boolean; _reason?: string | null };
     result: boolean;
   };
 };
@@ -256,6 +348,15 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "feature_flag.disabled": "Feature switched off",
   "creator_earnings.settings": "Creator earnings settings changed",
   "creator_earnings.milestone": "Creator milestone changed",
+  "creator_subscriptions.settings": "Creator subscription settings changed",
+  "creator.application_approved": "Creator application approved",
+  "creator.application_rejected": "Creator application rejected",
+  "creator.offer_approved": "Creator subscription price approved",
+  "creator.offer_rejected": "Creator subscription price rejected",
+  "creator.monetization_suspended": "Creator subscriptions paused",
+  "creator.monetization_restored": "Creator subscriptions restored",
+  "creator.post_removed": "Creator post removed",
+  "creator.post_restored": "Creator post restored",
 };
 
 export function auditLabel(action: string): string {

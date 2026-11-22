@@ -32,6 +32,7 @@ export const KEPT_TABLES = [
   "creator_payment_accounts",
   "plus_subscriptions",
   "billing_customers",
+  "creator_subscriptions",
   "admin_audit_log",
 ] as const;
 
@@ -81,14 +82,20 @@ export async function deleteAccount(
     );
   }
 
-  // Avatar files live under "<userId>/" in the avatars bucket.
-  const { data: files, error: lErr } = await admin.storage.from("avatars").list(userId, { limit: 1000 });
-  if (lErr) throw lErr;
-  if (files && files.length > 0) {
-    const { error } = await admin.storage
-      .from("avatars")
-      .remove(files.map((f) => `${userId}/${f.name}`));
-    if (error) throw error;
+  // Their files live under "<userId>/" in the avatars and creator-media buckets.
+  for (const bucket of ["avatars", "creator-media"]) {
+    const { data: files, error: lErr } = await admin.storage.from(bucket).list(userId, { limit: 1000 });
+    if (lErr) {
+      // creator-media is newer; a database without it has no such files.
+      if (bucket === "avatars") throw lErr;
+      continue;
+    }
+    if (files && files.length > 0) {
+      const { error } = await admin.storage
+        .from(bucket)
+        .remove(files.map((f) => `${userId}/${f.name}`));
+      if (error) throw error;
+    }
   }
 
   // Their address, for the confirmation email sent once the account is gone.
