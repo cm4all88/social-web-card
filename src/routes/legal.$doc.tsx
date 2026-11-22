@@ -12,7 +12,7 @@ export const Route = createFileRoute("/legal/$doc")({
   head: ({ loaderData }) => ({
     meta: loaderData
       ? [
-          { title: `${loaderData.title} (draft) — Yooits` },
+          { title: `${loaderData.title} — Yooits` },
           { name: "description", content: loaderData.summary },
           { name: "robots", content: "noindex" },
         ]

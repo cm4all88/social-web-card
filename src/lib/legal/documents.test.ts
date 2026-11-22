@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLegalDocument, LEGAL_DETAILS, LEGAL_DOCUMENTS, LEGAL_DRAFT_NOTICE } from "./documents";
+import { getLegalDocument, LEGAL_DETAILS, LEGAL_DOCUMENTS } from "./documents";
 import { PLATFORM_FEE_CENTS, MIN_TIP_CENTS, MAX_TIP_CENTS } from "@/lib/tipping/money";
 import { RESERVED_USERNAMES } from "@/lib/username";
 
@@ -16,9 +16,10 @@ describe("legal drafts", () => {
     ]);
   });
 
-  it("says plainly that each page is a draft not reviewed by an attorney", () => {
-    expect(LEGAL_DRAFT_NOTICE).toMatch(/draft/i);
-    expect(LEGAL_DRAFT_NOTICE).toMatch(/not been reviewed by an attorney/i);
+  it("doesn't call any page a draft (owner's decision, Nov 22)", () => {
+    for (const d of LEGAL_DOCUMENTS) {
+      expect(`${d.title}\n${d.summary}\n${text(d.slug)}`).not.toMatch(/draft/i);
+    }
   });
 
   it("states the decided tip terms, matching the code", () => {

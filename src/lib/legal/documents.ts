@@ -1,9 +1,9 @@
 /**
  * Yooits legal pages.
  *
- * DRAFTS. None of this has been reviewed by an attorney. Every page says so
- * at the top, and the bracketed placeholders must be filled in before the
- * drafts are relied on. Keep the wording consistent with the product bible:
+ * Published November 22, 2026 at the owner's request, without a "draft"
+ * label; he is having them reviewed by an attorney. Keep the wording
+ * consistent with the product bible:
  * a flat $0.50 supporter fee on tips, free wishlists, no peer-to-peer money
  * transfers, and live payments off until Stripe approves the tipping model.
  */
@@ -17,17 +17,12 @@ export type LegalDocument = {
   sections: LegalSection[];
 };
 
-export const LEGAL_DRAFT_NOTICE =
-  "Draft. This page has not been reviewed by an attorney and may change before Yooits relies on it.";
-
 export const LEGAL_LAST_UPDATED = "November 22, 2026";
 
-/** Filled in before publication. Shown as-is on the draft pages. */
 /**
  * Who runs Yooits. Yooits is the product and public brand; the legal owner and
  * operator is the company below. Change the legal name here only: every page
  * reads it from this one place. (Owner's correction, Nov 21, 2026.)
- * The pages stay marked as drafts until an attorney reviews them.
  */
 export const LEGAL_DETAILS = {
   brand: "Yooits",
