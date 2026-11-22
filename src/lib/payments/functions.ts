@@ -56,6 +56,7 @@ async function load() {
     env: {
       PLUS_BILLING_ENABLED: env("PLUS_BILLING_ENABLED") === "true",
       PLUS_CHECKOUT_ENABLED: env("PLUS_CHECKOUT_ENABLED") === "true",
+      PLUS_CHECKOUT_OWNER_ONLY: env("PLUS_CHECKOUT_ENABLED") === "owner",
       PLUS_LIVE_MODE_APPROVED: env("PLUS_LIVE_MODE_APPROVED") === "true",
       TIPPING_ENABLED: env("TIPPING_ENABLED") === "true",
       STRIPE_LIVE_MODE_APPROVED: env("STRIPE_LIVE_MODE_APPROVED") === "true",

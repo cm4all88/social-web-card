@@ -4,6 +4,7 @@ import { CheckCircle2, CircleDashed, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { getPaymentsSetup, runPaymentsSetup } from "@/lib/payments/functions";
+import { SETUP_WEBHOOKS } from "@/lib/payments/stripe-setup";
 
 /** Owner > Payments: the Stripe account, setting it up, and what's ready to switch on. */
 export const Route = createFileRoute("/owner/payments")({
@@ -67,9 +68,9 @@ function PaymentsPage() {
       <div>
         <h1 className="text-3xl font-bold">Payments</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          The Stripe account this site uses, and which payment features are ready. Setting up makes
-          the Plus price, the billing portal and the webhooks in Stripe. It charges nothing and
-          turns nothing on.
+          The Stripe account this site uses, and which payment features are ready. Setting up reuses
+          the Plus price, billing portal and webhook already in Stripe, makes only what's missing,
+          and checks the webhook. It charges nothing and turns nothing on.
         </p>
       </div>
       {error && <p className="text-muted-foreground">{error}</p>}
@@ -136,15 +137,17 @@ function PaymentsPage() {
                 <li className="flex items-center gap-2">
                   <Mark ok={status.portal.ok} /> Billing portal for Plus (card, invoices, cancel)
                 </li>
-                {status.webhooks.map((w) => (
-                  <li key={w.item} className="flex items-start gap-2">
-                    <Mark ok={w.state === "ok"} partial={w.state === "events_missing"} />
-                    <span>
-                      {w.label} webhook: {WEBHOOK_WORDS[w.state]}
-                      <span className="block text-xs text-muted-foreground">{w.url}</span>
-                    </span>
-                  </li>
-                ))}
+                {status.webhooks
+                  .filter((w) => SETUP_WEBHOOKS.includes(w.item))
+                  .map((w) => (
+                    <li key={w.item} className="flex items-start gap-2">
+                      <Mark ok={w.state === "ok"} partial={w.state === "events_missing"} />
+                      <span>
+                        {w.label} webhook: {WEBHOOK_WORDS[w.state]}
+                        <span className="block text-xs text-muted-foreground">{w.url}</span>
+                      </span>
+                    </li>
+                  ))}
               </ul>
               {steps && (
                 <ul className="mt-3 list-disc pl-5 text-sm text-muted-foreground">
@@ -162,8 +165,15 @@ function PaymentsPage() {
               {status.features.map((f) => (
                 <li key={f.id}>
                   <div className="flex items-center gap-2 font-medium">
-                    <Mark ok={f.on} partial={!f.on && f.ready} />
-                    {f.label}: {f.on ? "On" : f.ready ? "Ready to switch on" : "Not ready"}
+                    <Mark ok={f.on} partial={!f.on && (f.ready || !!f.ownerOnly)} />
+                    {f.label}:{" "}
+                    {f.on
+                      ? "On"
+                      : f.ownerOnly
+                        ? "On for your account only"
+                        : f.ready
+                          ? "Ready to switch on"
+                          : "Not ready"}
                   </div>
                   {!f.on && (
                     <ul className="mt-1 list-disc pl-10 text-muted-foreground">

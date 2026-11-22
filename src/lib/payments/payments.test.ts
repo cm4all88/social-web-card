@@ -120,4 +120,71 @@ describe("payment feature readiness", () => {
     expect(f.tips.on).toBe(false);
     expect(byId({ ...ready, keyMode: "test", env }).plus.on).toBe(true);
   });
+
+  it("owner-only Plus shows as on for the owner, not on for everyone", () => {
+    const env = {
+      ...ready.env,
+      PLUS_BILLING_ENABLED: true,
+      PLUS_LIVE_MODE_APPROVED: true,
+      PLUS_CHECKOUT_OWNER_ONLY: true,
+    };
+    const f = byId({ ...ready, env });
+    expect(f.plus).toMatchObject({ on: false, ownerOnly: true });
+    expect(byId({ ...ready, env: { ...env, PLUS_LIVE_MODE_APPROVED: false } }).plus.ownerOnly).toBe(
+      false,
+    );
+  });
+});
+
+describe("reusing what Stripe already has", () => {
+  it("picks the Plus price that is ours, else one on a product named Plus, oldest first", async () => {
+    const { choosePlusPrice } = await import("./stripe-setup");
+    const p = (id: string, created: number, product: unknown, metadata = {}) =>
+      ({ id, created, metadata, product: product as never });
+    expect(choosePlusPrice([])).toBeNull();
+    expect(choosePlusPrice([p("a", 1, { id: "x", name: "Coffee" })])).toBeNull();
+    expect(
+      choosePlusPrice([
+        p("new", 9, { id: "x", name: "Yooits Plus", active: true }),
+        p("old", 2, { id: "y", name: "Plus monthly", active: true }),
+      ])?.id,
+    ).toBe("old");
+    expect(
+      choosePlusPrice([
+        p("named", 1, { id: "x", name: "Yooits Plus" }),
+        p("ours", 5, { id: "y", name: "Something", metadata: { yooits_product: "plus" } }),
+      ])?.id,
+    ).toBe("ours");
+    expect(choosePlusPrice([p("gone", 1, { id: "x", name: "Plus", active: false })])).toBeNull();
+  });
+
+  it("finds an existing webhook at the Plus address on a Yooits host only", async () => {
+    const { endpointsForPlan, WEBHOOK_PLANS } = await import("./stripe-setup");
+    const plan = WEBHOOK_PLANS.find((x) => x.item === "billing_webhook")!;
+    const e = (url: string) => ({ id: url, url, status: "enabled" });
+    expect(
+      endpointsForPlan(
+        [
+          e("https://yooits.me/api/stripe/billing-webhook"),
+          e("https://test.yooits.me/api/stripe/billing-webhook"),
+          e("https://evil.example/api/stripe/billing-webhook"),
+          e("https://yooits.me/api/stripe/webhook"),
+          e("not a url"),
+        ],
+        plan,
+      ).map((x) => x.url),
+    ).toEqual([
+      "https://yooits.me/api/stripe/billing-webhook",
+      "https://test.yooits.me/api/stripe/billing-webhook",
+    ]);
+  });
+
+  it("reads the Plus checkout switch", async () => {
+    const { plusCheckoutMode, SETUP_WEBHOOKS } = await import("./stripe-setup");
+    expect(plusCheckoutMode("true")).toBe("everyone");
+    expect(plusCheckoutMode(" Owner ")).toBe("owner");
+    expect(plusCheckoutMode(undefined)).toBe("off");
+    expect(plusCheckoutMode("yes")).toBe("off");
+    expect(SETUP_WEBHOOKS).toEqual(["billing_webhook"]);
+  });
 });

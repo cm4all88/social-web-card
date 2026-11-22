@@ -7,12 +7,15 @@
  * Switches, all off unless set to "true" in Vercel by hand:
  *  - PLUS_BILLING_ENABLED: webhooks, the billing portal and cancelling work,
  *    so existing subscribers are looked after.
- *  - PLUS_CHECKOUT_ENABLED: new people can start paying. Needs the one above.
+ *  - PLUS_CHECKOUT_ENABLED: "true" lets new people start paying; "owner"
+ *    lets only Yooits admins (for a first live purchase). Needs the one above.
  *  - PLUS_LIVE_MODE_APPROVED: a LIVE Stripe key is accepted for billing.
  *    Without it only TEST keys work. Deploys never set any of these.
  *  - On a Vercel production deployment (yooits.me) a TEST key also keeps
  *    billing off unless STRIPE_TEST_MODE_ON_PRODUCTION=true.
  */
+
+import { plusCheckoutMode, type PlusCheckoutMode } from "@/lib/payments/stripe-setup";
 
 export class BillingUnavailableError extends Error {
   constructor(message = "Plus isn't available to buy right now.") {
@@ -24,7 +27,9 @@ export type BillingConfig = {
   secretKey: string;
   webhookSecret: string | null;
   liveModeAllowed: boolean;
+  /** Open to everyone (PLUS_CHECKOUT_ENABLED=true). */
   checkoutOpen: boolean;
+  checkoutMode: PlusCheckoutMode;
   siteUrl: string | null;
   priceId: string | null;
   portalConfigurationId: string | null;
@@ -61,7 +66,8 @@ export function getBillingConfig(): BillingConfig {
     secretKey,
     webhookSecret: env("STRIPE_BILLING_WEBHOOK_SECRET") ?? null,
     liveModeAllowed,
-    checkoutOpen: env("PLUS_CHECKOUT_ENABLED") === "true",
+    checkoutOpen: plusCheckoutMode(env("PLUS_CHECKOUT_ENABLED")) === "everyone",
+    checkoutMode: plusCheckoutMode(env("PLUS_CHECKOUT_ENABLED")),
     siteUrl: env("PUBLIC_SITE_URL")?.replace(/\/+$/, "") ?? null,
     priceId: env("STRIPE_PLUS_PRICE_ID") ?? null,
     portalConfigurationId: env("STRIPE_PORTAL_CONFIGURATION_ID") ?? null,

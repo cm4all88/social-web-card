@@ -20,7 +20,10 @@ import {
 } from "@/lib/billing/plus";
 import { openSecret, sealSecret } from "./secret-box";
 import {
+  choosePlusPrice,
+  endpointsForPlan,
   keyMode,
+  SETUP_WEBHOOKS,
   missingEvents,
   portalConfigurationParams,
   WEBHOOK_PLANS,
@@ -286,10 +289,85 @@ async function store(
   secretCache = undefined;
 }
 
+/** All active $4.99-a-month USD prices in the account, with their products. */
+async function plusLikePrices(stripe: Stripe): Promise<Stripe.Price[]> {
+  const out: Stripe.Price[] = [];
+  for await (const p of stripe.prices.list({
+    active: true,
+    type: "recurring",
+    currency: PLUS_CURRENCY,
+    limit: 100,
+    expand: ["data.product"],
+  })) {
+    if (priceIsPlus(p)) out.push(p);
+  }
+  return out;
+}
+
+/** An existing active Yooits Plus product (ours by metadata, or named Plus). */
+async function existingPlusProduct(stripe: Stripe): Promise<Stripe.Product | null> {
+  const all: Stripe.Product[] = [];
+  for await (const p of stripe.products.list({ active: true, limit: 100 })) all.push(p);
+  const oldest = (xs: Stripe.Product[]) => [...xs].sort((a, b) => a.created - b.created)[0];
+  return (
+    oldest(all.filter((p) => p.metadata?.[PLUS_METADATA_KEY] === PLUS_METADATA_VALUE)) ??
+    oldest(all.filter((p) => /\bplus\b/i.test(p.name))) ??
+    null
+  );
+}
+
+export type SelfCheck = { ok: boolean; signedStatus: number | null; badStatus: number | null };
+
 /**
- * Makes the Stripe account ready for Yooits. Safe to run again: it keeps what
- * is right, fixes event lists, and replaces only endpoints it made itself.
- * Returns what it did, in plain words.
+ * Proves the Plus webhook on this site checks Stripe signatures: a harmless
+ * event signed with the stored secret must be accepted (200) and the same
+ * event with a wrong signature refused (400). The event type is one Yooits
+ * ignores, so nothing is stored or changed.
+ */
+export async function billingWebhookSelfCheck(
+  base: string,
+  livemode: boolean,
+): Promise<SelfCheck | null> {
+  const k = stripeKey();
+  if (!k) return null;
+  const fromEnv = env("STRIPE_BILLING_WEBHOOK_SECRET");
+  const secret = fromEnv ?? (await storedWebhookSecrets(["billing_webhook"]))[0];
+  if (!secret) return null;
+  const stripe = keyOnlyStripe(k.key);
+  const crypto = Stripe.createSubtleCryptoProvider();
+  const payload = JSON.stringify({
+    id: `evt_yooits_self_check_${Date.now()}`,
+    object: "event",
+    type: "yooits.self_check",
+    livemode,
+    created: Math.floor(Date.now() / 1000),
+    data: { object: {} },
+  });
+  const header = (sec: string) =>
+    stripe.webhooks.generateTestHeaderStringAsync({ payload, secret: sec, cryptoProvider: crypto });
+  const send = async (sig: string) => {
+    try {
+      const r = await fetch(`${base}/api/stripe/billing-webhook`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "stripe-signature": sig },
+        body: payload,
+      });
+      return r.status;
+    } catch {
+      return null;
+    }
+  };
+  const signedStatus = await send(await header(secret));
+  const badStatus = await send(await header(`${secret}x`));
+  return { ok: signedStatus === 200 && badStatus === 400, signedStatus, badStatus };
+}
+
+/**
+ * Makes the Stripe account ready for Yooits Plus, reusing what is already
+ * there: an existing $4.99 monthly price, the account's own billing portal
+ * settings and any webhook already pointing at Yooits. It creates a piece only
+ * when the account has none, and never makes a second price, portal or
+ * webhook for the same job. Safe to run again. Returns what it did.
  */
 export async function runSetup(base: string, actorUserId: string): Promise<string[]> {
   const k = stripeKey();
@@ -299,40 +377,46 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
   const account = await stripe.accounts.retrieveCurrent();
   const done: string[] = [];
 
-  // 1. The Plus price: $4.99 a month in USD, found by its lookup key.
+  // 1. The Plus price: $4.99 a month in USD, found by its lookup key, else reused.
   if (await findPrice(stripe)) {
     done.push("Plus price was already right.");
   } else {
-    const products = await stripe.products.search({
-      query: `metadata['${PLUS_METADATA_KEY}']:'${PLUS_METADATA_VALUE}'`,
-    });
-    const product =
-      products.data.find((p) => p.active) ??
-      (await stripe.products.create(
-        {
-          name: "Yooits Plus",
-          description: "Premium customization and no Yooits branding.",
-          metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
-        },
-        { idempotencyKey: `yooits-plus-product-${account.id}` },
-      ));
-    await stripe.prices.create(
-      {
-        product: product.id,
-        unit_amount: PLUS_PRICE_CENTS,
-        currency: PLUS_CURRENCY,
-        recurring: { interval: PLUS_INTERVAL },
+    const chosen = choosePlusPrice(await plusLikePrices(stripe));
+    if (chosen) {
+      await stripe.prices.update(chosen.id, {
         lookup_key: PLUS_PRICE_LOOKUP_KEY,
         transfer_lookup_key: true,
-        nickname: "Yooits Plus monthly",
-        metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
-      },
-      { idempotencyKey: `yooits-plus-price-${account.id}-${PLUS_PRICE_CENTS}` },
-    );
-    done.push("Made the Plus price, $4.99 a month.");
+      });
+      done.push(`Reused your existing $4.99 a month Plus price (${chosen.id}).`);
+    } else {
+      const product =
+        (await existingPlusProduct(stripe)) ??
+        (await stripe.products.create(
+          {
+            name: "Yooits Plus",
+            description: "Premium customization and no Yooits branding.",
+            metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
+          },
+          { idempotencyKey: `yooits-plus-product-${account.id}` },
+        ));
+      await stripe.prices.create(
+        {
+          product: product.id,
+          unit_amount: PLUS_PRICE_CENTS,
+          currency: PLUS_CURRENCY,
+          recurring: { interval: PLUS_INTERVAL },
+          lookup_key: PLUS_PRICE_LOOKUP_KEY,
+          transfer_lookup_key: true,
+          nickname: "Yooits Plus monthly",
+          metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
+        },
+        { idempotencyKey: `yooits-plus-price-${account.id}-${PLUS_PRICE_CENTS}` },
+      );
+      done.push(`Made the Plus price, $4.99 a month, on "${product.name}".`);
+    }
   }
 
-  // 2. The billing portal for Plus.
+  // 2. The billing portal: the one Set up recorded, else the account's own, else a new one.
   const stored = await rows(livemode);
   const portalRow = stored.find((r) => r.item === "portal_configuration");
   const portalParams = portalConfigurationParams(
@@ -341,13 +425,15 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
   if (env("STRIPE_PORTAL_CONFIGURATION_ID")) {
     done.push("Billing portal is set in Vercel, left as it is.");
   } else if (portalRow) {
-    await stripe.billingPortal.configurations.update(portalRow.object_id, {
-      ...(portalParams as unknown as Stripe.BillingPortal.ConfigurationUpdateParams),
-      active: true,
-    });
-    done.push("Billing portal settings checked.");
+    done.push("Billing portal was already set up.");
   } else {
-    const cfg = await stripe.billingPortal.configurations.create(portalParams);
+    const configs: Stripe.BillingPortal.Configuration[] = [];
+    for await (const c of stripe.billingPortal.configurations.list({ active: true, limit: 100 }))
+      configs.push(c);
+    const existing =
+      configs.find((c) => c.metadata?.yooits_setup === "portal_configuration") ??
+      configs.find((c) => c.is_default);
+    const cfg = existing ?? (await stripe.billingPortal.configurations.create(portalParams));
     await store(
       {
         item: "portal_configuration",
@@ -358,17 +444,22 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
       },
       k.key,
     );
-    done.push("Made the billing portal settings for Plus.");
+    done.push(
+      existing
+        ? "Reused your billing portal settings in Stripe."
+        : "Made the billing portal settings for Plus.",
+    );
   }
 
-  // 3. Webhooks.
+  // 3. The Plus webhook (tips and Connect wait until those are switched on).
   const endpoints = await allEndpoints(stripe);
-  for (const p of WEBHOOK_PLANS) {
+  for (const p of WEBHOOK_PLANS.filter((x) => SETUP_WEBHOOKS.includes(x.item))) {
     const url = `${base}${p.path}`;
     const row = stored.find((r) => r.item === p.item);
-    const ours = row ? endpoints.find((e) => e.id === row.object_id) : undefined;
-    const external = env(p.envSecret) ? endpointAt(endpoints, url, p) : undefined;
-    const keep = ours && ours.url === url && row?.secret_ciphertext ? ours : external;
+    const ours = row?.secret_ciphertext ? endpoints.find((e) => e.id === row.object_id) : undefined;
+    const atAddress = endpointsForPlan(endpoints, p).filter((e) => e.url === url);
+    const external = env(p.envSecret) ? atAddress[0] : undefined;
+    const keep = ours && ours.url === url ? ours : external;
     if (keep) {
       const missing = missingEvents(keep.enabled_events, p.events);
       if (missing.length || keep.status !== "enabled") {
@@ -382,6 +473,13 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
       } else {
         done.push(`${p.label} webhook was already right.`);
       }
+      continue;
+    }
+    if (atAddress.length) {
+      // One exists, but Stripe only shows its signing secret once, when it's made.
+      done.push(
+        `A ${p.label} webhook already points at ${url}, but its signing secret isn't on this site. Add it in Vercel as ${p.envSecret} (Production, Sensitive) and redeploy. No second webhook was made.`,
+      );
       continue;
     }
     const created = await stripe.webhookEndpoints.create({
@@ -417,6 +515,16 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
     done.push(`Made the ${p.label} webhook.`);
   }
 
+  // 4. Prove the webhook checks signatures.
+  const check = await billingWebhookSelfCheck(base, livemode);
+  done.push(
+    !check
+      ? "Couldn't check the Plus webhook: no signing secret on this site yet."
+      : check.ok
+        ? "Plus webhook checked: it accepts Stripe's signature and refuses a wrong one."
+        : `Plus webhook check failed (signed ${check.signedStatus ?? "no answer"}, wrong ${check.badStatus ?? "no answer"}).`,
+  );
+
   await db()
     .from("admin_audit_log")
     .insert({
@@ -424,7 +532,21 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
       action: "payments.stripe_setup",
       target_type: "stripe_account",
       target_id: account.id,
-      details: { livemode, steps: done },
+      details: {
+        livemode,
+        steps: done,
+        account: {
+          business_name: account.business_profile?.name ?? null,
+          legal_name: account.company?.name ?? null,
+          display_name: account.settings?.dashboard?.display_name ?? null,
+          website: account.business_profile?.url ?? null,
+          statement_descriptor: account.settings?.payments?.statement_descriptor ?? null,
+          country: account.country ?? null,
+          charges_enabled: !!account.charges_enabled,
+          details_submitted: !!account.details_submitted,
+        },
+        self_check: check,
+      },
     });
   return done;
 }

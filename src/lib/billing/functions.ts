@@ -3,8 +3,9 @@
  * browser gets RPC stubs. The price, the customer and the plan are decided
  * here from the database and Stripe, never from browser input.
  *
- * Paid checkout opens only when PLUS_BILLING_ENABLED and PLUS_CHECKOUT_ENABLED
- * are both "true" (see config.server.ts). Without them, Founding Members keep
+ * Paid checkout opens only when PLUS_BILLING_ENABLED is "true" and
+ * PLUS_CHECKOUT_ENABLED is "true" (everyone) or "owner" (Yooits admins only),
+ * see config.server.ts. Without them, Founding Members keep
  * their free Plus and nobody is offered a way to pay.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -57,6 +58,14 @@ const db = () => supabaseAdmin as unknown as SupabaseClient;
 function siteUrl(): string {
   const cfg = getBillingConfig();
   return cfg.siteUrl ?? new URL(getRequest().url).origin;
+}
+
+/** True when this person may start a Plus checkout under the current switch. */
+async function checkoutAllowed(cfg: { checkoutMode: string }, userId: string): Promise<boolean> {
+  if (cfg.checkoutMode === "everyone") return true;
+  if (cfg.checkoutMode !== "owner") return false;
+  const { data, error } = await db().rpc("has_role", { _user_id: userId, _role: "admin" });
+  return !error && data === true;
 }
 
 async function isSuspended(userId: string): Promise<boolean> {
@@ -162,7 +171,7 @@ export const getMyPlus = createServerFn({ method: "GET" })
               testMode: !current.livemode,
             }
           : null,
-        checkoutAvailable: !!cfg && cfg.checkoutOpen && !current,
+        checkoutAvailable: !!cfg && !current && (await checkoutAllowed(cfg, context.userId)),
         canManageBilling: canManage,
       };
     } catch (e) {
@@ -178,8 +187,8 @@ export const startPlusCheckout = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     try {
       const cfg = getBillingConfig();
-      if (!cfg.checkoutOpen) throw new BillingUnavailableError();
       const userId = context.userId;
+      if (!(await checkoutAllowed(cfg, userId))) throw new BillingUnavailableError();
       if (await isSuspended(userId))
         throw new UserFacingError("This account can't start Plus right now.");
 

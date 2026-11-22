@@ -15,6 +15,8 @@ export type FeatureInputs = {
   env: {
     PLUS_BILLING_ENABLED: boolean;
     PLUS_CHECKOUT_ENABLED: boolean;
+    /** PLUS_CHECKOUT_ENABLED=owner: only Yooits admins can buy. */
+    PLUS_CHECKOUT_OWNER_ONLY?: boolean;
     PLUS_LIVE_MODE_APPROVED: boolean;
     TIPPING_ENABLED: boolean;
     STRIPE_LIVE_MODE_APPROVED: boolean;
@@ -34,6 +36,8 @@ export type FeatureState = {
   ready: boolean;
   missing: string[];
   toTurnOn: string[];
+  /** On for the owner's account only. */
+  ownerOnly?: boolean;
 };
 
 export function featureReadiness(i: FeatureInputs): FeatureState[] {
@@ -47,10 +51,9 @@ export function featureReadiness(i: FeatureInputs): FeatureState[] {
   if (i.keyMode && !i.portalOk) plusMissing.push("Billing portal settings (Set up makes them).");
   if (i.keyMode && !i.webhookOk.billing_webhook)
     plusMissing.push("The Plus billing webhook (Set up makes it).");
-  const plusOn =
-    i.env.PLUS_BILLING_ENABLED &&
-    i.env.PLUS_CHECKOUT_ENABLED &&
-    (!live || i.env.PLUS_LIVE_MODE_APPROVED);
+  const plusBase = i.env.PLUS_BILLING_ENABLED && (!live || i.env.PLUS_LIVE_MODE_APPROVED);
+  const plusOn = plusBase && i.env.PLUS_CHECKOUT_ENABLED;
+  const plusOwnerOnly = plusBase && !plusOn && !!i.env.PLUS_CHECKOUT_OWNER_ONLY;
 
   const connectMissing = [...base];
   if (i.keyMode && !i.connectOk)
@@ -76,6 +79,7 @@ export function featureReadiness(i: FeatureInputs): FeatureState[] {
       ready: plusMissing.length === 0,
       missing: plusMissing,
       toTurnOn: plusOn ? [] : [vercel(plusSwitches)],
+      ownerOnly: plusOwnerOnly,
     },
     {
       id: "tips",

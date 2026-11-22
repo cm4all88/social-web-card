@@ -83,6 +83,9 @@ export const WEBHOOK_PLANS: WebhookPlan[] = [
   },
 ];
 
+/** Webhooks Set up handles now. Tips and Connect wait until those features are switched on. */
+export const SETUP_WEBHOOKS: WebhookItem[] = ["billing_webhook"];
+
 /** The site the endpoints point at, or null when the address isn't one of Yooits' own. */
 export function webhookBase(siteUrl: string | null | undefined): string | null {
   if (!siteUrl) return null;
@@ -137,4 +140,76 @@ export function keyMode(key: string | null | undefined): KeyMode | null {
   if (/^(sk|rk)_live_/.test(key)) return "live";
   if (/^(sk|rk)_test_/.test(key)) return "test";
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Reusing what the Stripe account already has
+// ---------------------------------------------------------------------------
+type PriceCandidate = {
+  id: string;
+  created: number;
+  lookup_key?: string | null;
+  metadata?: Record<string, string> | null;
+  product:
+    | string
+    | {
+        id: string;
+        name?: string | null;
+        active?: boolean | null;
+        metadata?: Record<string, string> | null;
+        deleted?: unknown;
+      };
+};
+
+/**
+ * Of the account's active $4.99-a-month USD prices (already checked by the
+ * caller), the one that is Yooits Plus: marked as ours first, then one whose
+ * product is called Plus. Oldest wins, so running again picks the same one.
+ * Null when none of them is plainly Plus.
+ */
+export function choosePlusPrice<T extends PriceCandidate>(prices: T[]): T | null {
+  const product = (p: T) => (typeof p.product === "string" ? null : p.product);
+  const usable = prices.filter((p) => {
+    const pr = product(p);
+    return !pr || (!pr.deleted && pr.active !== false);
+  });
+  const ours = (p: T) =>
+    p.metadata?.yooits_product === "plus" || product(p)?.metadata?.yooits_product === "plus";
+  const named = (p: T) => /\bplus\b/i.test(product(p)?.name ?? "");
+  const oldest = (xs: T[]) => [...xs].sort((a, b) => a.created - b.created)[0] ?? null;
+  return oldest(usable.filter(ours)) ?? oldest(usable.filter(named));
+}
+
+type EndpointLike = {
+  id: string;
+  url: string;
+  status: string;
+  metadata?: Record<string, string> | null;
+};
+
+/** An endpoint already pointing at this plan's address on any Yooits host. */
+export function endpointsForPlan<T extends EndpointLike>(
+  endpoints: T[],
+  plan: Pick<WebhookPlan, "path">,
+): T[] {
+  return endpoints.filter((e) => {
+    try {
+      const u = new URL(e.url);
+      return (WEBHOOK_HOSTS as readonly string[]).includes(u.hostname) && u.pathname === plan.path;
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
+ * Who may start a Plus checkout. PLUS_CHECKOUT_ENABLED "true" opens it to
+ * everyone; "owner" only to Yooits admins, for a first live purchase.
+ */
+export type PlusCheckoutMode = "everyone" | "owner" | "off";
+export function plusCheckoutMode(value: string | null | undefined): PlusCheckoutMode {
+  const v = value?.trim().toLowerCase();
+  if (v === "true") return "everyone";
+  if (v === "owner") return "owner";
+  return "off";
 }
