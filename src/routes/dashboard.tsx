@@ -78,6 +78,7 @@ type Profile = {
   hide_branding?: boolean | null;
   created_at?: string | null;
   skin?: string | null;
+  background_url?: string | null;
 };
 
 const card = "rounded-2xl border border-border bg-card p-5";
@@ -409,7 +410,13 @@ function DashboardPage() {
               </div>
             </div>
             <div className={showPreview ? "mx-auto w-44" : "hidden sm:block"}>
-              <PagePreview profile={profile} links={links} sections={sections} isPlus={isPlus} />
+              <PagePreview
+                profile={profile}
+                links={links}
+                sections={sections}
+                isPlus={isPlus}
+                background={isPlus || rewards.popular ? profile.background_url : null}
+              />
             </div>
           </div>
         )}

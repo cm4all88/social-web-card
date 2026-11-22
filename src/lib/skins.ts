@@ -145,8 +145,24 @@ export function resolveSkin(opts: {
   return findSkin(THEME_DEFAULT_SKIN[shown]) ?? null;
 }
 
+export type SkinState = {
+  /** Effects are switched on for the site. */
+  enabled: boolean;
+  /** The creator has earned the theme their picked effect belongs to. */
+  unlocked: boolean;
+  /** Custom backgrounds are switched on for the site. */
+  backgroundsOn: boolean;
+  /** This creator's custom background may show (Plus or the popular reward). */
+  background: boolean;
+};
+
 /** Reads public_profile_skin_state()'s answer; anything unexpected reads as off. */
-export function parseSkinState(data: unknown): { enabled: boolean; unlocked: boolean } {
+export function parseSkinState(data: unknown): SkinState {
   const d = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
-  return { enabled: d.on === true, unlocked: d.unlocked === true };
+  return {
+    enabled: d.on === true,
+    unlocked: d.unlocked === true,
+    backgroundsOn: d.backgrounds_on === true,
+    background: d.background === true,
+  };
 }

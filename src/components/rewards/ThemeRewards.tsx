@@ -26,15 +26,23 @@ const rpc = (fn: string) => (supabase as unknown as Rpc).rpc(fn);
 export function useThemeRewards() {
   const [enabled, setEnabled] = useState(false);
   const [unlocked, setUnlocked] = useState<RewardKey[]>([]);
+  // Custom backgrounds (the "popular" reward) and the view count toward it.
+  const [popular, setPopular] = useState(false);
+  const [profileViews, setProfileViews] = useState(0);
+  const [popularAt, setPopularAt] = useState<number | null>(null);
 
   const apply = useCallback((data: unknown) => {
     const r = parseRewardClaim(data);
     setEnabled(r.enabled);
     setUnlocked(r.unlocked);
+    setPopular(r.popular);
+    setProfileViews(r.profileViews);
+    setPopularAt(r.popularAt);
     for (const k of r.newlyUnlocked)
       toast.success(`You unlocked the ${themeForReward(k).label} theme!`);
+    if (r.newlyPopular) toast.success("You unlocked custom backgrounds!");
     // Each unlock also adds a bell notification; show it without a reload.
-    if (r.newlyUnlocked.length > 0) void refreshFeed().catch(() => {});
+    if (r.newlyUnlocked.length > 0 || r.newlyPopular) void refreshFeed().catch(() => {});
   }, []);
 
   const refresh = useCallback(async () => {
@@ -60,7 +68,7 @@ export function useThemeRewards() {
     refresh();
   }, [refresh]);
 
-  return { enabled, unlocked, refresh, recordShare };
+  return { enabled, unlocked, popular, profileViews, popularAt, refresh, recordShare };
 }
 
 function ThemeTile({

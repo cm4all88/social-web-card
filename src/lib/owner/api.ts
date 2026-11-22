@@ -339,6 +339,7 @@ type OwnerFunctions = {
     args: { _offering_id: string; _suspended: boolean; _reason?: string | null };
     result: boolean;
   };
+  owner_remove_background: { args: { _user_id: string; _reason: string }; result: boolean };
 };
 
 export class OwnerAccessError extends Error {}
@@ -415,6 +416,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "support.version_rejected": "Support offering rejected",
   "support.offering_suspended": "Support offering paused",
   "support.offering_restored": "Support offering restored",
+  "background.removed": "Custom background removed",
 };
 
 export function auditLabel(action: string): string {

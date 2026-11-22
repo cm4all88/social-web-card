@@ -85,10 +85,10 @@ describe("rewards and earned themes", () => {
     expect(rewardHint("one_week", { links: [], createdAt: "2026-11-01T00:00:00Z" }, now)).toBe(
       "Add a Visible link and keep your page for a week (day 7 of 7).",
     );
-    expect(parseRewardClaim(null)).toEqual({ unlocked: [], newlyUnlocked: [], enabled: false });
+    expect(parseRewardClaim(null)).toMatchObject({ unlocked: [], newlyUnlocked: [], enabled: false });
     expect(
       parseRewardClaim({ enabled: true, unlocked: ["five_links", "bogus"], new: ["five_links"] }),
-    ).toEqual({
+    ).toMatchObject({
       unlocked: ["five_links"],
       newlyUnlocked: ["five_links"],
       enabled: true,

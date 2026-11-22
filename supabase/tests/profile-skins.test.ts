@@ -161,9 +161,134 @@ describe("skins", () => {
     it("can't be set on someone else's profile", async () => {
       await as(OTHER, `UPDATE public.profiles SET skin = 'none' WHERE user_id = $1`, [FREE]);
       expect(
-        (await svc<{ skin: string }>(`SELECT skin FROM public.profiles WHERE user_id = $1`, [FREE]))[0]
-          .skin,
+        (
+          await svc<{ skin: string }>(`SELECT skin FROM public.profiles WHERE user_id = $1`, [FREE])
+        )[0].skin,
       ).toBe("stars");
+    });
+  });
+});
+
+const bgUrl = (who: string, file = "background-1.webp") =>
+  `https://zlunoczkptknsxviddiw.supabase.co/storage/v1/object/public/avatars/${who}/${file}`;
+const setBg = (who: string, url: string | null, target = who) =>
+  fails(
+    as(who, `UPDATE public.profiles SET background_url = $2 WHERE user_id = $1`, [target, url]),
+  );
+const bgOf = async (who: string) =>
+  (
+    await svc<{ background_url: string | null }>(
+      `SELECT background_url FROM public.profiles WHERE user_id = $1`,
+      [who],
+    )
+  )[0].background_url;
+const views = (who: string, n: number) =>
+  svc(
+    `INSERT INTO public.analytics_events (kind, profile_user_id) SELECT 'profile_view', $1 FROM generate_series(1, $2)`,
+    [who, n],
+  );
+const claim = async (who: string) =>
+  (
+    await as<{
+      v: { new: string[]; unlocked: string[]; profile_views: number; popular_at: number };
+    }>(who, `SELECT public.claim_theme_rewards() AS v`)
+  )[0].v;
+const bgState = async (who: string) =>
+  (
+    await as<{ v: { backgrounds_on: boolean; background: boolean } }>(
+      null,
+      `SELECT public.public_profile_skin_state($1) AS v`,
+      [who],
+    )
+  )[0].v;
+
+describe("custom backgrounds", () => {
+  it("stay off while their flag is off, but removing one always works", async () => {
+    expect(await setBg(PLUS, bgUrl(PLUS))).toMatch(/aren't available yet/);
+    expect(await setBg(PLUS, null)).toBeNull();
+    expect((await bgState(PLUS)).backgrounds_on).toBe(false);
+    expect((await claim(FREE)).new).not.toContain("popular");
+  });
+
+  describe("with the flag on", () => {
+    beforeAll(async () => {
+      await flag("backgrounds", true);
+    });
+
+    it("are included with Plus", async () => {
+      expect(await setBg(PLUS, bgUrl(PLUS))).toBeNull();
+      expect(await bgState(PLUS)).toMatchObject({ backgrounds_on: true, background: true });
+    });
+
+    it("unlock for everyone else at the popular threshold, counted from profile views", async () => {
+      expect(await setBg(OTHER, bgUrl(OTHER))).toMatch(
+        /unlock at 1,000 profile views, or with Plus/,
+      );
+      await views(OTHER, 999);
+      let c = await claim(OTHER);
+      expect(c.profile_views).toBe(999);
+      expect(c.popular_at).toBe(1000);
+      expect(c.new).not.toContain("popular");
+      expect(await setBg(OTHER, bgUrl(OTHER))).toMatch(/unlock at 1,000/);
+      await views(OTHER, 1);
+      c = await claim(OTHER);
+      expect(c.new).toContain("popular");
+      expect(c.unlocked).toContain("popular");
+      expect((await claim(OTHER)).new).toEqual([]);
+      expect(await setBg(OTHER, bgUrl(OTHER))).toBeNull();
+      expect((await bgState(OTHER)).background).toBe(true);
+      const n = await svc<{ title: string; body: string; link_path: string }>(
+        `SELECT title, body, link_path FROM public.notifications WHERE user_id = $1 AND dedupe_key = 'reward:popular'`,
+        [OTHER],
+      );
+      expect(n).toEqual([
+        {
+          title: "You unlocked custom backgrounds",
+          body: "Your page reached 1,000 views. Add your own photo behind it in Appearance on your dashboard.",
+          link_path: "/dashboard#appearance",
+        },
+      ]);
+    });
+
+    it("must be a photo in the creator's own folder", async () => {
+      expect(await setBg(PLUS, bgUrl(OTHER))).toMatch(/profiles_background_url_own_bucket/);
+      expect(await setBg(PLUS, "https://example.com/me.jpg")).toMatch(
+        /profiles_background_url_own_bucket/,
+      );
+      expect(await setBg(PLUS, bgUrl(PLUS, "../x.webp"))).toMatch(
+        /profiles_background_url_own_bucket/,
+      );
+    });
+
+    it("can't be set on someone else's profile", async () => {
+      await setBg(OTHER, null, PLUS);
+      expect(await bgOf(PLUS)).toBe(bgUrl(PLUS));
+    });
+
+    it("can be taken off a page by an admin only, with a reason, in the audit log", async () => {
+      const removed = (who: string, target: string, reason: string | null) =>
+        fails(as(who, `SELECT public.owner_remove_background($1, $2)`, [target, reason]));
+      expect(await removed(PLUS, OTHER, "Reported photo")).toMatch(/admin|authorized/i);
+      expect(await bgOf(OTHER)).toBe(bgUrl(OTHER));
+      await svc(
+        `INSERT INTO public.user_roles (user_id, role) VALUES ($1, 'admin') ON CONFLICT DO NOTHING`,
+        [FREE],
+      );
+      expect(await removed(FREE, OTHER, "")).toMatch(/reason/);
+      expect(await removed(FREE, OTHER, "Reported photo")).toBeNull();
+      expect(await bgOf(OTHER)).toBeNull();
+      const log = await svc<{ action: string; details: { reason: string } }>(
+        `SELECT action, details FROM public.admin_audit_log WHERE action = 'background.removed' AND target_id = $1`,
+        [OTHER],
+      );
+      expect(log).toHaveLength(1);
+      expect(log[0].details.reason).toBe("Reported photo");
+    });
+
+    it("stop showing when Plus or the reward is gone, without deleting anything", async () => {
+      await svc(`DELETE FROM public.plan_entitlements WHERE user_id = $1`, [PLUS]);
+      expect((await bgState(PLUS)).background).toBe(false);
+      expect(await bgOf(PLUS)).toBe(bgUrl(PLUS));
     });
   });
 });
@@ -212,7 +337,7 @@ describe("profile skins migration", () => {
     const after = await snapshot(d);
     expect(after.prof).toBe(before.prof);
     const newCols = after.c.split(",").filter((x) => !before.c.split(",").includes(x));
-    expect(newCols).toEqual(["profiles.skin:text"]);
+    expect(newCols.sort()).toEqual(["profiles.background_url:text", "profiles.skin:text"]);
 
     await d.exec(readFileSync(ROLLBACK, "utf8"));
     const rolled = await snapshot(d);

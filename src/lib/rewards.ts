@@ -78,13 +78,31 @@ export function rewardHint(
   }
 }
 
-/** Parses claim_theme_rewards()'s answer; anything unexpected reads as nothing unlocked. */
+/**
+ * Parses claim_theme_rewards()'s answer; anything unexpected reads as nothing
+ * unlocked. "popular" (custom backgrounds) unlocks a feature, not a theme, so
+ * it's reported on its own with the view count toward it.
+ */
 export function parseRewardClaim(data: unknown): {
   unlocked: RewardKey[];
   newlyUnlocked: RewardKey[];
   enabled: boolean;
+  popular: boolean;
+  newlyPopular: boolean;
+  profileViews: number;
+  popularAt: number | null;
 } {
   const d = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
   const list = (v: unknown) => (Array.isArray(v) ? v.filter(isRewardKey) : []);
-  return { unlocked: list(d.unlocked), newlyUnlocked: list(d.new), enabled: d.enabled === true };
+  const has = (v: unknown) => Array.isArray(v) && v.includes("popular");
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : null);
+  return {
+    unlocked: list(d.unlocked),
+    newlyUnlocked: list(d.new),
+    enabled: d.enabled === true,
+    popular: has(d.unlocked),
+    newlyPopular: has(d.new),
+    profileViews: num(d.profile_views) ?? 0,
+    popularAt: num(d.popular_at),
+  };
 }

@@ -2,6 +2,7 @@
 import { Star } from "lucide-react";
 import { buttonRadiusFor, fontFamilyFor, getTheme, type ThemeTokens } from "@/lib/themes";
 import { linkDisplay } from "@/lib/platforms";
+import { backgroundScrim, safeBackgroundUrl } from "@/lib/backgrounds";
 import { groupLinks, type LinkSection } from "@/lib/links/groups";
 import type { ManagedLink } from "@/lib/links/api";
 
@@ -12,6 +13,7 @@ export function PagePreview({
   links,
   sections,
   isPlus,
+  background,
 }: {
   profile: {
     username: string;
@@ -23,7 +25,10 @@ export function PagePreview({
   links: ManagedLink[];
   sections: LinkSection[];
   isPlus: boolean;
+  /** The creator's custom background, when it may show. */
+  background?: string | null;
 }) {
+  const bg = safeBackgroundUrl(background);
   // Reward themes are checked on the server; the preview just shows the chosen look.
   const theme = getTheme(profile.theme, profile.custom_theme, { plus: isPlus, unlocked: true });
   const radius = buttonRadiusFor(theme.buttonStyle);
@@ -37,9 +42,11 @@ export function PagePreview({
     <div
       aria-label="Preview of your page"
       role="img"
-      className="w-full overflow-hidden rounded-3xl border-4 border-black/70 shadow-xl"
+      className="relative w-full overflow-hidden rounded-3xl border-4 border-black/70 shadow-xl"
       style={{
-        background: theme.background,
+        background: bg
+          ? `${backgroundScrim(theme.foreground)}, url("${bg}") center / cover no-repeat`
+          : theme.background,
         color: theme.foreground,
         fontFamily: fontFamilyFor(theme.font),
       }}

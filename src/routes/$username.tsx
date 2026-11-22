@@ -16,6 +16,7 @@ import { getPublicTipConfig } from "@/lib/tipping/functions";
 import { loadPublicPlus, loadPublicSkinState, loadPublicThemeUnlocked } from "@/lib/billing/public";
 import { SkinLayer } from "@/components/skins/SkinLayer";
 import { findSkin, parseSkinState, resolveSkin, THEME_DEFAULT_SKIN } from "@/lib/skins";
+import { backgroundScrim, safeBackgroundUrl } from "@/lib/backgrounds";
 import { trackVisit } from "@/lib/analytics/track";
 
 export const Route = createFileRoute("/$username")({
@@ -48,6 +49,7 @@ type Profile = {
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
   skin?: string | null;
+  background_url?: string | null;
 };
 type SocialLink = {
   id: string;
@@ -75,7 +77,7 @@ function ProfilePage() {
   // Plus settings (premium theme, hidden branding) count only while on Plus.
   const [plus, setPlus] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
-  const [skinState, setSkinState] = useState({ enabled: false, unlocked: false });
+  const [skinState, setSkinState] = useState(() => parseSkinState(null));
   // ?effect=snow previews an effect on this page without saving anything.
   const [previewSkin, setPreviewSkin] = useState<string | null>(null);
   useEffect(() => {
@@ -96,7 +98,9 @@ function ProfilePage() {
       }
       const pickedSkin = (prof as { skin?: string | null }).skin;
       const wantsSkin =
-        (!!pickedSkin && pickedSkin !== "none") || !!(prof.theme && THEME_DEFAULT_SKIN[prof.theme]);
+        (!!pickedSkin && pickedSkin !== "none") ||
+        !!(prof.theme && THEME_DEFAULT_SKIN[prof.theme]) ||
+        !!(prof as { background_url?: string | null }).background_url;
       const [{ data: l }, { data: secs }, isPlus, isUnlocked, skinData] = await Promise.all([
         supabase
           .from("social_links")
@@ -163,12 +167,29 @@ function ProfilePage() {
   });
   const skin = preview ?? resolvedSkin;
   const frame = skin?.frame;
+  // The creator's own photo, while they have Plus or the popular reward.
+  const bg = skinState.background ? safeBackgroundUrl(profile?.background_url) : null;
 
   return (
     <div
       className="relative min-h-screen overflow-hidden"
       style={{ background: theme.background, color: theme.foreground, fontFamily: font }}
     >
+      {bg && (
+        <>
+          <div
+            aria-hidden="true"
+            data-background
+            className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center"
+            style={{ backgroundImage: `url("${bg}")` }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed inset-0 z-0"
+            style={{ background: backgroundScrim(theme.foreground) }}
+          />
+        </>
+      )}
       <SkinLayer skin={skin} />
       {preview && (
         <div

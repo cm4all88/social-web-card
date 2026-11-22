@@ -1,6 +1,7 @@
 /**
  * Appearance on the creator dashboard: the full theme gallery, Plus themes,
- * seasonal and earned themes, animated effects, and custom colours. Moved here unchanged from
+ * seasonal and earned themes, animated effects, custom backgrounds and
+ * custom colours. Moved here unchanged from
  * the dashboard page so the links can come first.
  */
 import { toast } from "sonner";
@@ -26,7 +27,8 @@ import {
 import { ThemeRewardsPicker, type useThemeRewards } from "@/components/rewards/ThemeRewards";
 import type { MyPlus } from "@/components/plus/PlusPanel";
 import { themeForReward } from "@/lib/rewards";
-import { SkinPicker } from "@/components/skins/SkinPicker";
+import { SkinPicker, useSkinState } from "@/components/skins/SkinPicker";
+import { BackgroundPicker } from "@/components/backgrounds/BackgroundPicker";
 
 export type AppearanceProfile = {
   user_id: string;
@@ -38,6 +40,7 @@ export type AppearanceProfile = {
   custom_theme: Partial<ThemeTokens> | null;
   created_at?: string | null;
   skin?: string | null;
+  background_url?: string | null;
 };
 
 export function AppearanceSection<P extends AppearanceProfile>({
@@ -55,6 +58,12 @@ export function AppearanceSection<P extends AppearanceProfile>({
   rewards: ReturnType<typeof useThemeRewards>;
   links: { enabled: boolean; url: string }[];
 }) {
+  const skinState = useSkinState(profile.user_id);
+  const shownTokens = getTheme(profile.theme, profile.custom_theme, {
+    plus: isPlus,
+    unlocked: rewards.unlocked.some((k) => themeForReward(k).key === profile.theme),
+  });
+
   const setTheme = async (themeKey: string) => {
     if (!profile) return;
     setProfile({ ...profile, theme: themeKey });
@@ -200,13 +209,22 @@ export function AppearanceSection<P extends AppearanceProfile>({
         username={profile.username}
         skin={profile.skin}
         themeKey={profile.theme}
-        tokens={getTheme(profile.theme, profile.custom_theme, {
-          plus: isPlus,
-          unlocked: rewards.unlocked.some((k) => themeForReward(k).key === profile.theme),
-        })}
+        tokens={shownTokens}
         isPlus={isPlus}
         unlocked={rewards.unlocked}
         onSaved={(v) => setProfile((p) => (p ? { ...p, skin: v } : p))}
+      />
+
+      <BackgroundPicker
+        userId={profile.user_id}
+        background={profile.background_url}
+        tokens={shownTokens}
+        enabled={skinState.backgroundsOn}
+        isPlus={isPlus}
+        popular={rewards.popular}
+        profileViews={rewards.profileViews}
+        popularAt={rewards.popularAt}
+        onSaved={(v) => setProfile((p) => (p ? { ...p, background_url: v } : p))}
       />
 
       {profile.theme === "custom" && (

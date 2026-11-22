@@ -141,7 +141,7 @@ describe("season windows", () => {
 describe("with the flag off", () => {
   it("earns nothing and refuses seasonal and earned themes, while free and Plus themes work as before", async () => {
     const r = await claim(FREE);
-    expect(r).toEqual({ enabled: false, unlocked: [], new: [] });
+    expect(r).toEqual({ enabled: false, unlocked: [], new: [], profile_views: 0, popular_at: 1000 });
     expect((await as<{ v: boolean }>(FREE, `SELECT public.record_profile_share() AS v`))[0].v).toBe(
       false,
     );

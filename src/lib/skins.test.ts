@@ -80,9 +80,15 @@ describe("skins", () => {
   });
 
   it("read the database's answer safely", () => {
-    expect(parseSkinState(null)).toEqual({ enabled: false, unlocked: false });
-    expect(parseSkinState({ on: true, unlocked: true })).toEqual({ enabled: true, unlocked: true });
-    expect(parseSkinState({ on: "yes" })).toEqual({ enabled: false, unlocked: false });
+    const off = { enabled: false, unlocked: false, backgroundsOn: false, background: false };
+    expect(parseSkinState(null)).toEqual(off);
+    expect(parseSkinState({ on: true, unlocked: true, backgrounds_on: true, background: true })).toEqual({
+      enabled: true,
+      unlocked: true,
+      backgroundsOn: true,
+      background: true,
+    });
+    expect(parseSkinState({ on: "yes", background: 1 })).toEqual(off);
   });
 });
 

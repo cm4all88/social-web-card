@@ -29,18 +29,23 @@ const day = (md: string) => {
   return `${MONTHS[m - 1]} ${d}`;
 };
 
-/** Whether skins are switched on for this site (and the creator's earned state). */
-export function useSkinsEnabled(userId: string | null | undefined) {
-  const [on, setOn] = useState(false);
+/** Whether effects and custom backgrounds are switched on, and this creator's state. */
+export function useSkinState(userId: string | null | undefined) {
+  const [state, setState] = useState(() => parseSkinState(null));
   useEffect(() => {
     if (!userId) return;
     let live = true;
-    loadPublicSkinState(userId).then((d) => live && setOn(parseSkinState(d).enabled));
+    loadPublicSkinState(userId).then((d) => live && setState(parseSkinState(d)));
     return () => {
       live = false;
     };
   }, [userId]);
-  return on;
+  return state;
+}
+
+/** Whether skins are switched on for this site. */
+export function useSkinsEnabled(userId: string | null | undefined) {
+  return useSkinState(userId).enabled;
 }
 
 type Choice = "theme" | "none" | SkinKey;
