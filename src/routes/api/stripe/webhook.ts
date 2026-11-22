@@ -11,6 +11,12 @@ import {
   SubscriptionRetryLaterError,
   type SubscriptionEventLike,
 } from "@/lib/creator/subscription-webhook";
+import {
+  applyWishlistGiftEvent,
+  isWishlistGiftEvent,
+  type GiftEventLike,
+} from "@/lib/wishlist-gifts";
+import { supabaseGiftStore } from "@/lib/wishlist-gift-store.server";
 
 /**
  * Stripe webhook endpoint for both the platform endpoint and the
@@ -19,8 +25,9 @@ import {
  * accepted if it verifies against either.
  *
  * Creator subscription events (subscriptions and their checkouts on
- * connected accounts) go to the creator subscription handler; everything
- * else goes to the tip handler.
+ * connected accounts) go to the creator subscription handler; wishlist gift
+ * checkouts (switched off) go to the gift handler; everything else goes to
+ * the tip handler.
  */
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
@@ -47,6 +54,30 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         const log = (msg: string, extra?: Record<string, unknown>) =>
           console.log(`[stripe-webhook] ${msg}`, extra ?? {});
         try {
+          const giftEvent = event as unknown as GiftEventLike;
+          if (isWishlistGiftEvent(giftEvent)) {
+            const claim = await supabaseTippingStore.claimEvent({
+              id: event.id,
+              type: event.type,
+              account: giftEvent.account ?? null,
+              livemode: event.livemode,
+            });
+            if (claim === "duplicate")
+              return Response.json({ received: true, outcome: "duplicate" });
+            if (claim === "in_progress") return new Response("retry", { status: 500 });
+            try {
+              const outcome = await applyWishlistGiftEvent(giftEvent, {
+                store: supabaseGiftStore,
+                liveModeAllowed: cfg.liveModeAllowed,
+              });
+              await supabaseTippingStore.markEventProcessed(event.id);
+              log("wishlist gift", { id: event.id, outcome });
+              return Response.json({ received: true, outcome });
+            } catch (err) {
+              await supabaseTippingStore.releaseEvent(event.id);
+              throw err;
+            }
+          }
           const subEvent = event as unknown as SubscriptionEventLike;
           if (isCreatorSubscriptionEvent(subEvent)) {
             const result = await handleCreatorSubscriptionEvent(subEvent, {

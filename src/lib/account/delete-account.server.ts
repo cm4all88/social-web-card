@@ -34,6 +34,7 @@ export const KEPT_TABLES = [
   "billing_customers",
   "creator_subscriptions",
   "support_orders",
+  "wishlist_gifts", // gift money records (switched off; none exist yet)
   "admin_audit_log",
 ] as const;
 
