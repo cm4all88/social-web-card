@@ -53,6 +53,7 @@ function Home() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
             to="/auth"
+            search={{ mode: "signup" }}
             onClick={() => track("signup_cta")}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
             style={{ boxShadow: "var(--shadow-glow)" }}
