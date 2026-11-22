@@ -339,7 +339,6 @@ type OwnerFunctions = {
     args: { _offering_id: string; _suspended: boolean; _reason?: string | null };
     result: boolean;
   };
-  owner_remove_background: { args: { _user_id: string; _reason: string }; result: boolean };
 };
 
 export class OwnerAccessError extends Error {}

@@ -78,3 +78,18 @@ export function safeBackgroundUrl(url: string | null | undefined): string | null
     ? url
     : null;
 }
+
+/**
+ * The storage path (in the avatars bucket) of any photo in this creator's
+ * own folder, from its public address. Used to delete a removed background.
+ */
+export function storagePathInOwnFolder(
+  url: string | null | undefined,
+  userId: string,
+): string | null {
+  const m = safeBackgroundUrl(url)?.match(
+    /\/object\/public\/avatars\/([0-9a-f-]{36})\/([A-Za-z0-9._-]+)$/,
+  );
+  if (!m || m[1] !== userId || m[2] === "." || m[2] === "..") return null;
+  return `${m[1]}/${m[2]}`;
+}

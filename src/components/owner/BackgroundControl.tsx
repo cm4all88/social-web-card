@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ownerRpc } from "@/lib/owner/api";
+import { ownerRemoveBackground } from "@/lib/owner/background-functions";
 import { safeBackgroundUrl } from "@/lib/backgrounds";
 
 /**
@@ -36,8 +36,18 @@ export function BackgroundControl({ userId }: { userId: string }) {
   const remove = async () => {
     setBusy(true);
     try {
-      await ownerRpc("owner_remove_background", { _user_id: userId, _reason: reason.trim() });
-      toast.success("Background removed. It's in the audit log.");
+      const r = await ownerRemoveBackground({ data: { userId, reason: reason.trim() } });
+      if (!r.removed) toast("They had no background to remove.");
+      else if (r.fileDeleted)
+        toast.success("Background removed and the photo deleted. It's in the audit log.");
+      else if (r.kept === "is_profile_photo")
+        toast.warning(
+          "Background removed. It's also their profile photo, so that photo still loads.",
+        );
+      else
+        toast.warning(
+          "Background removed, but the photo file couldn't be deleted. Try again or remove it in Supabase.",
+        );
       setOpen(false);
       setReason("");
       await load();
@@ -72,8 +82,8 @@ export function BackgroundControl({ userId }: { userId: string }) {
             placeholder="e.g. Reported photo, not safe for work"
           />
           <p className="text-xs text-muted-foreground">
-            It stops showing on their page straight away. They can upload another; suspend the
-            account if it keeps happening.
+            It comes off their page straight away and the photo file is deleted, so its address
+            stops loading. They can upload another; suspend the account if it keeps happening.
           </p>
           <div className="flex gap-2">
             <Button

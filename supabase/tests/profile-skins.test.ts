@@ -275,7 +275,14 @@ describe("custom backgrounds", () => {
         [FREE],
       );
       expect(await removed(FREE, OTHER, "")).toMatch(/reason/);
-      expect(await removed(FREE, OTHER, "Reported photo")).toBeNull();
+      expect(
+        (
+          await as<{ v: string }>(FREE, `SELECT public.owner_remove_background($1, $2) AS v`, [
+            OTHER,
+            "Reported photo",
+          ])
+        )[0].v,
+      ).toBe(bgUrl(OTHER));
       expect(await bgOf(OTHER)).toBeNull();
       const log = await svc<{ action: string; details: { reason: string } }>(
         `SELECT action, details FROM public.admin_audit_log WHERE action = 'background.removed' AND target_id = $1`,

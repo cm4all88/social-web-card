@@ -333,9 +333,11 @@ REVOKE ALL ON FUNCTION public.claim_theme_rewards() FROM public, anon;
 GRANT EXECUTE ON FUNCTION public.claim_theme_rewards() TO authenticated;
 
 -- Admins can take a custom background off a page (after a report, say).
--- The photo stops showing at once; the action and reason go in the audit log.
+-- It stops showing at once; the action and reason go in the audit log.
+-- Returns the removed photo's address (NULL if there was none) so the
+-- server can delete the stored file, which stops the address loading too.
 CREATE OR REPLACE FUNCTION public.owner_remove_background(_user_id uuid, _reason text DEFAULT NULL)
-RETURNS boolean
+RETURNS text
 LANGUAGE plpgsql
 VOLATILE
 SECURITY DEFINER
@@ -350,12 +352,12 @@ BEGIN
   r := public.owner_clean_reason(_reason);
   SELECT background_url INTO _old FROM public.profiles WHERE user_id = _user_id;
   IF _old IS NULL THEN
-    RETURN false;
+    RETURN NULL;
   END IF;
   UPDATE public.profiles SET background_url = NULL WHERE user_id = _user_id;
   PERFORM public.write_admin_audit('background.removed', 'user', _user_id::text,
                                    jsonb_build_object('reason', r, 'background_url', _old));
-  RETURN true;
+  RETURN _old;
 END;
 $$;
 REVOKE ALL ON FUNCTION public.owner_remove_background(uuid, text) FROM public, anon;

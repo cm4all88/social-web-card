@@ -130,7 +130,8 @@ export function BackgroundPicker({
       const path = backgroundPath(userId, shrunk.ext);
       const { error: upErr } = await supabase.storage.from("avatars").upload(path, shrunk.blob, {
         contentType: shrunk.ext === "webp" ? "image/webp" : "image/jpeg",
-        cacheControl: "31536000",
+        // Short, so a photo taken down stops loading from caches soon after.
+        cacheControl: "3600",
         upsert: false,
       });
       if (upErr) {
