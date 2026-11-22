@@ -22,6 +22,7 @@ import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as DashboardWishlistsRouteImport } from './routes/dashboard_.wishlists'
+import { Route as EmailPreferencesRouteImport } from './routes/email.preferences'
 import { Route as LegalIndexRouteImport } from './routes/legal.index'
 import { Route as LegalDocRouteImport } from './routes/legal.$doc'
 import { Route as MessagesConversationIdRouteImport } from './routes/messages_.$conversationId'
@@ -31,6 +32,7 @@ import { Route as OwnerAnalyticsRouteImport } from './routes/owner.analytics'
 import { Route as OwnerAnnouncementsRouteImport } from './routes/owner.announcements'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
 import { Route as OwnerBlockedSitesRouteImport } from './routes/owner.blocked-sites'
+import { Route as OwnerEmailRouteImport } from './routes/owner.email'
 import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
 import { Route as OwnerMessagingRouteImport } from './routes/owner.messaging'
@@ -38,6 +40,9 @@ import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
 import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
+import { Route as ApiEmailDispatchRouteImport } from './routes/api/email/dispatch'
+import { Route as ApiEmailResendWebhookRouteImport } from './routes/api/email/resend-webhook'
+import { Route as ApiEmailUnsubscribeRouteImport } from './routes/api/email/unsubscribe'
 import { Route as ApiStripeBillingWebhookRouteImport } from './routes/api/stripe/billing-webhook'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as OwnerUsersUserIdRouteImport } from './routes/owner.users_.$userId'
@@ -107,6 +112,11 @@ const DashboardWishlistsRoute = DashboardWishlistsRouteImport.update({
   path: '/dashboard/wishlists',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmailPreferencesRoute = EmailPreferencesRouteImport.update({
+  id: '/email/preferences',
+  path: '/email/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegalIndexRoute = LegalIndexRouteImport.update({
   id: '/legal/',
   path: '/legal/',
@@ -152,6 +162,11 @@ const OwnerBlockedSitesRoute = OwnerBlockedSitesRouteImport.update({
   path: '/blocked-sites',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerEmailRoute = OwnerEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerFoundingRoute = OwnerFoundingRouteImport.update({
   id: '/founding',
   path: '/founding',
@@ -187,6 +202,21 @@ const UsernameWishlistSlugRoute = UsernameWishlistSlugRouteImport.update({
   path: '/$username/wishlist/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiEmailDispatchRoute = ApiEmailDispatchRouteImport.update({
+  id: '/api/email/dispatch',
+  path: '/api/email/dispatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEmailResendWebhookRoute = ApiEmailResendWebhookRouteImport.update({
+  id: '/api/email/resend-webhook',
+  path: '/api/email/resend-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiEmailUnsubscribeRoute = ApiEmailUnsubscribeRouteImport.update({
+  id: '/api/email/unsubscribe',
+  path: '/api/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiStripeBillingWebhookRoute = ApiStripeBillingWebhookRouteImport.update({
   id: '/api/stripe/billing-webhook',
   path: '/api/stripe/billing-webhook',
@@ -216,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
@@ -223,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/messaging': typeof OwnerMessagingRoute
@@ -233,6 +265,9 @@ export interface FileRoutesByFullPath {
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/email/dispatch': typeof ApiEmailDispatchRoute
+  '/api/email/resend-webhook': typeof ApiEmailResendWebhookRoute
+  '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
@@ -249,6 +284,7 @@ export interface FileRoutesByTo {
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
+  '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
@@ -256,6 +292,7 @@ export interface FileRoutesByTo {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/messaging': typeof OwnerMessagingRoute
@@ -266,6 +303,9 @@ export interface FileRoutesByTo {
   '/legal': typeof LegalIndexRoute
   '/owner': typeof OwnerIndexRoute
   '/$username/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/email/dispatch': typeof ApiEmailDispatchRoute
+  '/api/email/resend-webhook': typeof ApiEmailResendWebhookRoute
+  '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users/$userId': typeof OwnerUsersUserIdRoute
@@ -284,6 +324,7 @@ export interface FileRoutesById {
   '/$username_/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard_/wishlists': typeof DashboardWishlistsRoute
+  '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages_/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
@@ -291,6 +332,7 @@ export interface FileRoutesById {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/messaging': typeof OwnerMessagingRoute
@@ -301,6 +343,9 @@ export interface FileRoutesById {
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
   '/$username_/wishlist/$slug': typeof UsernameWishlistSlugRoute
+  '/api/email/dispatch': typeof ApiEmailDispatchRoute
+  '/api/email/resend-webhook': typeof ApiEmailResendWebhookRoute
+  '/api/email/unsubscribe': typeof ApiEmailUnsubscribeRoute
   '/api/stripe/billing-webhook': typeof ApiStripeBillingWebhookRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/owner/users_/$userId': typeof OwnerUsersUserIdRoute
@@ -320,6 +365,7 @@ export interface FileRouteTypes {
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
+    | '/email/preferences'
     | '/legal/$doc'
     | '/messages/$conversationId'
     | '/owner/$section'
@@ -327,6 +373,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
     | '/owner/messaging'
@@ -337,6 +384,9 @@ export interface FileRouteTypes {
     | '/legal/'
     | '/owner/'
     | '/$username/wishlist/$slug'
+    | '/api/email/dispatch'
+    | '/api/email/resend-webhook'
+    | '/api/email/unsubscribe'
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
@@ -353,6 +403,7 @@ export interface FileRouteTypes {
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
+    | '/email/preferences'
     | '/legal/$doc'
     | '/messages/$conversationId'
     | '/owner/$section'
@@ -360,6 +411,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
     | '/owner/messaging'
@@ -370,6 +422,9 @@ export interface FileRouteTypes {
     | '/legal'
     | '/owner'
     | '/$username/wishlist/$slug'
+    | '/api/email/dispatch'
+    | '/api/email/resend-webhook'
+    | '/api/email/unsubscribe'
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users/$userId'
@@ -387,6 +442,7 @@ export interface FileRouteTypes {
     | '/$username_/tip'
     | '/admin/$'
     | '/dashboard_/wishlists'
+    | '/email/preferences'
     | '/legal/$doc'
     | '/messages_/$conversationId'
     | '/owner/$section'
@@ -394,6 +450,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
     | '/owner/messaging'
@@ -404,6 +461,9 @@ export interface FileRouteTypes {
     | '/legal/'
     | '/owner/'
     | '/$username_/wishlist/$slug'
+    | '/api/email/dispatch'
+    | '/api/email/resend-webhook'
+    | '/api/email/unsubscribe'
     | '/api/stripe/billing-webhook'
     | '/api/stripe/webhook'
     | '/owner/users_/$userId'
@@ -422,11 +482,15 @@ export interface RootRouteChildren {
   UsernameTipRoute: typeof UsernameTipRoute
   AdminSplatRoute: typeof AdminSplatRoute
   DashboardWishlistsRoute: typeof DashboardWishlistsRoute
+  EmailPreferencesRoute: typeof EmailPreferencesRoute
   LegalDocRoute: typeof LegalDocRoute
   MessagesConversationIdRoute: typeof MessagesConversationIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   LegalIndexRoute: typeof LegalIndexRoute
   UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
+  ApiEmailDispatchRoute: typeof ApiEmailDispatchRoute
+  ApiEmailResendWebhookRoute: typeof ApiEmailResendWebhookRoute
+  ApiEmailUnsubscribeRoute: typeof ApiEmailUnsubscribeRoute
   ApiStripeBillingWebhookRoute: typeof ApiStripeBillingWebhookRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
@@ -524,6 +588,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWishlistsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/email/preferences': {
+      id: '/email/preferences'
+      path: '/email/preferences'
+      fullPath: '/email/preferences'
+      preLoaderRoute: typeof EmailPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/legal/': {
       id: '/legal/'
       path: '/legal'
@@ -587,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerBlockedSitesRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/email': {
+      id: '/owner/email'
+      path: '/email'
+      fullPath: '/owner/email'
+      preLoaderRoute: typeof OwnerEmailRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/founding': {
       id: '/owner/founding'
       path: '/founding'
@@ -636,6 +714,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsernameWishlistSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/email/dispatch': {
+      id: '/api/email/dispatch'
+      path: '/api/email/dispatch'
+      fullPath: '/api/email/dispatch'
+      preLoaderRoute: typeof ApiEmailDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/email/resend-webhook': {
+      id: '/api/email/resend-webhook'
+      path: '/api/email/resend-webhook'
+      fullPath: '/api/email/resend-webhook'
+      preLoaderRoute: typeof ApiEmailResendWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/email/unsubscribe': {
+      id: '/api/email/unsubscribe'
+      path: '/api/email/unsubscribe'
+      fullPath: '/api/email/unsubscribe'
+      preLoaderRoute: typeof ApiEmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stripe/billing-webhook': {
       id: '/api/stripe/billing-webhook'
       path: '/api/stripe/billing-webhook'
@@ -666,6 +765,7 @@ interface OwnerRouteChildren {
   OwnerAnnouncementsRoute: typeof OwnerAnnouncementsRoute
   OwnerAuditRoute: typeof OwnerAuditRoute
   OwnerBlockedSitesRoute: typeof OwnerBlockedSitesRoute
+  OwnerEmailRoute: typeof OwnerEmailRoute
   OwnerFoundingRoute: typeof OwnerFoundingRoute
   OwnerInvitesRoute: typeof OwnerInvitesRoute
   OwnerMessagingRoute: typeof OwnerMessagingRoute
@@ -682,6 +782,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerAnnouncementsRoute: OwnerAnnouncementsRoute,
   OwnerAuditRoute: OwnerAuditRoute,
   OwnerBlockedSitesRoute: OwnerBlockedSitesRoute,
+  OwnerEmailRoute: OwnerEmailRoute,
   OwnerFoundingRoute: OwnerFoundingRoute,
   OwnerInvitesRoute: OwnerInvitesRoute,
   OwnerMessagingRoute: OwnerMessagingRoute,
@@ -707,11 +808,15 @@ const rootRouteChildren: RootRouteChildren = {
   UsernameTipRoute: UsernameTipRoute,
   AdminSplatRoute: AdminSplatRoute,
   DashboardWishlistsRoute: DashboardWishlistsRoute,
+  EmailPreferencesRoute: EmailPreferencesRoute,
   LegalDocRoute: LegalDocRoute,
   MessagesConversationIdRoute: MessagesConversationIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   LegalIndexRoute: LegalIndexRoute,
   UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,
+  ApiEmailDispatchRoute: ApiEmailDispatchRoute,
+  ApiEmailResendWebhookRoute: ApiEmailResendWebhookRoute,
+  ApiEmailUnsubscribeRoute: ApiEmailUnsubscribeRoute,
   ApiStripeBillingWebhookRoute: ApiStripeBillingWebhookRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }

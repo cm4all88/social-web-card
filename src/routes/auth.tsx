@@ -14,8 +14,10 @@ import { betaRpc } from "@/lib/beta/api";
 import { BETA_NAME, betaStateMessage, isBetaCodeState, normalizeBetaCode, type BetaCodeState } from "@/lib/beta/invite";
 
 // yooits.me/auth?invite=fc-xxxxxxxxxx opens sign-up with a Founding Member code.
+// yooits.me/auth?mode=forgot opens the reset-password form (linked from email).
 const searchSchema = z.object({
   invite: z.string().max(200).optional().catch(undefined),
+  mode: z.enum(["signin", "signup", "forgot"]).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -30,10 +32,10 @@ const MIN_PASSWORD = 8;
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { invite } = Route.useSearch();
+  const { invite, mode: initialMode } = Route.useSearch();
   const inviteCode = normalizeBetaCode(invite);
   const [betaState, setBetaState] = useState<BetaCodeState | null>(invite && !inviteCode ? "invalid" : null);
-  const [mode, setMode] = useState<Mode>(invite ? "signup" : "signin");
+  const [mode, setMode] = useState<Mode>(invite ? "signup" : (initialMode ?? "signin"));
   const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

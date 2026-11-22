@@ -20,6 +20,7 @@ import { TipsManager } from "@/components/tipping/TipsManager";
 import { BetaPanel } from "@/components/beta/BetaPanel";
 import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
+import { EmailPreferences } from "@/components/account/EmailPreferences";
 import { MyAnalytics } from "@/components/analytics/MyAnalytics";
 import { ThemeRewardsPicker, useThemeRewards } from "@/components/rewards/ThemeRewards";
 import { Gift, Shield } from "lucide-react";
@@ -753,7 +754,8 @@ function DashboardPage() {
 
         {/* Account */}
         <h2 id="account" className="mt-10 scroll-mt-20 text-xl font-bold">Account</h2>
-        <div className="mt-4">
+        <div className="mt-4 space-y-4">
+          <EmailPreferences />
           {profile && <DeleteAccount username={profile.username} />}
         </div>
       </div>

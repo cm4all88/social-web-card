@@ -18,6 +18,7 @@ export class AccountDeletionRefused extends Error {}
 
 /** Tables cleared for the user, in this order (children before parents). */
 export const DELETED_TABLES = [
+  "email_outbox", // the person's email log (their address is in it)
   "wishlist_items",
   "wishlists",
   "social_links",
@@ -90,12 +91,47 @@ export async function deleteAccount(
     if (error) throw error;
   }
 
+  // Their address, for the confirmation email sent once the account is gone.
+  let email: string | null = null;
+  try {
+    const { data } = await admin.auth.admin.getUserById(userId);
+    email = data?.user?.email ?? null;
+  } catch {
+    email = null;
+  }
+
   for (const table of DELETED_TABLES) {
     const { error } = await admin.from(table).delete().eq("user_id", userId);
-    if (error) throw error;
+    // The email log may not exist yet on a database without the email migration.
+    if (error && !(table === "email_outbox" && isMissingTable(error))) throw error;
   }
 
   // Last: the sign-in itself (user_roles goes with it by foreign key).
   const { error: aErr } = await admin.auth.admin.deleteUser(userId);
   if (aErr) throw aErr;
+
+  // Confirmation to the old address. Not tied to the deleted account, and
+  // never allowed to turn a finished deletion into an error.
+  if (email) {
+    try {
+      await admin.rpc("email_queue", {
+        _template: "account_deleted",
+        _category: "account",
+        _user_id: null,
+        _payload: { username },
+        _dedupe_key: `account_deleted:${userId}`,
+        _to_email: email,
+      });
+    } catch {
+      /* best effort */
+    }
+  }
+}
+
+function isMissingTable(e: { code?: string; message?: string }): boolean {
+  return (
+    e.code === "42P01" ||
+    e.code === "PGRST205" ||
+    /does not exist|schema cache/i.test(e.message ?? "")
+  );
 }

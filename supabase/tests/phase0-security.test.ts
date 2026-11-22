@@ -123,7 +123,8 @@ describe("upgrading a live database (owner already admin)", () => {
     const { rows } = await db.query<{ tgname: string }>(
       `SELECT tgname FROM pg_trigger WHERE tgrelid = 'auth.users'::regclass AND NOT tgisinternal`,
     );
-    expect(rows.map((r) => r.tgname)).toEqual(["on_auth_user_created"]);
+    // auth_users_email_security (security emails) is not an admin trigger.
+    expect(rows.map((r) => r.tgname).filter((n) => n !== "auth_users_email_security")).toEqual(["on_auth_user_created"]);
     const fn = await db.query(`SELECT 1 FROM pg_proc WHERE proname = 'grant_first_admin'`);
     expect(fn.rows).toHaveLength(0);
   });

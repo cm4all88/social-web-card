@@ -1,0 +1,6 @@
+confirmation: Confirm your Yooits email
+invite: You're invited to Yooits
+magic_link: Your Yooits sign-in link
+email_change: Confirm your new Yooits email
+recovery: Reset your Yooits password
+reauthentication: Your Yooits verification code

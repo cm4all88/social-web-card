@@ -39,6 +39,16 @@ function publicError(e: unknown): never {
   throw new Error(GENERIC);
 }
 
+/** Yooits colours and logo on the Plus checkout page (the site's own tokens). */
+export const PLUS_CHECKOUT_BRANDING: Stripe.Checkout.SessionCreateParams.BrandingSettings = {
+  display_name: "Yooits",
+  background_color: "#ffffff",
+  button_color: "#df6df8",
+  border_style: "rounded",
+  font_family: "default",
+  logo: { type: "url", url: "https://yooits.me/email/yooits-logo.png" },
+};
+
 const isLive = (key: string) => /^(sk|rk)_live_/.test(key);
 const db = () => supabaseAdmin as unknown as SupabaseClient;
 
@@ -180,6 +190,7 @@ export const startPlusCheckout = createServerFn({ method: "POST" })
           description: "Yooits Plus",
         },
         allow_promotion_codes: false,
+        branding_settings: PLUS_CHECKOUT_BRANDING,
         success_url: `${base}/dashboard?plus=started#plus`,
         cancel_url: `${base}/dashboard#plus`,
       });
