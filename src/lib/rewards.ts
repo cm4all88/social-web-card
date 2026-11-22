@@ -81,7 +81,7 @@ export function rewardHint(
 /**
  * Parses claim_theme_rewards()'s answer; anything unexpected reads as nothing
  * unlocked. "popular" (custom backgrounds) unlocks a feature, not a theme, so
- * it's reported on its own with the view count toward it.
+ * it's reported on its own with the visitor count toward it.
  */
 export function parseRewardClaim(data: unknown): {
   unlocked: RewardKey[];

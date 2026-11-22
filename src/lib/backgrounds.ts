@@ -1,6 +1,6 @@
 /**
  * Custom backgrounds: a creator's own photo behind their page. Unlocked by
- * the "popular" reward (public.popular_view_threshold() profile views) or
+ * the "popular" reward (public.popular_view_threshold() real visitors, set in Owner > Creators) or
  * included with Plus; the database checks this (public.background_allowed()).
  *
  * The photo lives in the creator's own folder of the avatars bucket, so it
@@ -66,7 +66,7 @@ const n = (v: number) => v.toLocaleString("en-US");
 
 /** One plain line on how to unlock it, with a count. */
 export function popularHint(views: number, at = DEFAULT_POPULAR_AT): string {
-  return `Get ${n(at)} views on your page to unlock it (${n(Math.min(views, at))} of ${n(at)} so far). Included with Plus.`;
+  return `Get ${n(at)} visitors to your page to unlock it (${n(Math.min(views, at))} of ${n(at)} so far). Included with Plus.`;
 }
 
 /** The address to draw, or null unless it's a photo in the avatars bucket (as the database requires). */

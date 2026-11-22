@@ -45,7 +45,7 @@ describe("custom backgrounds", () => {
 
   it("say what's left to unlock, with the number from the database", () => {
     expect(popularHint(312, 1000)).toBe(
-      "Get 1,000 views on your page to unlock it (312 of 1,000 so far). Included with Plus.",
+      "Get 1,000 visitors to your page to unlock it (312 of 1,000 so far). Included with Plus.",
     );
     expect(popularHint(5000, 1000)).toContain("1,000 of 1,000");
   });

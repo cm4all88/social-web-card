@@ -68,7 +68,7 @@ async function shrinkPhoto(file: File): Promise<{ blob: Blob; ext: "webp" | "jpg
 /**
  * Custom background in the appearance editor: the creator's own photo behind
  * their page, with a shade that keeps text readable. Unlocks at the popular
- * reward's view count, or with Plus. Works with any theme and effect.
+ * reward's visitor count, or with Plus. Works with any theme and effect.
  */
 export function BackgroundPicker({
   userId,
@@ -198,7 +198,7 @@ export function BackgroundPicker({
             aria-valuemin={0}
             aria-valuemax={at}
             aria-valuenow={Math.min(profileViews, at)}
-            aria-label="Views toward custom backgrounds"
+            aria-label="Visitors toward custom backgrounds"
           >
             <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
           </div>

@@ -16,6 +16,12 @@ const PLUS = "00000000-0000-4000-8000-0000000002f2";
 const OTHER = "00000000-0000-4000-8000-0000000002f3";
 const ROLLBACK = new URL("../rollbacks/20261122183000_profile_skins.down.sql", import.meta.url);
 const MINE = (s: string) => s.includes("public.skin_theme(_skin text)");
+const WORDING = (s: string) =>
+  s.includes("Custom backgrounds unlock from real visitors (creator milestones");
+const WORDING_ROLLBACK = new URL(
+  "../rollbacks/20261122223000_background_visitor_wording.down.sql",
+  import.meta.url,
+);
 
 let db: PGlite;
 const svc = <T = Record<string, unknown>>(q: string, p: unknown[] = []) =>
@@ -223,9 +229,9 @@ describe("custom backgrounds", () => {
       expect(await bgState(PLUS)).toMatchObject({ backgrounds_on: true, background: true });
     });
 
-    it("unlock for everyone else at the popular threshold, counted from profile views", async () => {
+    it("unlock for everyone else at the popular threshold, counted from real visitors", async () => {
       expect(await setBg(OTHER, bgUrl(OTHER))).toMatch(
-        /unlock at 1,000 profile views, or with Plus/,
+        /unlock at 1,000 visitors to your page, or with Plus/,
       );
       await views(OTHER, 999);
       let c = await claim(OTHER);
@@ -247,7 +253,7 @@ describe("custom backgrounds", () => {
       expect(n).toEqual([
         {
           title: "You unlocked custom backgrounds",
-          body: "Your page reached 1,000 views. Add your own photo behind it in Appearance on your dashboard.",
+          body: "Your page reached 1,000 visitors. Add your own photo behind it in Appearance on your dashboard.",
           link_path: "/dashboard#appearance",
         },
       ]);
@@ -353,6 +359,23 @@ describe("profile skins migration", () => {
     const rolled = await snapshot(d);
     expect(rolled).toEqual(before);
     // And it can be applied again after a rollback.
+    await d.exec(mine);
+    await d.close();
+  }, 90_000);
+
+  it("the visitor wording only changes text, and its rollback puts the schema back", async () => {
+    const d = await freshDb(WORDING);
+    const before = await snapshot(d);
+    const mine = migrationSql().find(WORDING)!;
+    await d.exec(mine);
+    await d.exec(SUPABASE_GRANTS);
+    const after = await snapshot(d);
+    expect(after.c).toBe(before.c);
+    expect(after.t).toBe(before.t);
+    expect(after.k).toBe(before.k);
+    expect(after.f).not.toBe(before.f);
+    await d.exec(readFileSync(WORDING_ROLLBACK, "utf8"));
+    expect(await snapshot(d)).toEqual(before);
     await d.exec(mine);
     await d.close();
   }, 90_000);

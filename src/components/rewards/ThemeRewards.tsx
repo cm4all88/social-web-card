@@ -26,7 +26,7 @@ const rpc = (fn: string) => (supabase as unknown as Rpc).rpc(fn);
 export function useThemeRewards() {
   const [enabled, setEnabled] = useState(false);
   const [unlocked, setUnlocked] = useState<RewardKey[]>([]);
-  // Custom backgrounds (the "popular" reward) and the view count toward it.
+  // Custom backgrounds (the "popular" reward) and the visitor count toward it.
   const [popular, setPopular] = useState(false);
   const [profileViews, setProfileViews] = useState(0);
   const [popularAt, setPopularAt] = useState<number | null>(null);
