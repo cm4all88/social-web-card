@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsernameRouteImport } from './routes/$username'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -23,6 +24,7 @@ import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as DashboardWishlistsRouteImport } from './routes/dashboard_.wishlists'
 import { Route as LegalIndexRouteImport } from './routes/legal.index'
 import { Route as LegalDocRouteImport } from './routes/legal.$doc'
+import { Route as MessagesConversationIdRouteImport } from './routes/messages_.$conversationId'
 import { Route as OwnerIndexRouteImport } from './routes/owner.index'
 import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
 import { Route as OwnerAnalyticsRouteImport } from './routes/owner.analytics'
@@ -30,6 +32,7 @@ import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
 import { Route as OwnerBlockedSitesRouteImport } from './routes/owner.blocked-sites'
 import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
+import { Route as OwnerMessagingRouteImport } from './routes/owner.messaging'
 import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
@@ -56,6 +59,11 @@ const AuthRoute = AuthRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OwnerRoute = OwnerRouteImport.update({
@@ -108,6 +116,11 @@ const LegalDocRoute = LegalDocRouteImport.update({
   path: '/legal/$doc',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesConversationIdRoute = MessagesConversationIdRouteImport.update({
+  id: '/messages_/$conversationId',
+  path: '/messages/$conversationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OwnerIndexRoute = OwnerIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -141,6 +154,11 @@ const OwnerFoundingRoute = OwnerFoundingRouteImport.update({
 const OwnerInvitesRoute = OwnerInvitesRouteImport.update({
   id: '/invites',
   path: '/invites',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerMessagingRoute = OwnerMessagingRouteImport.update({
+  id: '/messaging',
+  path: '/messaging',
   getParentRoute: () => OwnerRoute,
 } as any)
 const OwnerReportsRoute = OwnerReportsRouteImport.update({
@@ -184,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/$username': typeof UsernameRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/owner': typeof OwnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -192,12 +211,14 @@ export interface FileRoutesByFullPath {
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
   '/legal/$doc': typeof LegalDocRoute
+  '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -214,6 +235,7 @@ export interface FileRoutesByTo {
   '/$username': typeof UsernameRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
@@ -221,12 +243,14 @@ export interface FileRoutesByTo {
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
   '/legal/$doc': typeof LegalDocRoute
+  '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -244,6 +268,7 @@ export interface FileRoutesById {
   '/$username': typeof UsernameRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRoute
+  '/messages': typeof MessagesRoute
   '/owner': typeof OwnerRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -252,12 +277,14 @@ export interface FileRoutesById {
   '/admin/$': typeof AdminSplatRoute
   '/dashboard_/wishlists': typeof DashboardWishlistsRoute
   '/legal/$doc': typeof LegalDocRoute
+  '/messages_/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
+  '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -276,6 +303,7 @@ export interface FileRouteTypes {
     | '/$username'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/owner'
     | '/privacy'
     | '/reset-password'
@@ -284,12 +312,14 @@ export interface FileRouteTypes {
     | '/admin/$'
     | '/dashboard/wishlists'
     | '/legal/$doc'
+    | '/messages/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -306,6 +336,7 @@ export interface FileRouteTypes {
     | '/$username'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/privacy'
     | '/reset-password'
     | '/terms'
@@ -313,12 +344,14 @@ export interface FileRouteTypes {
     | '/admin/$'
     | '/dashboard/wishlists'
     | '/legal/$doc'
+    | '/messages/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -335,6 +368,7 @@ export interface FileRouteTypes {
     | '/$username'
     | '/auth'
     | '/dashboard'
+    | '/messages'
     | '/owner'
     | '/privacy'
     | '/reset-password'
@@ -343,12 +377,14 @@ export interface FileRouteTypes {
     | '/admin/$'
     | '/dashboard_/wishlists'
     | '/legal/$doc'
+    | '/messages_/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
     | '/owner/invites'
+    | '/owner/messaging'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -366,6 +402,7 @@ export interface RootRouteChildren {
   UsernameRoute: typeof UsernameRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRoute
+  MessagesRoute: typeof MessagesRoute
   OwnerRoute: typeof OwnerRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -374,6 +411,7 @@ export interface RootRouteChildren {
   AdminSplatRoute: typeof AdminSplatRoute
   DashboardWishlistsRoute: typeof DashboardWishlistsRoute
   LegalDocRoute: typeof LegalDocRoute
+  MessagesConversationIdRoute: typeof MessagesConversationIdRoute
   AdminIndexRoute: typeof AdminIndexRoute
   LegalIndexRoute: typeof LegalIndexRoute
   UsernameWishlistSlugRoute: typeof UsernameWishlistSlugRoute
@@ -409,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/owner': {
@@ -481,6 +526,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LegalDocRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages_/$conversationId': {
+      id: '/messages_/$conversationId'
+      path: '/messages/$conversationId'
+      fullPath: '/messages/$conversationId'
+      preLoaderRoute: typeof MessagesConversationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/owner/': {
       id: '/owner/'
       path: '/'
@@ -528,6 +580,13 @@ declare module '@tanstack/react-router' {
       path: '/invites'
       fullPath: '/owner/invites'
       preLoaderRoute: typeof OwnerInvitesRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/messaging': {
+      id: '/owner/messaging'
+      path: '/messaging'
+      fullPath: '/owner/messaging'
+      preLoaderRoute: typeof OwnerMessagingRouteImport
       parentRoute: typeof OwnerRoute
     }
     '/owner/reports': {
@@ -589,6 +648,7 @@ interface OwnerRouteChildren {
   OwnerBlockedSitesRoute: typeof OwnerBlockedSitesRoute
   OwnerFoundingRoute: typeof OwnerFoundingRoute
   OwnerInvitesRoute: typeof OwnerInvitesRoute
+  OwnerMessagingRoute: typeof OwnerMessagingRoute
   OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
   OwnerUsersRoute: typeof OwnerUsersRoute
@@ -603,6 +663,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerBlockedSitesRoute: OwnerBlockedSitesRoute,
   OwnerFoundingRoute: OwnerFoundingRoute,
   OwnerInvitesRoute: OwnerInvitesRoute,
+  OwnerMessagingRoute: OwnerMessagingRoute,
   OwnerReportsRoute: OwnerReportsRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
   OwnerUsersRoute: OwnerUsersRoute,
@@ -617,6 +678,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsernameRoute: UsernameRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRoute,
+  MessagesRoute: MessagesRoute,
   OwnerRoute: OwnerRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -625,6 +687,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSplatRoute: AdminSplatRoute,
   DashboardWishlistsRoute: DashboardWishlistsRoute,
   LegalDocRoute: LegalDocRoute,
+  MessagesConversationIdRoute: MessagesConversationIdRoute,
   AdminIndexRoute: AdminIndexRoute,
   LegalIndexRoute: LegalIndexRoute,
   UsernameWishlistSlugRoute: UsernameWishlistSlugRoute,

@@ -100,7 +100,7 @@ export type AbuseReport = {
   status: "open" | "resolved" | "dismissed";
   reason: string;
   details: string | null;
-  target_kind: "profile" | "wishlist";
+  target_kind: "profile" | "wishlist" | "message";
   target_user_id: string;
   target_username: string | null;
   wishlist_slug: string | null;
@@ -110,6 +110,27 @@ export type AbuseReport = {
   reporter_contact: string | null;
   resolution_note: string | null;
   resolved_at: string | null;
+  message_id?: string | null;
+  message_excerpt?: string | null;
+  message_removed?: boolean;
+  target_messaging_suspended?: boolean;
+};
+
+export type MessagingStatus = {
+  enabled: boolean;
+  people_with_messages_on: number;
+  conversations: number;
+  messages_7d: number;
+  suspended: number;
+  open_message_reports: number;
+};
+
+export type UserMessaging = {
+  mode: "off" | "requests" | "everyone";
+  suspended: boolean;
+  suspended_reason: string | null;
+  messages_sent_7d: number;
+  reports_about: number;
 };
 
 type OwnerFunctions = {
@@ -130,6 +151,14 @@ type OwnerFunctions = {
     result: string;
   };
   owner_open_report_count: { args: Record<string, never>; result: number };
+  owner_messaging_status: { args: Record<string, never>; result: MessagingStatus };
+  owner_set_messaging_enabled: { args: { _enabled: boolean }; result: boolean };
+  owner_remove_message: { args: { _message_id: string; _reason?: string | null }; result: boolean };
+  owner_set_messaging_suspended: {
+    args: { _user_id: string; _suspended: boolean; _reason?: string | null };
+    result: boolean;
+  };
+  owner_user_messaging: { args: { _user_id: string }; result: UserMessaging };
 };
 
 export class OwnerAccessError extends Error {}
@@ -179,6 +208,11 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "report.resolved": "Report resolved",
   "report.dismissed": "Report dismissed",
   "report.reopened": "Report reopened",
+  "messaging.enabled": "Messages turned on for everyone",
+  "messaging.disabled": "Messages turned off for everyone",
+  "messaging.suspended": "Messaging suspended for a person",
+  "messaging.unsuspended": "Messaging restored for a person",
+  "message.removed": "Message removed",
 };
 
 export function auditLabel(action: string): string {

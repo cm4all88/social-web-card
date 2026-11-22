@@ -4,6 +4,7 @@ import { ArrowLeft, ExternalLink, Loader2 } from "lucide-react";
 import { ownerRpc, type OwnerUserDetail } from "@/lib/owner/api";
 import { safeLinkHref } from "@/lib/safe-url";
 import { AccountControls } from "@/components/owner/AccountControls";
+import { MessagingControls } from "@/components/owner/MessagingControls";
 
 export const Route = createFileRoute("/owner/users_/$userId")({
   component: UserDetailPage,
@@ -59,6 +60,7 @@ function UserDetailPage() {
           )}
 
           <AccountControls user={user} onChanged={load} />
+          <MessagingControls userId={user.user_id} />
 
           <section className="mt-4 rounded-2xl border border-border p-4">
             <h2 className="mb-2 font-semibold">Account</h2>

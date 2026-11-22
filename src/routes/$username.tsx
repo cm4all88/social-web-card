@@ -1,3 +1,4 @@
+import { MessageButton } from "@/components/messages/MessageButton";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,6 +138,13 @@ function ProfilePage() {
         <p className="mt-1 text-sm opacity-70">@{profile?.username ?? username}</p>
         {profile?.bio && (
           <p className="mt-4 max-w-md text-center opacity-80">{profile.bio}</p>
+        )}
+        {profile && (
+          <MessageButton
+            username={profile.username}
+            className="mt-5 inline-flex items-center gap-2 border px-5 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5"
+            style={{ borderColor: theme.accent, color: theme.foreground, borderRadius: radius }}
+          />
         )}
 
         <section className="mt-10 w-full space-y-3">

@@ -43,7 +43,7 @@ function ReportsPage() {
     <div className="max-w-3xl">
       <h1 className="text-3xl font-bold">Reports</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Pages and wishlists that visitors reported. To act on one, open the person and unpublish or suspend
+        Pages, wishlists and messages that people reported. To act on one, open the person and unpublish or suspend
         them, then mark the report resolved. Closing a report is recorded in the audit log.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
@@ -92,12 +92,18 @@ function ReportCard({ report: r, onChanged }: { report: AbuseReport; onChanged: 
         <span className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleString()}</span>
       </div>
       <div className="mt-1 text-muted-foreground">
-        {r.target_kind === "wishlist" ? `Wishlist "${r.wishlist_title ?? r.wishlist_slug ?? "deleted"}" by ` : "Page of "}
+        {r.target_kind === "wishlist"
+          ? `Wishlist "${r.wishlist_title ?? r.wishlist_slug ?? "deleted"}" by `
+          : r.target_kind === "message"
+            ? "Message from "
+            : "Page of "}
         <Link to="/owner/users/$userId" params={{ userId: r.target_user_id }} className="underline">
           {who}
         </Link>
+        {r.target_kind === "message" && r.reporter_username && ` · reported by @${r.reporter_username}`}
         {r.reporter_contact && ` · reply to ${r.reporter_contact}`}
       </div>
+      {r.target_kind === "message" && <MessageEvidence report={r} onChanged={onChanged} />}
       {r.details && <p className="mt-2 whitespace-pre-wrap">{r.details}</p>}
       {r.status === "open" ? (
         <div className="mt-3 flex flex-col gap-2 sm:flex-row">
@@ -122,5 +128,63 @@ function ReportCard({ report: r, onChanged }: { report: AbuseReport; onChanged: 
         </div>
       )}
     </li>
+  );
+}
+
+function MessageEvidence({ report: r, onChanged }: { report: AbuseReport; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const act = async (what: "remove" | "suspend" | "restore") => {
+    setBusy(true);
+    try {
+      if (what === "remove") {
+        await ownerRpc("owner_remove_message", {
+          _message_id: r.message_id!,
+          _reason: reportReasonLabel(r.reason),
+        });
+        toast.success("Message removed");
+      } else {
+        await ownerRpc("owner_set_messaging_suspended", {
+          _user_id: r.target_user_id,
+          _suspended: what === "suspend",
+          _reason: what === "suspend" ? reportReasonLabel(r.reason) : null,
+        });
+        toast.success(what === "suspend" ? "Messaging suspended" : "Messaging restored");
+      }
+      onChanged();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-2 space-y-2">
+      <blockquote className="whitespace-pre-wrap rounded-lg border border-border bg-muted/40 p-2">
+        {r.message_excerpt ?? "(no text)"}
+      </blockquote>
+      <div className="flex flex-wrap gap-2">
+        {r.message_removed ? (
+          <span className="text-xs text-muted-foreground">Removed from the conversation.</span>
+        ) : (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={busy || !r.message_id}
+            onClick={() => act("remove")}
+          >
+            Remove message
+          </Button>
+        )}
+        {r.target_messaging_suspended ? (
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => act("restore")}>
+            Restore their messaging
+          </Button>
+        ) : (
+          <Button size="sm" variant="destructive" disabled={busy} onClick={() => act("suspend")}>
+            Suspend their messaging
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }

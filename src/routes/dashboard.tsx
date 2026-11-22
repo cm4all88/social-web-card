@@ -1,3 +1,4 @@
+import { MessagesNavButton } from "@/components/messages/MessagesNavButton";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -301,6 +302,7 @@ function DashboardPage() {
           </Link>
           <img src="/yooits-logo.png" alt="yooits.me" className="h-9 w-auto" />
           <div className="flex items-center gap-1">
+            <MessagesNavButton />
             {isAdmin && (
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/owner">
