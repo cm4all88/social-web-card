@@ -14,7 +14,7 @@ import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username"
 import { normalizeLinkValue } from "@/lib/safe-url";
 import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
 import { findThemePreset, PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock } from "lucide-react";
+import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock, ChevronUp, ChevronDown } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
 import { getTippingAvailability } from "@/lib/tipping/functions";
@@ -22,6 +22,8 @@ import { BetaPanel } from "@/components/beta/BetaPanel";
 import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { EmailPreferences } from "@/components/account/EmailPreferences";
+import { ChangePassword } from "@/components/account/ChangePassword";
+import { moveLink } from "@/lib/links/order";
 import { MyAnalytics } from "@/components/analytics/MyAnalytics";
 import { ThemeRewardsPicker, useThemeRewards } from "@/components/rewards/ThemeRewards";
 import { Gift, Shield } from "lucide-react";
@@ -78,6 +80,9 @@ function DashboardPage() {
   const [links, setLinks] = useState<SocialLink[]>([]);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [newPlatform, setNewPlatform] = useState<string>("twitter");
+  const [newUrl, setNewUrl] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const { plus, reload: reloadPlus } = useMyPlus();
   const isPlus = plus?.plan === "plus";
   const rewards = useThemeRewards();
@@ -289,15 +294,49 @@ function DashboardPage() {
   };
 
   const add = async () => {
-    if (!userId) return;
-    const nextOrder = (links.at(-1)?.display_order ?? 0) + 1;
+    if (!userId || adding) return;
+    if (!newUrl.trim()) {
+      toast.error(`Enter your ${getPlatform(newPlatform).label} link first.`);
+      return;
+    }
+    const url = normalizeLinkValue(newUrl);
+    if (!url) {
+      toast.error("Links must be a plain web address (https://...), mailto:, tel: or sms:");
+      return;
+    }
+    setAdding(true);
+    const nextOrder = Math.max(0, ...links.map((l) => l.display_order)) + 1;
     const { data, error } = await supabase
       .from("social_links")
-      .insert({ platform: newPlatform, url: "", display_order: nextOrder, enabled: true, user_id: userId })
+      .insert({ platform: newPlatform, url, display_order: nextOrder, enabled: true, user_id: userId })
       .select()
       .single();
+    setAdding(false);
     if (error) toast.error(error.message);
-    else if (data) setLinks((p) => [...p, data as SocialLink]);
+    else if (data) {
+      setLinks((p) => [...p, data as SocialLink]);
+      setNewUrl("");
+      toast.success(`${getPlatform(newPlatform).label} added`);
+      rewards.refresh();
+    }
+  };
+
+  const move = async (index: number, direction: -1 | 1) => {
+    if (reordering) return;
+    const before = links;
+    const { links: next, changed } = moveLink(links, index, direction);
+    if (changed.length === 0) return;
+    setLinks(next);
+    setReordering(true);
+    const results = await Promise.all(
+      changed.map((c) => supabase.from("social_links").update({ display_order: c.display_order }).eq("id", c.id)),
+    );
+    setReordering(false);
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      setLinks(before);
+      toast.error("We couldn't save the new order. Please try again.");
+    }
   };
 
   const copyShareLink = () => {
@@ -689,7 +728,7 @@ function DashboardPage() {
         <p className="mt-1 text-sm text-muted-foreground">Empty links are hidden from your public page.</p>
 
         <div className="mt-4 space-y-4">
-          {links.map((link) => {
+          {links.map((link, index) => {
             const meta = getPlatform(link.platform);
             const Icon = meta.icon;
             return (
@@ -704,7 +743,28 @@ function DashboardPage() {
                   </div>
                   <div className="flex-1">
                     <div className="font-semibold">{meta.label}</div>
-                    <div className="text-xs text-muted-foreground">Order #{link.display_order}</div>
+                  </div>
+                  <div className="flex flex-col">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => move(index, -1)}
+                      disabled={index === 0 || reordering}
+                      aria-label={`Move ${meta.label} up`}
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => move(index, 1)}
+                      disabled={index === links.length - 1 || reordering}
+                      aria-label={`Move ${meta.label} down`}
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
                   </div>
                   <div className="flex items-center gap-2">
                     <Label htmlFor={`en-${link.id}`} className="text-xs text-muted-foreground">Visible</Label>
@@ -715,7 +775,14 @@ function DashboardPage() {
                   <Input
                     value={link.url}
                     onChange={(e) => updateLink(link.id, { url: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        void save(link);
+                      }
+                    }}
                     placeholder={meta.hint}
+                    aria-label={`${meta.label} link`}
                   />
                   <Button onClick={() => save(link)} disabled={savingId === link.id}>
                     <Save className="mr-2 h-4 w-4" />
@@ -757,13 +824,28 @@ function DashboardPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button onClick={add}><Plus className="mr-2 h-4 w-4" /> Add</Button>
+            <Input
+              value={newUrl}
+              onChange={(e) => setNewUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void add();
+                }
+              }}
+              placeholder={getPlatform(newPlatform).hint}
+              aria-label={`New ${getPlatform(newPlatform).label} link`}
+            />
+            <Button onClick={add} disabled={adding || !newUrl.trim()}>
+              <Plus className="mr-2 h-4 w-4" /> {adding ? "Adding" : "Add"}
+            </Button>
           </div>
         </div>
 
         {/* Account */}
         <h2 id="account" className="mt-10 scroll-mt-20 text-xl font-bold">Account</h2>
         <div className="mt-4 space-y-4">
+          <ChangePassword />
           <EmailPreferences />
           {profile && <DeleteAccount username={profile.username} />}
         </div>
