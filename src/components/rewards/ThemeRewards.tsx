@@ -7,7 +7,7 @@ import { seasonalThemesInSeason, type ThemePreset } from "@/lib/themes";
 import {
   parseRewardClaim,
   REWARDS,
-  rewardProgress,
+  rewardHint,
   themeForReward,
   type RewardKey,
   type RewardProgressInput,
@@ -171,16 +171,16 @@ export function ThemeRewardsPicker({
             const t = themeForReward(r.key);
             const has = unlocked.includes(r.key);
             const locked = !has && !isPlus;
-            const p = has ? null : rewardProgress(r.key, progress);
+            const hint = rewardHint(r.key, progress);
             return (
               <ThemeTile
                 key={r.key}
                 theme={t}
                 active={currentTheme === t.key}
                 locked={locked}
-                note={has ? `Earned: ${r.label}` : `${r.label}${p ? ` (${p})` : ""}. ${r.howTo}`}
+                note={has ? `Earned: ${r.label}` : hint}
                 onPick={() => {
-                  if (locked) toast(`${r.label} to unlock ${t.label}. ${r.howTo}`);
+                  if (locked) toast(`To unlock ${t.label}: ${hint}`);
                   else onPick(t.key);
                 }}
               />

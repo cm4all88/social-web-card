@@ -66,6 +66,7 @@ type Profile = {
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
+  created_at?: string | null;
 };
 
 function DashboardPage() {
@@ -640,7 +641,7 @@ function DashboardPage() {
               currentTheme={profile.theme}
               isPlus={isPlus}
               plusAvailable={!!plus?.checkoutAvailable}
-              progress={{ displayName: profile.display_name, bio: profile.bio, avatarUrl: profile.avatar_url, links }}
+              progress={{ displayName: profile.display_name, bio: profile.bio, avatarUrl: profile.avatar_url, links, createdAt: profile.created_at }}
               onPick={setTheme}
             />
 

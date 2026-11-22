@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseRewardClaim, REWARD_KEYS, rewardProgress, themeForReward } from "@/lib/rewards";
+import { parseRewardClaim, REWARD_KEYS, rewardHint, themeForReward } from "@/lib/rewards";
 import {
   findThemePreset,
   getTheme,
@@ -64,22 +64,27 @@ describe("rewards and earned themes", () => {
 
   it("shows progress and reads the database answer safely", () => {
     expect(
-      rewardProgress("profile_complete", {
-        displayName: "Sam",
-        bio: " ",
-        avatarUrl: null,
-        links: [],
-      }),
-    ).toBe("1 of 3");
-    expect(
-      rewardProgress("five_links", {
-        links: [
-          { url: "https://a", enabled: true },
-          { url: "", enabled: true },
-          { url: "https://b", enabled: false },
-        ],
-      }),
-    ).toBe("1 of 5");
+      rewardHint("profile_complete", { displayName: "Sam", bio: " ", avatarUrl: null, links: [] }),
+    ).toBe("Add a display name, a bio and a photo to your profile (1 of 3 done).");
+    const links = [
+      { url: "https://a", enabled: true },
+      { url: "", enabled: true },
+      { url: "https://b", enabled: false },
+    ];
+    expect(rewardHint("five_links", { links })).toBe(
+      "Add 5 links to your page and keep them Visible (1 of 5 so far).",
+    );
+    expect(rewardHint("first_share", { links })).toBe(
+      "Tap Copy link at the top of your dashboard.",
+    );
+    expect(rewardHint("first_wishlist", { links })).toBe("Make a wishlist and add one item to it.");
+    const now = new Date("2026-11-25T12:00:00Z");
+    expect(rewardHint("one_week", { links, createdAt: "2026-11-22T10:00:00Z" }, now)).toBe(
+      "Keep at least one Visible link on your page until it's a week old (day 3 of 7).",
+    );
+    expect(rewardHint("one_week", { links: [], createdAt: "2026-11-01T00:00:00Z" }, now)).toBe(
+      "Add a Visible link and keep your page for a week (day 7 of 7).",
+    );
     expect(parseRewardClaim(null)).toEqual({ unlocked: [], newlyUnlocked: [], enabled: false });
     expect(
       parseRewardClaim({ enabled: true, unlocked: ["five_links", "bogus"], new: ["five_links"] }),

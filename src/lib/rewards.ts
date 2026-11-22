@@ -11,29 +11,16 @@ export type RewardKey =
 
 export type Reward = {
   key: RewardKey;
+  /** Short name, shown once it's earned ("Earned: ..."). */
   label: string;
-  /** What to do, shown before it's earned. */
-  howTo: string;
 };
 
 export const REWARDS: readonly Reward[] = [
-  {
-    key: "profile_complete",
-    label: "Complete your profile",
-    howTo: "Add a display name, a bio and a photo.",
-  },
-  { key: "five_links", label: "Add 5 links", howTo: "Have 5 links switched on with an address." },
-  {
-    key: "first_share",
-    label: "Share your page",
-    howTo: "Copy your Yooits link from the dashboard.",
-  },
-  {
-    key: "first_wishlist",
-    label: "Make a wishlist",
-    howTo: "Create a wishlist with at least one item.",
-  },
-  { key: "one_week", label: "One week on Yooits", howTo: "Keep a link on your page for 7 days." },
+  { key: "profile_complete", label: "Completed your profile" },
+  { key: "five_links", label: "5 links on your page" },
+  { key: "first_share", label: "Shared your page" },
+  { key: "first_wishlist", label: "Made a wishlist" },
+  { key: "one_week", label: "A week on Yooits" },
 ];
 
 export const REWARD_KEYS: readonly RewardKey[] = REWARDS.map((r) => r.key);
@@ -51,24 +38,44 @@ export type RewardProgressInput = {
   bio?: string | null;
   avatarUrl?: string | null;
   links: { url: string; enabled: boolean }[];
+  /** When the profile was made (profiles.created_at). */
+  createdAt?: string | null;
 };
 
+const filled = (v?: string | null) => !!v && v.trim().length > 0;
+
 /**
- * Progress for the dashboard, from what it already has loaded. Returns a
- * short "2 of 5" style hint, or null when there's nothing to count.
+ * One plain line saying exactly what to do to earn a reward, with a count
+ * where there is one. Mirrors the checks in public.claim_theme_rewards().
  */
-export function rewardProgress(key: RewardKey, input: RewardProgressInput): string | null {
-  if (key === "profile_complete") {
-    const done = [input.displayName, input.bio, input.avatarUrl].filter(
-      (v) => !!v && v.trim().length > 0,
-    ).length;
-    return `${done} of 3`;
+export function rewardHint(
+  key: RewardKey,
+  input: RewardProgressInput,
+  now: Date = new Date(),
+): string {
+  const visibleLinks = input.links.filter((l) => l.enabled && filled(l.url)).length;
+  switch (key) {
+    case "profile_complete": {
+      const done = [input.displayName, input.bio, input.avatarUrl].filter(filled).length;
+      return `Add a display name, a bio and a photo to your profile (${done} of 3 done).`;
+    }
+    case "five_links":
+      return `Add 5 links to your page and keep them Visible (${Math.min(visibleLinks, 5)} of 5 so far).`;
+    case "first_share":
+      return "Tap Copy link at the top of your dashboard.";
+    case "first_wishlist":
+      return "Make a wishlist and add one item to it.";
+    case "one_week": {
+      const made = input.createdAt ? Date.parse(input.createdAt) : NaN;
+      const days = Number.isFinite(made)
+        ? Math.min(7, Math.max(0, Math.floor((now.getTime() - made) / 86_400_000)))
+        : null;
+      const count = days === null ? "" : ` (day ${days} of 7)`;
+      return visibleLinks > 0
+        ? `Keep at least one Visible link on your page until it's a week old${count}.`
+        : `Add a Visible link and keep your page for a week${count}.`;
+    }
   }
-  if (key === "five_links") {
-    const n = input.links.filter((l) => l.enabled && l.url.trim().length > 0).length;
-    return `${Math.min(n, 5)} of 5`;
-  }
-  return null;
 }
 
 /** Parses claim_theme_rewards()'s answer; anything unexpected reads as nothing unlocked. */
