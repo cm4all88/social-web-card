@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Gift, Lock, Snowflake } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { refreshFeed } from "@/lib/notifications/feed";
 import { seasonalThemesInSeason, type ThemePreset } from "@/lib/themes";
 import {
   parseRewardClaim,
@@ -32,6 +33,8 @@ export function useThemeRewards() {
     setUnlocked(r.unlocked);
     for (const k of r.newlyUnlocked)
       toast.success(`You unlocked the ${themeForReward(k).label} theme!`);
+    // Each unlock also adds a bell notification; show it without a reload.
+    if (r.newlyUnlocked.length > 0) void refreshFeed().catch(() => {});
   }, []);
 
   const refresh = useCallback(async () => {
