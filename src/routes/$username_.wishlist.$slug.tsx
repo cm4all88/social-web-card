@@ -4,6 +4,7 @@ import { ExternalLink, Gift, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { buttonRadiusFor, fontFamilyFor } from "@/lib/themes";
 import { usePublicProfile } from "@/lib/use-public-profile";
+import { trackVisit } from "@/lib/analytics/track";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { hostOf, isSafeExternalUrl, type Wishlist, type WishlistItem } from "@/lib/wishlists";
@@ -39,6 +40,7 @@ function WishlistPage() {
         .maybeSingle();
       setList((w as Wishlist | null) ?? null);
       if (w) {
+        trackVisit("wishlist_view", profile.user_id, { username: profile.username, wishlistSlug: slug });
         const { data: it } = await supabase
           .from("wishlist_items")
           .select("*")

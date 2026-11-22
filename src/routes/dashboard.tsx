@@ -19,6 +19,7 @@ import { TipsManager } from "@/components/tipping/TipsManager";
 import { BetaPanel } from "@/components/beta/BetaPanel";
 import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
+import { MyAnalytics } from "@/components/analytics/MyAnalytics";
 import { Gift, Shield } from "lucide-react";
 
 /** Creator dashboard: every signed-in user manages their own page here. */
@@ -377,6 +378,8 @@ function DashboardPage() {
             </a>
           ))}
         </nav>
+
+        {profile && <MyAnalytics />}
 
         {/* Profile */}
         {profile && (

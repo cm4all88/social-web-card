@@ -146,6 +146,13 @@ const privacy: LegalDocument = {
       ],
     },
     {
+      heading: "Page analytics",
+      paragraphs: [
+        "When someone visits a Yooits page or wishlist, or taps a link on it, we record that it happened, which link was tapped and where the visit came from: the referring website, the app's in-app browser, any campaign (UTM) tags in the address, the kind of device and the country. Page owners see these totals for their own page on their dashboard, and Yooits uses site-wide totals to run and improve the service.",
+        "We don't store IP addresses for this, use cookies for it, or follow visitors across other websites. To count unique visitors we keep a salted one-way hash of the IP address and browser that changes every day, so a visitor can't be recognised from one day to the next. If your browser sends Do Not Track or Global Privacy Control, your visit isn't recorded. Known bots and link-preview fetchers aren't counted. A page's analytics are deleted with the account.",
+      ],
+    },
+    {
       heading: "How we use it",
       paragraphs: [
         "To run your account and public pages, to process and report tips and Plus payments, to prevent fraud and abuse, to answer you, and to meet legal duties. We don't sell your personal information and we don't show third-party advertising on profiles.",

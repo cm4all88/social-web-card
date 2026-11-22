@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Sparkles, ArrowRight } from "lucide-react";
 import logo from "@/assets/yooits-logo.png";
 import { LegalLinks } from "@/components/legal/LegalPage";
+import { useEffect } from "react";
+import { track } from "@/lib/analytics/track";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -14,6 +16,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  useEffect(() => track("home_view"), []);
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -50,6 +53,7 @@ function Home() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <Link
             to="/auth"
+            onClick={() => track("signup_cta")}
             className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
             style={{ boxShadow: "var(--shadow-glow)" }}
           >

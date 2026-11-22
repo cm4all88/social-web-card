@@ -11,6 +11,7 @@ import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
 import { loadPublicPlus } from "@/lib/billing/public";
+import { trackVisit } from "@/lib/analytics/track";
 
 export const Route = createFileRoute("/$username")({
   component: ProfilePage,
@@ -82,6 +83,7 @@ function ProfilePage() {
       setProfile(prof as Profile);
       setLinks((l ?? []) as SocialLink[]);
       setLoading(false);
+      trackVisit("profile_view", prof.user_id, { username: prof.username });
 
       // Optional sections; failures here must never break the profile page.
       getPublicTipConfig({ data: { username: prof.username } })
@@ -164,6 +166,7 @@ function ProfilePage() {
                   href={href}
                   target={href ? "_blank" : undefined}
                   rel="noopener noreferrer nofollow ugc"
+                  onClick={href ? () => trackVisit("link_click", profile?.user_id, { username: profile?.username, linkId: link.id }) : undefined}
                   className="group relative flex items-center gap-4 overflow-hidden border p-4 transition-all hover:-translate-y-0.5"
                   style={{
                     background: isOutline ? "transparent" : theme.card,
@@ -242,7 +245,12 @@ function ProfilePage() {
         )}
 
         {showBranding && (
-          <Link to="/" className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100" style={{ color: theme.foreground }}>
+          <Link
+            to="/"
+            onClick={() => trackVisit("signup_cta", profile?.user_id, { username: profile?.username })}
+            className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100"
+            style={{ color: theme.foreground }}
+          >
             <UserPlus className="h-3 w-3" /> Get your own Yooits
           </Link>
         )}

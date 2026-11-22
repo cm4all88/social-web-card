@@ -24,7 +24,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
   { id: "wishlists", label: "Wishlists", to: "/owner/wishlists", status: "planned", summary: "Retailers, affiliate tags and wishlist moderation." },
   { id: "promotions", label: "Promotions", to: "/owner/promotions", status: "planned", summary: "House promotions shown across Yooits." },
   { id: "settings", label: "Settings", to: "/owner/settings", status: "planned", summary: "Feature switches and limits, changed without code." },
-  { id: "analytics", label: "Analytics", to: "/owner/analytics", status: "planned", summary: "Growth and engagement over time." },
+  { id: "analytics", label: "Analytics", to: "/owner/analytics", status: "live", summary: "Users, traffic, destinations, platforms, conversions and growth." },
 ];
 
 export const PLANNED_SECTION_IDS = OWNER_SECTIONS.filter((s) => s.status === "planned").map((s) => s.id);
