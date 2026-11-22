@@ -542,6 +542,23 @@ export function isPremiumTheme(key: string | null | undefined): boolean {
   return !!key && PREMIUM_THEME_KEYS.includes(key);
 }
 
+/**
+ * The theme key a public page actually shows: a Plus theme needs Plus and an
+ * earned theme needs its reward (or Plus), otherwise the page falls back to
+ * the default free theme (the setting itself is kept). Free seasonal themes
+ * keep showing after their season ends.
+ */
+export function effectiveThemeKey(
+  key: string | null | undefined,
+  opts: { plus?: boolean; unlocked?: boolean } = {},
+): string {
+  const fallback = THEME_PRESETS[0].key;
+  if (key === "custom") return "custom";
+  if (isPremiumTheme(key)) return opts.plus ? key! : fallback;
+  if (isRewardTheme(key)) return opts.plus || opts.unlocked ? key! : fallback;
+  return findThemePreset(key)?.key ?? fallback;
+}
+
 export function getTheme(
   key: string | null | undefined,
   custom: Partial<ThemeTokens> | null | undefined,
@@ -551,20 +568,8 @@ export function getTheme(
     const base = THEME_PRESETS[0].tokens;
     return { ...base, ...sanitizeCustomTheme(custom) };
   }
-  // A premium theme shows only while its creator is on Plus; otherwise the
-  // page falls back to the default free theme (the setting itself is kept).
-  if (isPremiumTheme(key)) {
-    if (opts.plus) return findThemePreset(key)!.tokens;
-    return THEME_PRESETS[0].tokens;
-  }
-  // An earned theme shows once its reward is unlocked, or with Plus.
-  if (isRewardTheme(key)) {
-    if (opts.plus || opts.unlocked) return findThemePreset(key)!.tokens;
-    return THEME_PRESETS[0].tokens;
-  }
-  // Free seasonal themes keep showing after their season ends.
-  const preset = findThemePreset(key) ?? THEME_PRESETS[0];
-  return preset.tokens;
+  const shown = effectiveThemeKey(key === "custom" ? null : key, opts);
+  return (findThemePreset(shown) ?? THEME_PRESETS[0]).tokens;
 }
 
 export function fontFamilyFor(font: ThemeTokens["font"]): string {

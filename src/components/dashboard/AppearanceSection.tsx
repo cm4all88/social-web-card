@@ -1,6 +1,6 @@
 /**
  * Appearance on the creator dashboard: the full theme gallery, Plus themes,
- * seasonal and earned themes, and custom colours. Moved here unchanged from
+ * seasonal and earned themes, animated effects, and custom colours. Moved here unchanged from
  * the dashboard page so the links can come first.
  */
 import { toast } from "sonner";
@@ -18,21 +18,26 @@ import {
 } from "@/components/ui/select";
 import {
   findThemePreset,
+  getTheme,
   PREMIUM_THEME_PRESETS,
   THEME_PRESETS,
   type ThemeTokens,
 } from "@/lib/themes";
 import { ThemeRewardsPicker, type useThemeRewards } from "@/components/rewards/ThemeRewards";
 import type { MyPlus } from "@/components/plus/PlusPanel";
+import { themeForReward } from "@/lib/rewards";
+import { SkinPicker } from "@/components/skins/SkinPicker";
 
 export type AppearanceProfile = {
   user_id: string;
+  username: string;
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   created_at?: string | null;
+  skin?: string | null;
 };
 
 export function AppearanceSection<P extends AppearanceProfile>({
@@ -188,6 +193,20 @@ export function AppearanceSection<P extends AppearanceProfile>({
           createdAt: profile.created_at,
         }}
         onPick={setTheme}
+      />
+
+      <SkinPicker
+        userId={profile.user_id}
+        username={profile.username}
+        skin={profile.skin}
+        themeKey={profile.theme}
+        tokens={getTheme(profile.theme, profile.custom_theme, {
+          plus: isPlus,
+          unlocked: rewards.unlocked.some((k) => themeForReward(k).key === profile.theme),
+        })}
+        isPlus={isPlus}
+        unlocked={rewards.unlocked}
+        onSaved={(v) => setProfile((p) => (p ? { ...p, skin: v } : p))}
       />
 
       {profile.theme === "custom" && (

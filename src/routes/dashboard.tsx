@@ -77,6 +77,7 @@ type Profile = {
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
   created_at?: string | null;
+  skin?: string | null;
 };
 
 const card = "rounded-2xl border border-border bg-card p-5";

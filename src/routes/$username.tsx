@@ -13,7 +13,9 @@ import { readableTextOn } from "@/lib/contrast";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
-import { loadPublicPlus, loadPublicThemeUnlocked } from "@/lib/billing/public";
+import { loadPublicPlus, loadPublicSkinState, loadPublicThemeUnlocked } from "@/lib/billing/public";
+import { SkinLayer } from "@/components/skins/SkinLayer";
+import { findSkin, parseSkinState, resolveSkin, THEME_DEFAULT_SKIN } from "@/lib/skins";
 import { trackVisit } from "@/lib/analytics/track";
 
 export const Route = createFileRoute("/$username")({
@@ -45,6 +47,7 @@ type Profile = {
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
+  skin?: string | null;
 };
 type SocialLink = {
   id: string;
@@ -72,6 +75,12 @@ function ProfilePage() {
   // Plus settings (premium theme, hidden branding) count only while on Plus.
   const [plus, setPlus] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  const [skinState, setSkinState] = useState({ enabled: false, unlocked: false });
+  // ?effect=snow previews an effect on this page without saving anything.
+  const [previewSkin, setPreviewSkin] = useState<string | null>(null);
+  useEffect(() => {
+    setPreviewSkin(new URLSearchParams(window.location.search).get("effect"));
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -85,7 +94,10 @@ function ProfilePage() {
         setLoading(false);
         return;
       }
-      const [{ data: l }, { data: secs }, isPlus, isUnlocked] = await Promise.all([
+      const pickedSkin = (prof as { skin?: string | null }).skin;
+      const wantsSkin =
+        (!!pickedSkin && pickedSkin !== "none") || !!(prof.theme && THEME_DEFAULT_SKIN[prof.theme]);
+      const [{ data: l }, { data: secs }, isPlus, isUnlocked, skinData] = await Promise.all([
         supabase
           .from("social_links")
           .select("*")
@@ -101,7 +113,9 @@ function ProfilePage() {
           .then((r) => (r.error ? { data: [] } : r)),
         loadPublicPlus(prof.user_id),
         isRewardTheme(prof.theme) ? loadPublicThemeUnlocked(prof.user_id) : Promise.resolve(false),
+        wantsSkin ? loadPublicSkinState(prof.user_id) : Promise.resolve(null),
       ]);
+      setSkinState(parseSkinState(skinData));
       setPlus(isPlus);
       setUnlocked(isUnlocked);
       setProfile(prof as Profile);
@@ -138,13 +152,33 @@ function ProfilePage() {
   const showBranding = !(plus && profile?.hide_branding);
   const radius = buttonRadiusFor(theme.buttonStyle);
   const font = fontFamilyFor(theme.font);
+  const preview = findSkin(previewSkin);
+  const resolvedSkin = resolveSkin({
+    enabled: skinState.enabled,
+    skin: profile?.skin,
+    theme: profile?.theme,
+    plus,
+    themeUnlocked: unlocked,
+    skinUnlocked: skinState.unlocked,
+  });
+  const skin = preview ?? resolvedSkin;
+  const frame = skin?.frame;
 
   return (
     <div
       className="relative min-h-screen overflow-hidden"
       style={{ background: theme.background, color: theme.foreground, fontFamily: font }}
     >
-      <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center px-6 py-16">
+      <SkinLayer skin={skin} />
+      {preview && (
+        <div
+          className="fixed left-1/2 top-3 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white"
+          role="status"
+        >
+          Previewing {preview.label}
+        </div>
+      )}
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col items-center px-6 py-16">
         <div
           className="mb-5 h-28 w-28 rounded-full p-1"
           style={{ background: theme.accent, boxShadow: `0 10px 40px -10px ${theme.accent}` }}
@@ -224,13 +258,15 @@ function ProfilePage() {
                       style={{
                         background: isOutline ? "transparent" : theme.card,
                         color: theme.cardForeground,
-                        borderColor: featured ? theme.accent : theme.border,
+                        borderColor: featured ? theme.accent : (frame?.cardBorder ?? theme.border),
                         borderRadius: radius,
                         boxShadow: featured
                           ? `0 10px 30px -12px ${theme.accent}`
                           : isOutline
                             ? "none"
-                            : "0 8px 24px -12px rgba(0,0,0,0.3)",
+                            : (frame?.cardShadow ?? "0 8px 24px -12px rgba(0,0,0,0.3)"),
+                        backdropFilter: isOutline ? undefined : frame?.cardBackdrop,
+                        WebkitBackdropFilter: isOutline ? undefined : frame?.cardBackdrop,
                       }}
                     >
                       <div

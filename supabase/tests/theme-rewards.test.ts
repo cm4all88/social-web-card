@@ -234,8 +234,8 @@ describe("with the flag on", () => {
         user_id: PLUS,
         kind: "reward_unlocked",
         title: "You unlocked the Confetti theme",
-        body: "It's yours to use on your page. Pick it under Theme in your dashboard.",
-        link: "/dashboard",
+        body: "It's yours to use on your page. Pick it in Appearance on your dashboard.",
+        link: "/dashboard#appearance",
         dedupe: "reward:first_share",
       },
     ]);

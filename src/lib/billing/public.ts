@@ -34,3 +34,17 @@ export async function loadPublicThemeUnlocked(userId: string): Promise<boolean> 
     return false;
   }
 }
+
+/** For public pages: whether skins are on, and whether the creator earned their skin's theme. */
+export async function loadPublicSkinState(userId: string): Promise<unknown> {
+  try {
+    const { data, error } = await (
+      supabase as unknown as {
+        rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
+      }
+    ).rpc("public_profile_skin_state", { _user_id: userId });
+    return error ? null : data;
+  } catch {
+    return null;
+  }
+}

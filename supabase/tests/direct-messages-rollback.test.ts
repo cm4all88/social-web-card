@@ -86,9 +86,11 @@ describe("direct messages migration", () => {
     await db.exec(all[idx]);
     for (const sql of all.slice(idx + 1)) await db.exec(sql);
     const after = await rows(db);
-    // abuse_reports rows gain two empty columns; every other table is untouched.
+    // abuse_reports rows gain two empty columns; later migrations add a flag
+    // row and an empty profiles.skin column. Every other table is untouched.
+    const grows = ["abuse_reports", "app_flags", "profiles"];
     for (const [t, h] of Object.entries(before.r))
-      if (t !== "abuse_reports") expect(after[t], t).toBe(h);
+      if (!grows.includes(t)) expect(after[t], t).toBe(h);
     expect(
       await one(
         db,
