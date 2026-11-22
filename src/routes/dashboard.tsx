@@ -17,6 +17,7 @@ import { findThemePreset, PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens
 import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
+import { getTippingAvailability } from "@/lib/tipping/functions";
 import { BetaPanel } from "@/components/beta/BetaPanel";
 import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
@@ -80,6 +81,14 @@ function DashboardPage() {
   const { plus, reload: reloadPlus } = useMyPlus();
   const isPlus = plus?.plan === "plus";
   const rewards = useThemeRewards();
+  // The Earnings shortcut only makes sense while tipping is switched on.
+  const [tippingOn, setTippingOn] = useState(false);
+
+  useEffect(() => {
+    getTippingAvailability()
+      .then((r) => setTippingOn(r.enabled))
+      .catch(() => setTippingOn(false));
+  }, []);
 
   useEffect(() => {
     const init = async () => {
@@ -389,7 +398,7 @@ function DashboardPage() {
           aria-label="Dashboard sections"
           className="sticky top-0 z-20 -mx-4 mt-4 flex gap-2 overflow-x-auto bg-background/90 px-4 py-3 backdrop-blur"
         >
-          {[...SECTIONS, ...(plusPanelVisible(plus) ? [{ id: "plus", label: "Plus" }] : [])].map((sec) => (
+          {[...SECTIONS.filter((sec) => sec.id !== "earnings" || tippingOn), ...(plusPanelVisible(plus) ? [{ id: "plus", label: "Plus" }] : [])].map((sec) => (
             <a
               key={sec.id}
               href={`#${sec.id}`}
