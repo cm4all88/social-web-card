@@ -184,7 +184,10 @@ const bgOf = async (who: string) =>
   )[0].background_url;
 const views = (who: string, n: number) =>
   svc(
-    `INSERT INTO public.analytics_events (kind, profile_user_id) SELECT 'profile_view', $1 FROM generate_series(1, $2)`,
+    // Each a different real visitor: backgrounds unlock from qualifying visitors
+    // (migration 20261122220000_backgrounds_from_creator_milestones).
+    `INSERT INTO public.analytics_events (kind, profile_user_id, visitor_hash)
+     SELECT 'profile_view', $1, md5(random()::text || g) FROM generate_series(1, $2) g`,
     [who, n],
   );
 const claim = async (who: string) =>

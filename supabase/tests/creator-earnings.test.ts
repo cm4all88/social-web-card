@@ -127,17 +127,19 @@ describe("qualifying visitors", () => {
 });
 
 describe("milestones", () => {
-  it("seeds the four proposed milestones, all not live", async () => {
+  it("seeds the four proposed milestones, all not live, plus custom backgrounds (live)", async () => {
     const rows = await svc<{ key: string; threshold: number; live: boolean }>(
-      `SELECT key, threshold, live FROM creator_milestones ORDER BY threshold`,
+      `SELECT key, threshold, live FROM creator_milestones ORDER BY sort`,
     );
     expect(rows.map((r) => [r.key, r.threshold])).toEqual([
       ["exclusive_skin", 100],
       ["more_customization", 500],
+      ["custom_background", 1000],
       ["subscriptions_apply", 1000],
       ["creator_features", 5000],
     ]);
-    expect(rows.every((r) => !r.live)).toBe(true);
+    // Custom backgrounds already work (migration 20261122220000), so that one is live.
+    expect(rows.filter((r) => r.live).map((r) => r.key)).toEqual(["custom_background"]);
   });
 
   it("a milestone that isn't live is never reached, whatever the count", async () => {
@@ -200,7 +202,7 @@ describe("visibility and privacy", () => {
     const admin = (await as<{ r: any }>(OWNER, `SELECT public.my_creator_earnings() AS r`))[0].r;
     expect(admin.visible).toBe(true);
     expect(admin.enabled).toBe(false);
-    expect(admin.milestones).toHaveLength(4);
+    expect(admin.milestones).toHaveLength(5);
   });
 
   it("shows a creator their own count once switched on", async () => {
@@ -243,6 +245,36 @@ describe("visibility and privacy", () => {
     expect((await svc<{ n: number }>(`SELECT count(*)::int AS n FROM creator_presence`))[0].n).toBe(
       2,
     );
+  });
+});
+
+describe("custom backgrounds read the milestones", () => {
+  const threshold = async () =>
+    (await as<{ t: number }>(BOB, `SELECT public.popular_view_threshold() AS t`))[0].t;
+  const views = async (who: string) =>
+    Number((await svc<{ n: string }>(`SELECT public.profile_view_count($1) AS n`, [who]))[0].n);
+
+  it("uses the qualifying visitor count and the threshold the owner sets", async () => {
+    expect(await threshold()).toBe(1000);
+    expect(await views(ALICE)).toBe(await count(ALICE));
+    await as(
+      OWNER,
+      `SELECT public.owner_set_creator_milestone('custom_background', 3, 'Custom background', 'Your own photo', true)`,
+    );
+    expect(await threshold()).toBe(3);
+  });
+
+  it("counts nothing while the milestone isn't live", async () => {
+    await as(
+      OWNER,
+      `SELECT public.owner_set_creator_milestone('custom_background', 3, 'Custom background', 'Your own photo', false)`,
+    );
+    expect(await views(ALICE)).toBe(0);
+    await as(
+      OWNER,
+      `SELECT public.owner_set_creator_milestone('custom_background', 1000, 'Custom background', 'Put your own photo behind your page.', true)`,
+    );
+    expect(await views(ALICE)).toBe(await count(ALICE));
   });
 });
 
