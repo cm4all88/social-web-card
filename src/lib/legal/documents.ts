@@ -141,6 +141,7 @@ const privacy: LegalDocument = {
         "Profile content: your avatar, links, theme and wishlists. Anything you publish on your profile or a public wishlist is visible to anyone. Private wishlists are visible only to you.",
         "Tips, once available: the amount, the Yooits fee, the supporter's optional name and message, and payment references from Stripe. Card details are entered on Stripe's pages and never reach Yooits.",
         "Reports: if you report a page or wishlist, we keep the reason, what you write, and your email if you choose to give it. The person you report doesn't see who sent it.",
+        "Direct messages, if you turn them on: the messages you send and receive, who they are between and when, your message settings, the people you block, and your confirmation that you are 18 or older. Yooits staff read a message only when someone reports it or to enforce our rules. Deleting your account deletes your conversations.",
         "Plus billing, if you pay for Plus: your Stripe customer and subscription references, the plan's status and renewal date. Card details are entered on Stripe's pages and never reach Yooits.",
         "Security data: to stop abuse we keep a one-way, salted hash of the IP address used to start a tip checkout or send a report, not the address itself. If our bot check is switched on, Cloudflare processes your browser's response to it.",
       ],
@@ -211,6 +212,12 @@ const acceptableUse: LegalDocument = {
       ],
     },
     {
+      heading: "Direct messages",
+      paragraphs: [
+        "Messages are for people 18 and older, and they are off until you turn them on. Don't use them to harass, threaten or spam anyone, to keep writing to someone who has declined or blocked you, or to send anything this policy forbids elsewhere. We may remove messages and turn off messaging for an account.",
+      ],
+    },
+    {
       heading: "Tips and payments",
       paragraphs: [
         "Tips must be for real content or services. Tipping yourself, arranging tips with others to move money, or using tips for gifts, loans, fundraising or resale is not allowed. Stripe's own rules on restricted businesses also apply.",
@@ -219,7 +226,7 @@ const acceptableUse: LegalDocument = {
     {
       heading: "What happens if you break these rules",
       paragraphs: [
-        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a page or a wishlist, use the Report link at the bottom of it, or email ${P.contact} with its address and what is wrong. We review every report.`,
+        `We may remove content, hide your profile, stop your tips, or suspend or close your account. To report a page or a wishlist, use the Report link at the bottom of it, or email ${P.contact} with its address and what is wrong. To report a message, use Report beside it in the conversation. We review every report.`,
       ],
     },
   ],
