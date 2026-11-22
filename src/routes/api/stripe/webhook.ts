@@ -4,12 +4,23 @@ import { getStripe } from "@/lib/tipping/stripe.server";
 import { verifyStripeWebhook } from "@/lib/tipping/verify-webhook";
 import { supabaseTippingStore } from "@/lib/tipping/store.server";
 import { handleStripeEvent, RetryLaterError } from "@/lib/tipping/webhook-handler";
+import { supabaseCreatorSubscriptionStore } from "@/lib/creator/subscription-store.server";
+import {
+  handleCreatorSubscriptionEvent,
+  isCreatorSubscriptionEvent,
+  SubscriptionRetryLaterError,
+  type SubscriptionEventLike,
+} from "@/lib/creator/subscription-webhook";
 
 /**
  * Stripe webhook endpoint for both the platform endpoint and the
  * "connected accounts" endpoint. Each endpoint has its own signing secret
  * (STRIPE_WEBHOOK_SECRET and STRIPE_CONNECT_WEBHOOK_SECRET); a request is
  * accepted if it verifies against either.
+ *
+ * Creator subscription events (subscriptions and their checkouts on
+ * connected accounts) go to the creator subscription handler; everything
+ * else goes to the tip handler.
  */
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
@@ -33,7 +44,18 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         const event = await verifyStripeWebhook(stripe, body, signature, cfg.webhookSecrets);
         if (!event) return new Response("invalid signature", { status: 400 });
 
+        const log = (msg: string, extra?: Record<string, unknown>) =>
+          console.log(`[stripe-webhook] ${msg}`, extra ?? {});
         try {
+          const subEvent = event as unknown as SubscriptionEventLike;
+          if (isCreatorSubscriptionEvent(subEvent)) {
+            const result = await handleCreatorSubscriptionEvent(subEvent, {
+              store: supabaseCreatorSubscriptionStore,
+              liveModeAllowed: cfg.liveModeAllowed,
+              log,
+            });
+            return Response.json({ received: true, outcome: result.outcome });
+          }
           const result = await handleStripeEvent(
             event as unknown as Parameters<typeof handleStripeEvent>[0],
             {
@@ -56,13 +78,13 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                   applicationFeeCents: latest.application_fee_amount ?? null,
                 };
               },
-              log: (msg, extra) => console.log(`[stripe-webhook] ${msg}`, extra ?? {}),
+              log,
             },
           );
           return Response.json({ received: true, outcome: result.outcome });
         } catch (e) {
           // 500 makes Stripe retry with backoff; the event isn't marked processed.
-          const retry = e instanceof RetryLaterError;
+          const retry = e instanceof RetryLaterError || e instanceof SubscriptionRetryLaterError;
           console.error(
             `[stripe-webhook] ${retry ? "retry later" : "failed"}`,
             event.id,
