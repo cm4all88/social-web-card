@@ -33,6 +33,7 @@ export const KEPT_TABLES = [
   "plus_subscriptions",
   "billing_customers",
   "creator_subscriptions",
+  "support_orders",
   "admin_audit_log",
 ] as const;
 
@@ -82,11 +83,11 @@ export async function deleteAccount(
     );
   }
 
-  // Their files live under "<userId>/" in the avatars and creator-media buckets.
-  for (const bucket of ["avatars", "creator-media"]) {
+  // Their files live under "<userId>/" in the avatars, creator-media and support-files buckets.
+  for (const bucket of ["avatars", "creator-media", "support-files"]) {
     const { data: files, error: lErr } = await admin.storage.from(bucket).list(userId, { limit: 1000 });
     if (lErr) {
-      // creator-media is newer; a database without it has no such files.
+      // The creator buckets are newer; a database without them has no such files.
       if (bucket === "avatars") throw lErr;
       continue;
     }

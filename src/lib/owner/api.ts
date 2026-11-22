@@ -207,6 +207,46 @@ export type OwnerCreatorSubscriptions = {
   }[];
 };
 
+export type OwnerSupportOfferingSettings = {
+  enabled: boolean;
+  checkout_enabled: boolean;
+  price_min_cents: number;
+  price_max_cents: number;
+  updated_at: string;
+};
+
+export type OwnerSupportVersion = {
+  id: string;
+  version: number;
+  kind: "download" | "digital_card" | "reader_pack" | "exclusive_post";
+  title: string;
+  description: string;
+  what_you_get: string;
+  min_price_cents: number;
+  allow_pay_more: boolean;
+  file_name: string | null;
+  file_path: string | null;
+  content_body: string | null;
+  status: "pending" | "approved" | "rejected" | "retired" | "withdrawn";
+  created_at: string;
+  decided_at: string | null;
+  decision_note: string | null;
+};
+
+export type OwnerSupportOfferings = {
+  settings: OwnerSupportOfferingSettings;
+  offerings: {
+    id: string;
+    user_id: string;
+    username: string | null;
+    created_at: string;
+    archived: boolean;
+    suspended: boolean;
+    suspended_reason: string | null;
+    versions: OwnerSupportVersion[] | null;
+  }[];
+};
+
 export type OwnerCreatorEarnings = {
   settings: {
     enabled: boolean;
@@ -286,6 +326,19 @@ type OwnerFunctions = {
     args: { _id: string; _removed: boolean; _reason?: string | null };
     result: boolean;
   };
+  owner_support_offerings: { args: Record<string, never>; result: OwnerSupportOfferings };
+  owner_set_support_offering_settings: {
+    args: { _enabled: boolean | null; _price_min_cents: number | null; _price_max_cents: number | null };
+    result: OwnerSupportOfferingSettings;
+  };
+  owner_decide_support_version: {
+    args: { _id: string; _approve: boolean; _note?: string | null };
+    result: string;
+  };
+  owner_set_support_offering_suspended: {
+    args: { _offering_id: string; _suspended: boolean; _reason?: string | null };
+    result: boolean;
+  };
 };
 
 export class OwnerAccessError extends Error {}
@@ -357,6 +410,11 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "creator.monetization_restored": "Creator subscriptions restored",
   "creator.post_removed": "Creator post removed",
   "creator.post_restored": "Creator post restored",
+  "support_offerings.settings": "Support Offerings settings changed",
+  "support.version_approved": "Support offering approved",
+  "support.version_rejected": "Support offering rejected",
+  "support.offering_suspended": "Support offering paused",
+  "support.offering_restored": "Support offering restored",
 };
 
 export function auditLabel(action: string): string {

@@ -42,6 +42,8 @@ import { AppearanceSection } from "@/components/dashboard/AppearanceSection";
 import { CreatorEarningsSection } from "@/components/dashboard/CreatorEarningsSection";
 import { loadMyCreatorEarnings, type CreatorEarnings } from "@/lib/creator/earnings";
 import { CreatorSubscriptionsSection } from "@/components/dashboard/CreatorSubscriptionsSection";
+import { SupportOfferingsSection } from "@/components/dashboard/SupportOfferingsSection";
+import { loadMySupportOfferings, type MySupportOfferings } from "@/lib/support/offerings";
 import {
   loadMyCreatorSubscriptions,
   type MyCreatorSubscriptions,
@@ -108,6 +110,12 @@ function DashboardPage() {
       .then(setCreatorSubs)
       .catch(() => setCreatorSubs({ visible: false }));
   }, []);
+  const [supportOfferings, setSupportOfferings] = useState<MySupportOfferings>({ visible: false });
+  const reloadSupportOfferings = useCallback(() => {
+    loadMySupportOfferings()
+      .then(setSupportOfferings)
+      .catch(() => setSupportOfferings({ visible: false }));
+  }, []);
 
   useEffect(() => {
     getTippingAvailability()
@@ -117,19 +125,20 @@ function DashboardPage() {
       .then(setCreator)
       .catch(() => setCreator({ visible: false }));
     reloadCreatorSubs();
+    reloadSupportOfferings();
     // So a signed-out look at your own page from this browser isn't counted as a visitor.
     void markCreatorPresence().catch(() => {});
     dm("dm_my_settings", {}).then(
       (s) => setMessagesOn(!!s.available),
       () => setMessagesOn(false),
     );
-  }, [reloadCreatorSubs]);
+  }, [reloadCreatorSubs, reloadSupportOfferings]);
 
   const tabs = DASHBOARD_TABS.filter(
     (t) =>
       (t.id !== "support" || tippingOn) &&
       (t.id !== "messages" || messagesOn) &&
-      (t.id !== "creator" || creator.visible || creatorSubs.visible),
+      (t.id !== "creator" || creator.visible || creatorSubs.visible || supportOfferings.visible),
   );
 
   const setTab = useCallback((id: TabId) => {
@@ -509,7 +518,8 @@ function DashboardPage() {
             </div>
           )}
 
-          {activeTab === "creator" && (creator.visible || creatorSubs.visible) && (
+          {activeTab === "creator" &&
+            (creator.visible || creatorSubs.visible || supportOfferings.visible) && (
             <div id="creator">
               <h2 className="text-xl font-bold">Creator earnings</h2>
               <CreatorEarningsSection data={creator} />
@@ -517,6 +527,11 @@ function DashboardPage() {
                 data={creatorSubs}
                 userId={userId}
                 onChanged={reloadCreatorSubs}
+              />
+              <SupportOfferingsSection
+                data={supportOfferings}
+                userId={userId}
+                onChanged={reloadSupportOfferings}
               />
             </div>
           )}

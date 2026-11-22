@@ -410,7 +410,7 @@ function Field({
   );
 }
 
-function Decide({
+export function Decide({
   approveLabel,
   onApprove,
   onReject,
@@ -439,7 +439,7 @@ function Decide({
   );
 }
 
-function WithReason({ label, onSubmit }: { label: string; onSubmit: (reason: string) => void }) {
+export function WithReason({ label, onSubmit }: { label: string; onSubmit: (reason: string) => void }) {
   const [reason, setReason] = useState("");
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2">

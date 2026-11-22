@@ -64,7 +64,9 @@ describe("deleteAccount", () => {
     await deleteAccount(client, "u1", " Maya ");
     expect(log).toEqual([
       "remove u1/avatar-1.png",
-      "remove u1/avatar-1.png", // the same fake listing serves the creator-media bucket
+      // The same fake listing serves the creator-media and support-files buckets.
+      "remove u1/avatar-1.png",
+      "remove u1/avatar-1.png",
       ...DELETED_TABLES.map((t) => `delete ${t} user_id=u1`),
       "deleteUser u1",
     ]);

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { ownerRpc, type OwnerCreatorEarnings, type OwnerCreatorMilestone } from "@/lib/owner/api";
 import { CreatorSubscriptionsAdmin } from "@/components/owner/CreatorSubscriptionsAdmin";
+import { SupportOfferingsAdmin } from "@/components/owner/SupportOfferingsAdmin";
 
 /**
  * Creator earnings, step 1: who has real visitors, the milestones they work
@@ -118,6 +119,7 @@ function CreatorsPage() {
         </>
       )}
       <CreatorSubscriptionsAdmin />
+      <SupportOfferingsAdmin />
     </div>
   );
 }
