@@ -12,13 +12,22 @@ import { LEGAL_DETAILS } from "@/lib/legal/documents";
 import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username";
 import { z } from "zod";
 import { betaRpc } from "@/lib/beta/api";
-import { BETA_NAME, betaStateMessage, isBetaCodeState, normalizeBetaCode, type BetaCodeState } from "@/lib/beta/invite";
+import { SAFE_NEXT_PATH } from "@/lib/safe-path";
+import {
+  BETA_NAME,
+  betaStateMessage,
+  isBetaCodeState,
+  normalizeBetaCode,
+  type BetaCodeState,
+} from "@/lib/beta/invite";
 
 // yooits.me/auth?invite=fc-xxxxxxxxxx opens sign-up with a Founding Member code.
 // yooits.me/auth?mode=forgot opens the reset-password form (linked from email).
 const searchSchema = z.object({
   invite: z.string().max(200).optional().catch(undefined),
   mode: z.enum(["signin", "signup", "forgot"]).optional().catch(undefined),
+  // Where to go after signing in: a Yooits page path only (e.g. a wishlist).
+  next: z.string().max(200).regex(SAFE_NEXT_PATH).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -33,9 +42,11 @@ const MIN_PASSWORD = 8;
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { invite, mode: initialMode } = Route.useSearch();
+  const { invite, mode: initialMode, next } = Route.useSearch();
   const inviteCode = normalizeBetaCode(invite);
-  const [betaState, setBetaState] = useState<BetaCodeState | null>(invite && !inviteCode ? "invalid" : null);
+  const [betaState, setBetaState] = useState<BetaCodeState | null>(
+    invite && !inviteCode ? "invalid" : null,
+  );
   const [mode, setMode] = useState<Mode>(invite ? "signup" : (initialMode ?? "signin"));
   const [signedIn, setSignedIn] = useState(false);
   const [email, setEmail] = useState("");
@@ -66,6 +77,10 @@ function AuthPage() {
         toast.error(err instanceof Error ? err.message : "Couldn't use that invite");
         return;
       }
+    }
+    if (next) {
+      window.location.assign(next);
+      return;
     }
     navigate({ to: "/dashboard" });
   };
@@ -113,7 +128,9 @@ function AuthPage() {
           throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
         }
         if (!ageConfirmed) {
-          throw new Error(`You need to be ${LEGAL_DETAILS.minimumAge} or older to create a Yooits page.`);
+          throw new Error(
+            `You need to be ${LEGAL_DETAILS.minimumAge} or older to create a Yooits page.`,
+          );
         }
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -196,7 +213,11 @@ function AuthPage() {
   };
 
   const title =
-    mode === "signin" ? "Welcome back" : mode === "signup" ? "Create your page" : "Reset your password";
+    mode === "signin"
+      ? "Welcome back"
+      : mode === "signup"
+        ? "Create your page"
+        : "Reset your password";
   const subtitle =
     mode === "signin"
       ? "Sign in to manage your links."
@@ -207,7 +228,10 @@ function AuthPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <Toaster />
-      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8" style={{ boxShadow: "var(--shadow-card)" }}>
+      <div
+        className="w-full max-w-md rounded-3xl border border-border bg-card p-8"
+        style={{ boxShadow: "var(--shadow-card)" }}
+      >
         <h1 className="text-2xl font-bold">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
         {betaState && (
@@ -232,7 +256,10 @@ function AuthPage() {
           </div>
         )}
         {notice && (
-          <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm" role="status">
+          <div
+            className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm"
+            role="status"
+          >
             {notice}
           </div>
         )}
@@ -271,14 +298,25 @@ function AuthPage() {
           )}
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           {mode !== "forgot" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 {mode === "signin" && (
-                  <button type="button" onClick={() => switchMode("forgot")} className="text-xs text-primary hover:underline">
+                  <button
+                    type="button"
+                    onClick={() => switchMode("forgot")}
+                    className="text-xs text-primary hover:underline"
+                  >
                     Forgot password?
                   </button>
                 )}
@@ -299,7 +337,13 @@ function AuthPage() {
           )}
           <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
             <label htmlFor="website">Website</label>
-            <input id="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            <input
+              id="website"
+              tabIndex={-1}
+              autoComplete="off"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
           </div>
           <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
           {mode === "signup" && (
@@ -318,15 +362,27 @@ function AuthPage() {
           {mode === "signup" && (
             <p className="text-xs text-muted-foreground">
               By creating an account you agree to the{" "}
-              <Link to="/legal/$doc" params={{ doc: "terms" }} className="text-primary hover:underline">
+              <Link
+                to="/legal/$doc"
+                params={{ doc: "terms" }}
+                className="text-primary hover:underline"
+              >
                 Terms of Service
               </Link>
               ,{" "}
-              <Link to="/legal/$doc" params={{ doc: "acceptable-use" }} className="text-primary hover:underline">
+              <Link
+                to="/legal/$doc"
+                params={{ doc: "acceptable-use" }}
+                className="text-primary hover:underline"
+              >
                 Acceptable Use Policy
               </Link>{" "}
               and{" "}
-              <Link to="/legal/$doc" params={{ doc: "privacy" }} className="text-primary hover:underline">
+              <Link
+                to="/legal/$doc"
+                params={{ doc: "privacy" }}
+                className="text-primary hover:underline"
+              >
                 Privacy Policy
               </Link>
               .
@@ -342,22 +398,45 @@ function AuthPage() {
                   : "Send reset link"}
           </Button>
           {unconfirmedEmail && (
-            <Button type="button" variant="outline" className="w-full" disabled={loading} onClick={resendConfirmation}>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={loading}
+              onClick={resendConfirmation}
+            >
               Resend confirmation email
             </Button>
           )}
         </form>
         <div className="mt-4 text-center text-sm text-muted-foreground">
           {mode === "signin" ? (
-            <>No account? <button onClick={() => switchMode("signup")} className="text-primary hover:underline">Sign up</button></>
+            <>
+              No account?{" "}
+              <button onClick={() => switchMode("signup")} className="text-primary hover:underline">
+                Sign up
+              </button>
+            </>
           ) : mode === "signup" ? (
-            <>Have an account? <button onClick={() => switchMode("signin")} className="text-primary hover:underline">Sign in</button></>
+            <>
+              Have an account?{" "}
+              <button onClick={() => switchMode("signin")} className="text-primary hover:underline">
+                Sign in
+              </button>
+            </>
           ) : (
-            <>Remembered it? <button onClick={() => switchMode("signin")} className="text-primary hover:underline">Back to sign in</button></>
+            <>
+              Remembered it?{" "}
+              <button onClick={() => switchMode("signin")} className="text-primary hover:underline">
+                Back to sign in
+              </button>
+            </>
           )}
         </div>
         <div className="mt-6 text-center">
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to home</Link>
+          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">
+            ← Back to home
+          </Link>
         </div>
         <LegalLinks className="mt-4" />
       </div>

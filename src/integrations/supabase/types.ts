@@ -453,6 +453,8 @@ export type Database = {
           event_date: string | null
           id: string
           occasion: string | null
+          recipient_name: string | null
+          reveal_claims: boolean
           show_on_profile: boolean
           slug: string
           title: string
@@ -467,6 +469,8 @@ export type Database = {
           event_date?: string | null
           id?: string
           occasion?: string | null
+          recipient_name?: string | null
+          reveal_claims?: boolean
           show_on_profile?: boolean
           slug: string
           title: string
@@ -481,6 +485,8 @@ export type Database = {
           event_date?: string | null
           id?: string
           occasion?: string | null
+          recipient_name?: string | null
+          reveal_claims?: boolean
           show_on_profile?: boolean
           slug?: string
           title?: string

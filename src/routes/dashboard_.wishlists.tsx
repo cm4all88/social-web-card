@@ -19,12 +19,24 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  hostOf,
+  isSafeExternalUrl,
   normalizeExternalUrl,
   OCCASIONS,
+  type MyClaim,
   slugify,
   type Wishlist,
   type WishlistItem,
 } from "@/lib/wishlists";
+
+type Rpc = {
+  rpc: (
+    fn: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
+const rpc = (fn: string, args?: Record<string, unknown>) =>
+  (supabase as unknown as Rpc).rpc(fn, args);
 
 export const Route = createFileRoute("/dashboard_/wishlists")({
   component: WishlistsAdmin,
@@ -42,6 +54,8 @@ function WishlistsAdmin() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [draft, setDraft] = useState(blankItem);
+  const [claimsOn, setClaimsOn] = useState(false);
+  const [myClaims, setMyClaims] = useState<MyClaim[]>([]);
 
   const active = lists.find((l) => l.id === activeId) ?? null;
 
@@ -69,8 +83,25 @@ function WishlistsAdmin() {
         .maybeSingle();
       setUsername(prof?.username ?? "");
       await loadLists(uid);
+      // Gifts this person said they'll buy. Quietly empty before the claims migration.
+      const { data: mine, error: mineErr } = await rpc("my_wishlist_claims");
+      if (!mineErr && Array.isArray(mine)) setMyClaims(mine as MyClaim[]);
     })();
   }, [navigate, loadLists]);
+
+  useEffect(() => {
+    if (!activeId) return setClaimsOn(false);
+    rpc("wishlist_claim_status", { _wishlist_id: activeId }).then(({ data, error }) =>
+      setClaimsOn(!error && !!(data as { claims_on?: boolean } | null)?.claims_on),
+    );
+  }, [activeId]);
+
+  const unclaim = async (itemId: string) => {
+    const { error } = await rpc("unclaim_wishlist_item", { _item_id: itemId });
+    if (error) return toast.error(error.message);
+    setMyClaims((p) => p.filter((c) => c.item_id !== itemId));
+    toast.success("Okay, it's free for someone else.");
+  };
 
   useEffect(() => {
     if (!activeId) return setItems([]);
@@ -117,6 +148,8 @@ function WishlistsAdmin() {
         title: active.title.trim().slice(0, 80),
         description: active.description?.trim() || null,
         occasion: active.occasion?.trim() || null,
+        recipient_name: active.recipient_name?.trim().slice(0, 40) || null,
+        reveal_claims: active.reveal_claims,
         event_date: active.event_date || null,
         visibility: active.visibility,
         show_on_profile: active.visibility === "public" && active.show_on_profile,
@@ -234,6 +267,52 @@ function WishlistsAdmin() {
           Make gift lists that link to any store. Lists start private; make one public to share it.
         </p>
 
+        {myClaims.length > 0 && (
+          <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+            <h2 className="font-semibold">Gifts you&apos;re getting</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Only you can see these. The list owner isn&apos;t told who is getting what.
+            </p>
+            <ul className="mt-3 divide-y divide-border">
+              {myClaims.map((c) => (
+                <li
+                  key={c.item_id}
+                  className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+                >
+                  <span>
+                    <span className="font-medium">{c.item_name}</span>
+                    {c.price_text && (
+                      <span className="text-muted-foreground"> · {c.price_text}</span>
+                    )}
+                    <span className="block text-xs text-muted-foreground">
+                      <Link
+                        to="/$username/wishlist/$slug"
+                        params={{ username: c.username, slug: c.wishlist_slug }}
+                        className="underline"
+                      >
+                        {c.wishlist_title}
+                      </Link>
+                      {c.recipient_name ? ` · for ${c.recipient_name}` : ` · @${c.username}`}
+                    </span>
+                  </span>
+                  <span className="flex gap-2">
+                    {c.url && isSafeExternalUrl(c.url) && (
+                      <Button variant="secondary" size="sm" asChild>
+                        <a href={c.url} target="_blank" rel="noopener noreferrer nofollow">
+                          {hostOf(c.url)} <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => unclaim(c.item_id)}>
+                      Let it go
+                    </Button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Input
             value={newTitle}
@@ -276,6 +355,20 @@ function WishlistsAdmin() {
                   value={active.title}
                   onChange={(e) => patchActive({ title: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="wl-for">Who it&apos;s for (optional)</Label>
+                <Input
+                  id="wl-for"
+                  maxLength={40}
+                  placeholder="Leave blank if it's yours, or e.g. Mia"
+                  value={active.recipient_name ?? ""}
+                  onChange={(e) => patchActive({ recipient_name: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Making a list for your child? Put their first name here and the list shows
+                  &ldquo;For Mia&rdquo;. It stays on your account.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="wl-occasion">Occasion</Label>
@@ -324,6 +417,21 @@ function WishlistsAdmin() {
                   }
                 />
               </div>
+              {claimsOn && (
+                <div className="flex items-center justify-between gap-4 sm:col-span-2">
+                  <Label htmlFor="wl-reveal">
+                    Show me which gifts are taken
+                    <span className="block text-xs font-normal text-muted-foreground">
+                      Spoils the surprise. You never see who is getting what.
+                    </span>
+                  </Label>
+                  <Switch
+                    id="wl-reveal"
+                    checked={!!active.reveal_claims}
+                    onCheckedChange={(v) => patchActive({ reveal_claims: v })}
+                  />
+                </div>
+              )}
               <div className="flex items-center justify-between gap-4">
                 <Label htmlFor="wl-profile">Show on my profile</Label>
                 <Switch

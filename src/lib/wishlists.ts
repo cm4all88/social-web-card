@@ -5,6 +5,10 @@ export type Wishlist = {
   title: string;
   description: string | null;
   occasion: string | null;
+  /** Who the list is for when it isn't the owner, e.g. a child's first name. */
+  recipient_name: string | null;
+  /** Owner can see which items are taken (never who took them). */
+  reveal_claims: boolean;
   event_date: string | null;
   visibility: "public" | "private";
   show_on_profile: boolean;
@@ -82,3 +86,43 @@ export function hostOf(url: string): string {
     return "";
   }
 }
+
+/** What wishlist_claim_status() tells a viewer. Never says who claimed. */
+export type ClaimStatus = {
+  enabled: boolean;
+  is_owner: boolean;
+  claims_on?: boolean;
+  reveal_claims?: boolean;
+  claimed: { item_id: string; mine: boolean }[];
+};
+
+export type ClaimResult =
+  "claimed" | "taken" | "limit" | "own_list" | "unavailable" | "sign_in" | "off";
+
+export const CLAIM_MESSAGES: Record<Exclude<ClaimResult, "claimed">, string> = {
+  taken: "Someone already said they'll get this one.",
+  limit: "You've claimed the most gifts allowed on this list.",
+  own_list: "This is your own list.",
+  unavailable: "This gift can't be claimed right now.",
+  sign_in: "Sign in to claim a gift.",
+  off: "Claiming gifts isn't available yet.",
+};
+
+/** "Mia's Christmas list" header line: "For Mia" when set. */
+export function recipientLine(list: Pick<Wishlist, "recipient_name">): string | null {
+  const n = list.recipient_name?.trim();
+  return n ? `For ${n}` : null;
+}
+
+/** A gift the signed-in person said they'll buy (my_wishlist_claims()). */
+export type MyClaim = {
+  item_id: string;
+  item_name: string;
+  url: string | null;
+  price_text: string | null;
+  wishlist_title: string;
+  wishlist_slug: string;
+  recipient_name: string | null;
+  username: string;
+  claimed_at: string;
+};
