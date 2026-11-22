@@ -64,3 +64,22 @@ it("formats cents as dollars", () => {
   expect(formatCents(123456)).toBe("$1,234.56");
   expect(formatCents(50)).toBe("$0.50");
 });
+
+// The owner's schedule (Nov 22): $0.50 for Yooits plus Stripe's card fee, both
+// paid by the subscriber. Creators' connected accounts pay Stripe's fee, so the
+// application fee must be yooitsNet for the creator to receive the full price.
+it("gives the creator their whole price under the owner's schedule", () => {
+  const owner: FeeRates = {
+    yooits_percent_bps: 0,
+    yooits_fixed_cents: 50,
+    stripe_percent_bps: 290,
+    stripe_fixed_cents: 30,
+  };
+  expect(creatorFeeBreakdown(500, owner)?.total).toBe(597);
+  for (const price of [100, 299, 500, 999, 2500, 50_000]) {
+    const b = creatorFeeBreakdown(price, owner)!;
+    const creatorReceives = b.total - b.estimatedProcessingFee - b.yooitsNet;
+    expect(creatorReceives).toBe(price);
+    expect(b.yooitsNet).toBeGreaterThanOrEqual(50);
+  }
+});
