@@ -39,6 +39,7 @@ import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
 import { Route as OwnerMailRouteImport } from './routes/owner.mail'
 import { Route as OwnerMessagingRouteImport } from './routes/owner.messaging'
+import { Route as OwnerPaymentsRouteImport } from './routes/owner.payments'
 import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
@@ -202,6 +203,11 @@ const OwnerMessagingRoute = OwnerMessagingRouteImport.update({
   path: '/messaging',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerPaymentsRoute = OwnerPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerReportsRoute = OwnerReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -291,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
+  '/owner/payments': typeof OwnerPaymentsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -334,6 +341,7 @@ export interface FileRoutesByTo {
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
+  '/owner/payments': typeof OwnerPaymentsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -379,6 +387,7 @@ export interface FileRoutesById {
   '/owner/invites': typeof OwnerInvitesRoute
   '/owner/mail': typeof OwnerMailRoute
   '/owner/messaging': typeof OwnerMessagingRoute
+  '/owner/payments': typeof OwnerPaymentsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
   '/owner/users': typeof OwnerUsersRoute
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/owner/invites'
     | '/owner/mail'
     | '/owner/messaging'
+    | '/owner/payments'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -468,6 +478,7 @@ export interface FileRouteTypes {
     | '/owner/invites'
     | '/owner/mail'
     | '/owner/messaging'
+    | '/owner/payments'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/owner/invites'
     | '/owner/mail'
     | '/owner/messaging'
+    | '/owner/payments'
     | '/owner/reports'
     | '/owner/revenue'
     | '/owner/users'
@@ -770,6 +782,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerMessagingRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/payments': {
+      id: '/owner/payments'
+      path: '/payments'
+      fullPath: '/owner/payments'
+      preLoaderRoute: typeof OwnerPaymentsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/reports': {
       id: '/owner/reports'
       path: '/reports'
@@ -869,6 +888,7 @@ interface OwnerRouteChildren {
   OwnerInvitesRoute: typeof OwnerInvitesRoute
   OwnerMailRoute: typeof OwnerMailRoute
   OwnerMessagingRoute: typeof OwnerMessagingRoute
+  OwnerPaymentsRoute: typeof OwnerPaymentsRoute
   OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
   OwnerUsersRoute: typeof OwnerUsersRoute
@@ -888,6 +908,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerInvitesRoute: OwnerInvitesRoute,
   OwnerMailRoute: OwnerMailRoute,
   OwnerMessagingRoute: OwnerMessagingRoute,
+  OwnerPaymentsRoute: OwnerPaymentsRoute,
   OwnerReportsRoute: OwnerReportsRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
   OwnerUsersRoute: OwnerUsersRoute,

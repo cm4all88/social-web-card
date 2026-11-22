@@ -19,6 +19,7 @@ import { billingConfigOrNull, BillingUnavailableError, getBillingConfig } from "
 import { loadPlusState } from "./store.server";
 import { subscriptionToRow } from "./sync";
 import { getBillingStripe } from "./stripe.server";
+import { storedPortalConfigurationId } from "@/lib/payments/setup.server";
 import {
   founderTrialEnd,
   PLUS_METADATA_KEY,
@@ -34,7 +35,8 @@ const GENERIC = "Something went wrong. Please try again.";
 class UserFacingError extends Error {}
 
 function publicError(e: unknown): never {
-  if (e instanceof BillingUnavailableError || e instanceof UserFacingError) throw new Error(e.message);
+  if (e instanceof BillingUnavailableError || e instanceof UserFacingError)
+    throw new Error(e.message);
   console.error("[plus-billing]", e instanceof Error ? e.message : e);
   throw new Error(GENERIC);
 }
@@ -58,7 +60,11 @@ function siteUrl(): string {
 }
 
 async function isSuspended(userId: string): Promise<boolean> {
-  const { data, error } = await db().from("account_status").select("suspended_at").eq("user_id", userId).maybeSingle();
+  const { data, error } = await db()
+    .from("account_status")
+    .select("suspended_at")
+    .eq("user_id", userId)
+    .maybeSingle();
   if (error) throw error;
   return !!(data as { suspended_at: string | null } | null)?.suspended_at;
 }
@@ -69,7 +75,11 @@ export async function findPlusPrice(stripe: Stripe, priceId: string | null): Pro
   if (priceId) {
     price = await stripe.prices.retrieve(priceId);
   } else {
-    const list = await stripe.prices.list({ lookup_keys: [PLUS_PRICE_LOOKUP_KEY], active: true, limit: 1 });
+    const list = await stripe.prices.list({
+      lookup_keys: [PLUS_PRICE_LOOKUP_KEY],
+      active: true,
+      limit: 1,
+    });
     price = list.data[0];
   }
   if (!price || !priceIsPlus(price)) {
@@ -80,7 +90,12 @@ export async function findPlusPrice(stripe: Stripe, priceId: string | null): Pro
 }
 
 /** The person's Stripe customer in this mode, created once. */
-async function customerFor(stripe: Stripe, userId: string, email: string | undefined, livemode: boolean): Promise<string> {
+async function customerFor(
+  stripe: Stripe,
+  userId: string,
+  email: string | undefined,
+  livemode: boolean,
+): Promise<string> {
   const { data, error } = await db()
     .from("billing_customers")
     .select("stripe_customer_id, livemode")
@@ -102,7 +117,11 @@ async function customerFor(stripe: Stripe, userId: string, email: string | undef
     .insert({ stripe_customer_id: customer.id, user_id: userId, livemode });
   if (insErr) {
     // Another request created it first: use the stored one.
-    const { data: again } = await db().from("billing_customers").select("stripe_customer_id").eq("user_id", userId).maybeSingle();
+    const { data: again } = await db()
+      .from("billing_customers")
+      .select("stripe_customer_id")
+      .eq("user_id", userId)
+      .maybeSingle();
     const id = (again as { stripe_customer_id: string } | null)?.stripe_customer_id;
     if (id) return id;
     throw insErr;
@@ -125,7 +144,9 @@ export const getMyPlus = createServerFn({ method: "GET" })
         state.subscriptions.find((s) => statusBlocksNewCheckout(s.status)) ??
         null;
       const grantActive =
-        !!state.grant && !state.grant.revoked_at && new Date(state.grant.ends_at).getTime() > Date.now();
+        !!state.grant &&
+        !state.grant.revoked_at &&
+        new Date(state.grant.ends_at).getTime() > Date.now();
       const canManage = !!cfg && state.customers.some((c) => c.livemode === livemode);
       return {
         plan: state.plan,
@@ -159,7 +180,8 @@ export const startPlusCheckout = createServerFn({ method: "POST" })
       const cfg = getBillingConfig();
       if (!cfg.checkoutOpen) throw new BillingUnavailableError();
       const userId = context.userId;
-      if (await isSuspended(userId)) throw new UserFacingError("This account can't start Plus right now.");
+      if (await isSuspended(userId))
+        throw new UserFacingError("This account can't start Plus right now.");
 
       const state = await loadPlusState(userId);
       if (state.subscriptions.some((s) => statusBlocksNewCheckout(s.status))) {
@@ -170,7 +192,12 @@ export const startPlusCheckout = createServerFn({ method: "POST" })
       const livemode = isLive(cfg.secretKey);
       const price = await findPlusPrice(stripe, cfg.priceId);
       const { data: userData } = await db().auth.admin.getUserById(userId);
-      const customer = await customerFor(stripe, userId, userData?.user?.email ?? undefined, livemode);
+      const customer = await customerFor(
+        stripe,
+        userId,
+        userData?.user?.email ?? undefined,
+        livemode,
+      );
 
       // A Founding Member who keeps Plus isn't charged before the free months end.
       const grantLive = state.grant && !state.grant.revoked_at ? state.grant.ends_at : null;
@@ -214,10 +241,12 @@ export const openBillingPortal = createServerFn({ method: "POST" })
       const customer = state.customers.find((c) => c.livemode === livemode);
       if (!customer) throw new UserFacingError("There's no billing to manage yet.");
       const stripe = getBillingStripe();
+      const configuration =
+        cfg.portalConfigurationId ?? (await storedPortalConfigurationId(livemode));
       const session = await stripe.billingPortal.sessions.create({
         customer: customer.stripe_customer_id,
         return_url: `${siteUrl()}/dashboard#plus`,
-        ...(cfg.portalConfigurationId ? { configuration: cfg.portalConfigurationId } : {}),
+        ...(configuration ? { configuration } : {}),
       });
       return { url: session.url };
     } catch (e) {
@@ -237,7 +266,9 @@ export const setPlusCancellation = createServerFn({ method: "POST" })
       const cfg = getBillingConfig();
       const livemode = isLive(cfg.secretKey);
       const state = await loadPlusState(context.userId);
-      const sub = state.subscriptions.find((s) => statusKeepsPlus(s.status) && s.livemode === livemode);
+      const sub = state.subscriptions.find(
+        (s) => statusKeepsPlus(s.status) && s.livemode === livemode,
+      );
       if (!sub) throw new UserFacingError("There's no Plus subscription to change.");
       const stripe = getBillingStripe();
       // Check with Stripe that this subscription is still this person's.
@@ -246,12 +277,17 @@ export const setPlusCancellation = createServerFn({ method: "POST" })
       if (liveCustomer !== sub.stripe_customer_id) throw new Error("customer mismatch");
       const updated = await stripe.subscriptions.update(
         sub.stripe_subscription_id,
-        data.cancel ? { cancel_at_period_end: true } : { cancel_at_period_end: false, cancel_at: "" },
+        data.cancel
+          ? { cancel_at_period_end: true }
+          : { cancel_at_period_end: false, cancel_at: "" },
       );
       // The webhook stores the result too; storing it here shows it at once.
       await db()
         .from("plus_subscriptions")
-        .update({ ...subscriptionToRow(updated as never, context.userId), updated_at: new Date().toISOString() })
+        .update({
+          ...subscriptionToRow(updated as never, context.userId),
+          updated_at: new Date().toISOString(),
+        })
         .eq("stripe_subscription_id", sub.stripe_subscription_id);
       return { cancelAtPeriodEnd: !!updated.cancel_at_period_end || !!updated.cancel_at };
     } catch (e) {

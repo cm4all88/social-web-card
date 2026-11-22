@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getTippingConfig, TippingUnavailableError } from "@/lib/tipping/config.server";
+import {
+  envWebhookSecrets,
+  getTippingConfig,
+  TippingUnavailableError,
+} from "@/lib/tipping/config.server";
+import { keyOnlyStripe, storedWebhookSecrets, stripeKey } from "@/lib/payments/setup.server";
 import { getStripe } from "@/lib/tipping/stripe.server";
 import { verifyStripeWebhook } from "@/lib/tipping/verify-webhook";
 import { supabaseTippingStore } from "@/lib/tipping/store.server";
@@ -21,8 +26,9 @@ import { supabaseGiftStore } from "@/lib/wishlist-gift-store.server";
 /**
  * Stripe webhook endpoint for both the platform endpoint and the
  * "connected accounts" endpoint. Each endpoint has its own signing secret
- * (STRIPE_WEBHOOK_SECRET and STRIPE_CONNECT_WEBHOOK_SECRET); a request is
- * accepted if it verifies against either.
+ * (STRIPE_WEBHOOK_SECRET and STRIPE_CONNECT_WEBHOOK_SECRET, or the ones
+ * Owner > Payments stored); a request is accepted if it verifies against any.
+ * While tipping is off a verified event gets 200 and changes nothing.
  *
  * Creator subscription events (subscriptions and their checkouts on
  * connected accounts) go to the creator subscription handler; wishlist gift
@@ -33,23 +39,33 @@ export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        let cfg;
-        try {
-          cfg = getTippingConfig();
-        } catch (e) {
-          if (e instanceof TippingUnavailableError)
-            return new Response("disabled", { status: 503 });
-          throw e;
-        }
-        if (cfg.webhookSecrets.length === 0) return new Response("not configured", { status: 503 });
+        // Verify first, with the secrets in Vercel or the ones Owner > Payments
+        // stored, so a Stripe endpoint stays healthy while payments are off.
+        const key = stripeKey();
+        if (!key) return new Response("not configured", { status: 503 });
+        const secrets = [
+          ...envWebhookSecrets(),
+          ...(await storedWebhookSecrets(["payments_webhook", "connect_webhook"])),
+        ];
+        if (secrets.length === 0) return new Response("not configured", { status: 503 });
 
         const signature = request.headers.get("stripe-signature");
         if (!signature) return new Response("missing signature", { status: 400 });
         const body = await request.text(); // raw body is required for verification
 
-        const stripe = getStripe();
-        const event = await verifyStripeWebhook(stripe, body, signature, cfg.webhookSecrets);
+        const event = await verifyStripeWebhook(keyOnlyStripe(key.key), body, signature, secrets);
         if (!event) return new Response("invalid signature", { status: 400 });
+
+        let cfg;
+        try {
+          cfg = getTippingConfig();
+        } catch (e) {
+          // Payments are switched off (or this key isn't allowed): nothing to do.
+          if (e instanceof TippingUnavailableError)
+            return Response.json({ received: true, outcome: "payments_off" });
+          throw e;
+        }
+        const stripe = getStripe();
 
         const log = (msg: string, extra?: Record<string, unknown>) =>
           console.log(`[stripe-webhook] ${msg}`, extra ?? {});

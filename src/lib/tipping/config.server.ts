@@ -43,6 +43,13 @@ export function isTestKey(key: string): boolean {
   return key.startsWith("sk_test_") || key.startsWith("rk_test_");
 }
 
+/** Webhook signing secrets set in Vercel (platform and connected-accounts endpoints). */
+export function envWebhookSecrets(): string[] {
+  return [env("STRIPE_WEBHOOK_SECRET"), env("STRIPE_CONNECT_WEBHOOK_SECRET")].filter(
+    (s): s is string => !!s,
+  );
+}
+
 /** Returns config or throws TippingUnavailableError (never leaks key material). */
 export function getTippingConfig(): TippingConfig {
   if (!isTippingEnabled()) throw new TippingUnavailableError();
@@ -57,14 +64,15 @@ export function getTippingConfig(): TippingConfig {
   if (!isLiveKey(secretKey) && !isTestKey(secretKey)) {
     throw new TippingUnavailableError("Payments are misconfigured.");
   }
-  if (isTestKey(secretKey) && env("VERCEL_ENV") === "production" && env("STRIPE_TEST_MODE_ON_PRODUCTION") !== "true") {
+  if (
+    isTestKey(secretKey) &&
+    env("VERCEL_ENV") === "production" &&
+    env("STRIPE_TEST_MODE_ON_PRODUCTION") !== "true"
+  ) {
     throw new TippingUnavailableError();
   }
 
-  const webhookSecrets = [
-    env("STRIPE_WEBHOOK_SECRET"),
-    env("STRIPE_CONNECT_WEBHOOK_SECRET"),
-  ].filter((s): s is string => !!s);
+  const webhookSecrets = envWebhookSecrets();
 
   return {
     secretKey,

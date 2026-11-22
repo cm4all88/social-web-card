@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 import { previewGate, suppliedPassword } from "./gate";
 
 const req = (path: string, auth?: string) =>
-  new Request(`https://yooits-preview.example.workers.dev${path}`, auth ? { headers: { authorization: auth } } : {});
+  new Request(
+    `https://yooits-preview.example.workers.dev${path}`,
+    auth ? { headers: { authorization: auth } } : {},
+  );
 const basic = (user: string, pw: string) => `Basic ${btoa(`${user}:${pw}`)}`;
 
 describe("preview gate", () => {
@@ -25,7 +28,8 @@ describe("preview gate", () => {
   });
 
   it("reads non-ASCII passwords as UTF-8 and ignores spaces pasted around either side", () => {
-    const utf8 = (u: string, pw: string) => `Basic ${Buffer.from(`${u}:${pw}`, "utf8").toString("base64")}`;
+    const utf8 = (u: string, pw: string) =>
+      `Basic ${Buffer.from(`${u}:${pw}`, "utf8").toString("base64")}`;
     expect(previewGate(req("/", utf8("x", "pässwörd-ñ-12")), "pässwörd-ñ-12")).toBeNull();
     expect(previewGate(req("/", basic("x", "s3cret-pass")), " s3cret-pass\n")).toBeNull();
     expect(previewGate(req("/", basic("x", "s3cret-pass ")), "s3cret-pass")).toBeNull();
@@ -42,8 +46,11 @@ describe("preview gate", () => {
   });
 
   it("lets only Stripe's webhook POST through (Stripe signs it)", () => {
-    const post = (path: string) => new Request(`https://yooits-preview.vercel.app${path}`, { method: "POST", body: "{}" });
+    const post = (path: string) =>
+      new Request(`https://yooits-preview.vercel.app${path}`, { method: "POST", body: "{}" });
     expect(previewGate(post("/api/stripe/webhook"), "s3cret-pass")).toBeNull();
+    expect(previewGate(post("/api/stripe/billing-webhook"), "s3cret-pass")).toBeNull();
+    expect(previewGate(req("/api/stripe/billing-webhook"), "s3cret-pass")?.status).toBe(401);
     expect(previewGate(req("/api/stripe/webhook"), "s3cret-pass")?.status).toBe(401);
     expect(previewGate(post("/api/stripe/webhook2"), "s3cret-pass")?.status).toBe(401);
     expect(previewGate(req("/api/stripe/webhook2"), "s3cret-pass")?.status).toBe(401);
