@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { Turnstile, TURNSTILE_SITE_KEY } from "@/components/auth/Turnstile";
 import { LegalLinks } from "@/components/legal/LegalPage";
+import { LEGAL_DETAILS } from "@/lib/legal/documents";
 import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username";
 import { z } from "zod";
 import { betaRpc } from "@/lib/beta/api";
@@ -43,6 +44,7 @@ function AuthPage() {
   const [displayName, setDisplayName] = useState("");
   // Honeypot: real people never see or fill this field.
   const [website, setWebsite] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaReset, setCaptchaReset] = useState(0);
@@ -110,6 +112,9 @@ function AuthPage() {
         if (password.length < MIN_PASSWORD) {
           throw new Error(`Password must be at least ${MIN_PASSWORD} characters.`);
         }
+        if (!ageConfirmed) {
+          throw new Error(`You need to be ${LEGAL_DETAILS.minimumAge} or older to create a Yooits page.`);
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -119,6 +124,7 @@ function AuthPage() {
             data: {
               username: cleanUsername,
               display_name: displayName.trim().slice(0, 50) || cleanUsername,
+              age_confirmed: `${LEGAL_DETAILS.minimumAge}+`,
               // Send any well-formed beta code, even if the precheck failed or is still
               // loading: the database checks and redeems it, and a bad code just means the free plan.
               ...(inviteCode ? { invite_code: inviteCode } : {}),
@@ -296,6 +302,19 @@ function AuthPage() {
             <input id="website" tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
           <Turnstile onToken={setCaptchaToken} resetKey={captchaReset} />
+          {mode === "signup" && (
+            <label htmlFor="age-confirm" className="flex items-start gap-2 text-sm">
+              <input
+                id="age-confirm"
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 accent-primary"
+                checked={ageConfirmed}
+                onChange={(e) => setAgeConfirmed(e.target.checked)}
+                required
+              />
+              <span>I'm {LEGAL_DETAILS.minimumAge} or older.</span>
+            </label>
+          )}
           {mode === "signup" && (
             <p className="text-xs text-muted-foreground">
               By creating an account you agree to the{" "}
