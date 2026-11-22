@@ -3,7 +3,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader, getRequestIP } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { EVENT_KINDS, recordEvent } from "./record.server";
+import { attachSupabaseAuth } from "@/integrations/supabase/attach-auth";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { EVENT_KINDS, recordEvent, visitorHash } from "./record.server";
 
 const input = z.object({
   kind: z.enum(EVENT_KINDS),
@@ -54,6 +56,33 @@ export const trackEvent = createServerFn({ method: "POST" })
       return { status };
     } catch (e) {
       console.error("[analytics]", e instanceof Error ? e.message : e);
+      return { status: "error" as const };
+    }
+  });
+
+/**
+ * Called from the dashboard: remembers today's visitor hash for the signed-in
+ * creator's own browser, so a signed-out visit from it to their own page is
+ * not counted as a qualifying visitor (public.creator_qualifying_visitors).
+ */
+export const markCreatorPresence = createServerFn({ method: "POST" })
+  .middleware([attachSupabaseAuth, requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    try {
+      const s = salt();
+      const ip = getRequestHeader("x-real-ip") ?? getRequestIP({ xForwardedFor: true }) ?? null;
+      const ua = getRequestHeader("user-agent") ?? null;
+      if (!s || !ip || ip === "unknown" || !ua) return { status: "skipped" as const };
+      const hash = await visitorHash(ip, ua, s);
+      const { error } = await (
+        supabaseAdmin as unknown as {
+          rpc: (f: string, a: object) => PromiseLike<{ error: { message: string } | null }>;
+        }
+      ).rpc("record_creator_presence", { _user_id: context.userId, _visitor_hash: hash });
+      if (error) throw new Error(error.message);
+      return { status: "ok" as const };
+    } catch (e) {
+      console.error("[creator-presence]", e instanceof Error ? e.message : e);
       return { status: "error" as const };
     }
   });

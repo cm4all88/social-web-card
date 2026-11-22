@@ -133,6 +133,28 @@ export type UserMessaging = {
   reports_about: number;
 };
 
+export type OwnerCreatorMilestone = {
+  key: string;
+  threshold: number;
+  title: string;
+  unlocks: string;
+  kind: string;
+  live: boolean;
+  sort: number;
+  updated_at: string;
+};
+
+export type OwnerCreatorEarnings = {
+  settings: {
+    enabled: boolean;
+    suspicious_pages_per_day: number;
+    suspicious_events_per_day: number;
+    updated_at: string;
+  };
+  milestones: OwnerCreatorMilestone[];
+  top_creators: { user_id: string; username: string; qualifying_visitors: number }[];
+};
+
 type OwnerFunctions = {
   owner_overview: { args: Record<string, never>; result: OwnerOverview };
   owner_list_users: {
@@ -159,6 +181,19 @@ type OwnerFunctions = {
     result: boolean;
   };
   owner_user_messaging: { args: { _user_id: string }; result: UserMessaging };
+  owner_creator_earnings: { args: Record<string, never>; result: OwnerCreatorEarnings };
+  owner_set_creator_earnings: {
+    args: {
+      _enabled: boolean | null;
+      _suspicious_pages_per_day?: number | null;
+      _suspicious_events_per_day?: number | null;
+    };
+    result: boolean;
+  };
+  owner_set_creator_milestone: {
+    args: { _key: string; _threshold: number; _title: string; _unlocks: string; _live: boolean };
+    result: boolean;
+  };
 };
 
 export class OwnerAccessError extends Error {}
@@ -219,6 +254,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "announcement.restored": "Announcement restored",
   "feature_flag.enabled": "Feature switched on",
   "feature_flag.disabled": "Feature switched off",
+  "creator_earnings.settings": "Creator earnings settings changed",
+  "creator_earnings.milestone": "Creator milestone changed",
 };
 
 export function auditLabel(action: string): string {

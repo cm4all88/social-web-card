@@ -39,6 +39,9 @@ import {
 } from "@/components/notifications/DashboardNotices";
 import { LinkManager } from "@/components/dashboard/LinkManager";
 import { AppearanceSection } from "@/components/dashboard/AppearanceSection";
+import { CreatorEarningsSection } from "@/components/dashboard/CreatorEarningsSection";
+import { loadMyCreatorEarnings, type CreatorEarnings } from "@/lib/creator/earnings";
+import { markCreatorPresence } from "@/lib/analytics/functions";
 import { PagePreview } from "@/components/dashboard/PagePreview";
 import { loadLinkClicks, loadSections, type LinkClicks, type ManagedLink } from "@/lib/links/api";
 import type { LinkSection } from "@/lib/links/groups";
@@ -92,11 +95,18 @@ function DashboardPage() {
   const rewards = useThemeRewards();
   // Support (tips) only makes sense while tipping is switched on.
   const [tippingOn, setTippingOn] = useState(false);
+  // Creator tab: shown to admins now, everyone once the owner turns it on.
+  const [creator, setCreator] = useState<CreatorEarnings>({ visible: false });
 
   useEffect(() => {
     getTippingAvailability()
       .then((r) => setTippingOn(r.enabled))
       .catch(() => setTippingOn(false));
+    loadMyCreatorEarnings()
+      .then(setCreator)
+      .catch(() => setCreator({ visible: false }));
+    // So a signed-out look at your own page from this browser isn't counted as a visitor.
+    void markCreatorPresence().catch(() => {});
     dm("dm_my_settings", {}).then(
       (s) => setMessagesOn(!!s.available),
       () => setMessagesOn(false),
@@ -104,7 +114,10 @@ function DashboardPage() {
   }, []);
 
   const tabs = DASHBOARD_TABS.filter(
-    (t) => (t.id !== "support" || tippingOn) && (t.id !== "messages" || messagesOn),
+    (t) =>
+      (t.id !== "support" || tippingOn) &&
+      (t.id !== "messages" || messagesOn) &&
+      (t.id !== "creator" || creator.visible),
   );
 
   const setTab = useCallback((id: TabId) => {
@@ -481,6 +494,13 @@ function DashboardPage() {
                   Stats show here once analytics is switched on for Yooits.
                 </p>
               )}
+            </div>
+          )}
+
+          {activeTab === "creator" && creator.visible && (
+            <div id="creator">
+              <h2 className="text-xl font-bold">Creator earnings</h2>
+              <CreatorEarningsSection data={creator} />
             </div>
           )}
 

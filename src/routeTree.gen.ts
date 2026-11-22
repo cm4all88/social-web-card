@@ -32,6 +32,7 @@ import { Route as OwnerAnalyticsRouteImport } from './routes/owner.analytics'
 import { Route as OwnerAnnouncementsRouteImport } from './routes/owner.announcements'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
 import { Route as OwnerBlockedSitesRouteImport } from './routes/owner.blocked-sites'
+import { Route as OwnerCreatorsRouteImport } from './routes/owner.creators'
 import { Route as OwnerEmailRouteImport } from './routes/owner.email'
 import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
 import { Route as OwnerInvitesRouteImport } from './routes/owner.invites'
@@ -162,6 +163,11 @@ const OwnerBlockedSitesRoute = OwnerBlockedSitesRouteImport.update({
   path: '/blocked-sites',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerCreatorsRoute = OwnerCreatorsRouteImport.update({
+  id: '/creators',
+  path: '/creators',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerEmailRoute = OwnerEmailRouteImport.update({
   id: '/email',
   path: '/email',
@@ -254,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/creators': typeof OwnerCreatorsRoute
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/creators': typeof OwnerCreatorsRoute
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
@@ -332,6 +340,7 @@ export interface FileRoutesById {
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
+  '/owner/creators': typeof OwnerCreatorsRoute
   '/owner/email': typeof OwnerEmailRoute
   '/owner/founding': typeof OwnerFoundingRoute
   '/owner/invites': typeof OwnerInvitesRoute
@@ -373,6 +382,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/creators'
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/creators'
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
@@ -450,6 +461,7 @@ export interface FileRouteTypes {
     | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
+    | '/owner/creators'
     | '/owner/email'
     | '/owner/founding'
     | '/owner/invites'
@@ -658,6 +670,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerBlockedSitesRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/creators': {
+      id: '/owner/creators'
+      path: '/creators'
+      fullPath: '/owner/creators'
+      preLoaderRoute: typeof OwnerCreatorsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/email': {
       id: '/owner/email'
       path: '/email'
@@ -765,6 +784,7 @@ interface OwnerRouteChildren {
   OwnerAnnouncementsRoute: typeof OwnerAnnouncementsRoute
   OwnerAuditRoute: typeof OwnerAuditRoute
   OwnerBlockedSitesRoute: typeof OwnerBlockedSitesRoute
+  OwnerCreatorsRoute: typeof OwnerCreatorsRoute
   OwnerEmailRoute: typeof OwnerEmailRoute
   OwnerFoundingRoute: typeof OwnerFoundingRoute
   OwnerInvitesRoute: typeof OwnerInvitesRoute
@@ -782,6 +802,7 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerAnnouncementsRoute: OwnerAnnouncementsRoute,
   OwnerAuditRoute: OwnerAuditRoute,
   OwnerBlockedSitesRoute: OwnerBlockedSitesRoute,
+  OwnerCreatorsRoute: OwnerCreatorsRoute,
   OwnerEmailRoute: OwnerEmailRoute,
   OwnerFoundingRoute: OwnerFoundingRoute,
   OwnerInvitesRoute: OwnerInvitesRoute,

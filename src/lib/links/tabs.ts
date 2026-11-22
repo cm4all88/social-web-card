@@ -3,6 +3,7 @@ export type TabId =
   | "links"
   | "appearance"
   | "analytics"
+  | "creator"
   | "profile"
   | "wishlists"
   | "messages"
@@ -13,6 +14,7 @@ export const DASHBOARD_TABS: { id: TabId; label: string }[] = [
   { id: "links", label: "Links" },
   { id: "appearance", label: "Appearance" },
   { id: "analytics", label: "Analytics" },
+  { id: "creator", label: "Creator" },
   { id: "profile", label: "Profile" },
   { id: "wishlists", label: "Wishlists" },
   { id: "messages", label: "Messages" },
