@@ -1,60 +1,60 @@
 import { MessagesNavButton } from "@/components/messages/MessagesNavButton";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel, SelectSeparator } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
-import { normalizeLinkValue } from "@/lib/safe-url";
-import { getPlatform, PLATFORMS, PLATFORM_CATEGORIES } from "@/lib/platforms";
-import { findThemePreset, PREMIUM_THEME_PRESETS, THEME_PRESETS, type ThemeTokens } from "@/lib/themes";
-import { Plus, Trash2, LogOut, ArrowLeft, Save, Copy, ExternalLink, Check, Upload, X, Lock, ChevronUp, ChevronDown } from "lucide-react";
+import { type ThemeTokens } from "@/lib/themes";
+import {
+  LogOut,
+  ArrowLeft,
+  Save,
+  Copy,
+  ExternalLink,
+  Upload,
+  X,
+  Eye,
+  MessageCircle,
+} from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
 import { getTippingAvailability } from "@/lib/tipping/functions";
 import { BetaPanel } from "@/components/beta/BetaPanel";
-import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPanel";
+import { PlusPanel, useMyPlus } from "@/components/plus/PlusPanel";
 import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { EmailPreferences } from "@/components/account/EmailPreferences";
 import { ChangePassword } from "@/components/account/ChangePassword";
-import { moveLink } from "@/lib/links/order";
 import { MyAnalytics } from "@/components/analytics/MyAnalytics";
-import { ThemeRewardsPicker, useThemeRewards } from "@/components/rewards/ThemeRewards";
+import { AnalyticsSummary } from "@/components/analytics/AnalyticsSummary";
+import { useThemeRewards } from "@/components/rewards/ThemeRewards";
 import { Gift, Shield } from "lucide-react";
-import { DashboardAnnouncements, NotificationBell } from "@/components/notifications/DashboardNotices";
+import {
+  DashboardAnnouncements,
+  NotificationBell,
+} from "@/components/notifications/DashboardNotices";
+import { LinkManager } from "@/components/dashboard/LinkManager";
+import { AppearanceSection } from "@/components/dashboard/AppearanceSection";
+import { PagePreview } from "@/components/dashboard/PagePreview";
+import { loadLinkClicks, loadSections, type LinkClicks, type ManagedLink } from "@/lib/links/api";
+import type { LinkSection } from "@/lib/links/groups";
+import { dm } from "@/lib/messages/api";
+import { tabForHash, DASHBOARD_TABS, type TabId } from "@/lib/links/tabs";
 
-/** Creator dashboard: every signed-in user manages their own page here. */
+/** Creator dashboard: every signed-in user manages their own page here. Links come first. */
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
-  head: () => ({ meta: [{ title: "Your dashboard — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Your dashboard — Yooits" }, { name: "robots", content: "noindex" }],
+  }),
 });
-
-const SECTIONS = [
-  { id: "profile", label: "Profile" },
-  { id: "earnings", label: "Earnings" },
-  { id: "wishlists", label: "Wishlists" },
-  { id: "appearance", label: "Appearance" },
-  { id: "links", label: "Links" },
-  { id: "account", label: "Account" },
-] as const;
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
 const BIO_MAX = 300;
-
-type SocialLink = {
-  id: string;
-  platform: string;
-  url: string;
-  display_order: number;
-  enabled: boolean;
-  user_id: string;
-};
 
 type Profile = {
   id: string;
@@ -69,6 +69,9 @@ type Profile = {
   created_at?: string | null;
 };
 
+const card = "rounded-2xl border border-border bg-card p-5";
+const cardStyle = { boxShadow: "var(--shadow-card)" };
+
 function DashboardPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
@@ -78,23 +81,60 @@ function DashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  const [links, setLinks] = useState<SocialLink[]>([]);
-  const [savingId, setSavingId] = useState<string | null>(null);
-  const [newPlatform, setNewPlatform] = useState<string>("twitter");
-  const [newUrl, setNewUrl] = useState("");
-  const [adding, setAdding] = useState(false);
-  const [reordering, setReordering] = useState(false);
+  const [links, setLinks] = useState<ManagedLink[]>([]);
+  const [sections, setSections] = useState<LinkSection[]>([]);
+  const [clicks, setClicks] = useState<LinkClicks>({ enabled: false, byLink: {} });
+  const [tab, setTabState] = useState<TabId>("links");
+  const [showPreview, setShowPreview] = useState(false);
+  const [messagesOn, setMessagesOn] = useState(false);
   const { plus, reload: reloadPlus } = useMyPlus();
   const isPlus = plus?.plan === "plus";
   const rewards = useThemeRewards();
-  // The Earnings shortcut only makes sense while tipping is switched on.
+  // Support (tips) only makes sense while tipping is switched on.
   const [tippingOn, setTippingOn] = useState(false);
 
   useEffect(() => {
     getTippingAvailability()
       .then((r) => setTippingOn(r.enabled))
       .catch(() => setTippingOn(false));
+    dm("dm_my_settings", {}).then(
+      (s) => setMessagesOn(!!s.available),
+      () => setMessagesOn(false),
+    );
   }, []);
+
+  const tabs = DASHBOARD_TABS.filter(
+    (t) => (t.id !== "support" || tippingOn) && (t.id !== "messages" || messagesOn),
+  );
+
+  const setTab = useCallback((id: TabId) => {
+    setTabState(id);
+    if (typeof window === "undefined") return;
+    window.history.replaceState(null, "", id === "links" ? window.location.pathname : `#${id}`);
+    const nav = document.getElementById("dashboard-tabs");
+    if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: "start" });
+  }, []);
+
+  // Open the tab named in the address (#appearance, #plus, ...), now and when it changes.
+  useEffect(() => {
+    const fromHash = () => {
+      const t = tabForHash(window.location.hash);
+      if (t) setTabState(t);
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+  }, []);
+
+  // After the Plus panel mounts, Stripe's return to #plus scrolls to it.
+  useEffect(() => {
+    if (!ready || tab !== "appearance" || window.location.hash !== "#plus") return;
+    const id = window.setTimeout(
+      () => document.getElementById("plus")?.scrollIntoView({ behavior: "smooth" }),
+      300,
+    );
+    return () => window.clearTimeout(id);
+  }, [ready, tab]);
 
   useEffect(() => {
     const init = async () => {
@@ -106,26 +146,45 @@ function DashboardPage() {
       const uid = data.session.user.id;
       setUserId(uid);
 
-      const [{ data: prof }, { data: roles }, { data: l }] = await Promise.all([
+      const [{ data: prof }, { data: roles }, { data: l }, secs] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
-        supabase.from("social_links").select("*").eq("user_id", uid).order("display_order", { ascending: true }),
+        supabase
+          .from("social_links")
+          .select("*")
+          .eq("user_id", uid)
+          .order("display_order", { ascending: true }),
+        loadSections(uid),
       ]);
 
       setProfile(prof as Profile | null);
       const admin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
       setIsAdmin(admin);
-      setLinks((l ?? []) as SocialLink[]);
+      setLinks(
+        ((l ?? []) as Partial<ManagedLink>[]).map((x) => ({
+          ...(x as ManagedLink),
+          title: x.title ?? null,
+          icon: x.icon ?? null,
+          featured: !!x.featured,
+          section_id: x.section_id ?? null,
+        })),
+      );
+      setSections(secs);
+      loadLinkClicks().then(setClicks);
 
       // Set by Yooits admins from the owner console; readable only by this user.
       // (Not in the generated types yet; called as a method so the client keeps its `this`.)
-      const { data: st } = await (supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> })
+      const { data: st } = await (
+        supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> }
+      )
         .from("account_status")
         .select("unpublished_at, suspended_at")
         .eq("user_id", uid)
         .maybeSingle();
       const status = st as { unpublished_at: string | null; suspended_at: string | null } | null;
-      setRestriction(status?.suspended_at ? "suspended" : status?.unpublished_at ? "unpublished" : null);
+      setRestriction(
+        status?.suspended_at ? "suspended" : status?.unpublished_at ? "unpublished" : null,
+      );
       setReady(true);
     };
     init();
@@ -181,7 +240,10 @@ function DashboardPage() {
       return;
     }
     setUploadingAvatar(true);
-    const ext = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" }[file.type] ?? "jpg";
+    const ext =
+      { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" }[
+        file.type
+      ] ?? "jpg";
     const path = `${userId}/avatar-${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
       cacheControl: "3600",
@@ -221,125 +283,6 @@ function DashboardPage() {
     }
   };
 
-  const setTheme = async (themeKey: string) => {
-    if (!profile) return;
-    setProfile({ ...profile, theme: themeKey });
-    const { error } = await supabase
-      .from("profiles")
-      .update({ theme: themeKey })
-      .eq("user_id", profile.user_id);
-    if (error) {
-      toast.error(
-        /part of Plus/i.test(error.message)
-          ? "That theme is part of Plus."
-          : /out of season/i.test(error.message)
-            ? "That seasonal theme is out of season."
-            : /Earn this theme/i.test(error.message)
-              ? "Earn that theme first."
-              : error.message,
-      );
-      setProfile((p) => (p ? { ...p, theme: profile.theme } : p));
-    } else toast.success(`Theme set to ${findThemePreset(themeKey)?.label ?? themeKey}`);
-  };
-
-  const updateCustomTheme = (patch: Partial<ThemeTokens>) => {
-    if (!profile) return;
-    setProfile({
-      ...profile,
-      theme: "custom",
-      custom_theme: { ...(profile.custom_theme ?? {}), ...patch },
-    });
-  };
-
-  const saveCustomTheme = async () => {
-    if (!profile) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ theme: "custom", custom_theme: profile.custom_theme })
-      .eq("user_id", profile.user_id);
-    if (error) toast.error(error.message);
-    else toast.success("Custom theme saved");
-  };
-
-  const updateLink = (id: string, patch: Partial<SocialLink>) => {
-    setLinks((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
-  };
-
-  const save = async (link: SocialLink) => {
-    const url = normalizeLinkValue(link.url);
-    if (url === null) {
-      toast.error("Links must be a plain web address (https://...), mailto:, tel: or sms:");
-      return;
-    }
-    setSavingId(link.id);
-    const { error } = await supabase
-      .from("social_links")
-      .update({ url, enabled: link.enabled, platform: link.platform })
-      .eq("id", link.id);
-    setSavingId(null);
-    if (error) toast.error(error.message);
-    else {
-      updateLink(link.id, { url });
-      toast.success("Saved");
-      rewards.refresh();
-    }
-  };
-
-  const remove = async (id: string) => {
-    const { error } = await supabase.from("social_links").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      setLinks((p) => p.filter((l) => l.id !== id));
-      toast.success("Removed");
-    }
-  };
-
-  const add = async () => {
-    if (!userId || adding) return;
-    if (!newUrl.trim()) {
-      toast.error(`Enter your ${getPlatform(newPlatform).label} link first.`);
-      return;
-    }
-    const url = normalizeLinkValue(newUrl);
-    if (!url) {
-      toast.error("Links must be a plain web address (https://...), mailto:, tel: or sms:");
-      return;
-    }
-    setAdding(true);
-    const nextOrder = Math.max(0, ...links.map((l) => l.display_order)) + 1;
-    const { data, error } = await supabase
-      .from("social_links")
-      .insert({ platform: newPlatform, url, display_order: nextOrder, enabled: true, user_id: userId })
-      .select()
-      .single();
-    setAdding(false);
-    if (error) toast.error(error.message);
-    else if (data) {
-      setLinks((p) => [...p, data as SocialLink]);
-      setNewUrl("");
-      toast.success(`${getPlatform(newPlatform).label} added`);
-      rewards.refresh();
-    }
-  };
-
-  const move = async (index: number, direction: -1 | 1) => {
-    if (reordering) return;
-    const before = links;
-    const { links: next, changed } = moveLink(links, index, direction);
-    if (changed.length === 0) return;
-    setLinks(next);
-    setReordering(true);
-    const results = await Promise.all(
-      changed.map((c) => supabase.from("social_links").update({ display_order: c.display_order }).eq("id", c.id)),
-    );
-    setReordering(false);
-    const failed = results.find((r) => r.error);
-    if (failed?.error) {
-      setLinks(before);
-      toast.error("We couldn't save the new order. Please try again.");
-    }
-  };
-
   const copyShareLink = () => {
     if (!profile) return;
     const url = `${window.location.origin}/${profile.username}`;
@@ -354,16 +297,25 @@ function DashboardPage() {
   };
 
   if (!ready) {
-    return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Loading…</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-muted-foreground">
+        Loading…
+      </div>
+    );
   }
 
+  const activeTab = tabs.some((t) => t.id === tab) ? tab : "links";
+
   return (
-    <div className="min-h-screen px-4 py-10">
+    <div className="min-h-screen px-4 py-6 sm:py-10">
       <Toaster />
       <div className="mx-auto max-w-3xl">
-        <div className="mb-8 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Home
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> <span className="hidden sm:inline">Home</span>
           </Link>
           <img src="/yooits-logo.png" alt="yooits.me" className="h-9 w-auto" />
           <div className="flex items-center gap-1">
@@ -372,483 +324,335 @@ function DashboardPage() {
             {isAdmin && (
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/owner">
-                  <Shield className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Owner console</span><span className="sm:hidden">Owner</span>
+                  <Shield className="mr-2 h-4 w-4" />{" "}
+                  <span className="hidden sm:inline">Owner console</span>
+                  <span className="sm:hidden">Owner</span>
                 </Link>
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={signOut}>
-              <LogOut className="mr-2 h-4 w-4" /> Sign out
+            <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out">
+              <LogOut className="h-4 w-4 sm:mr-2" />{" "}
+              <span className="hidden sm:inline">Sign out</span>
             </Button>
           </div>
         </div>
 
+        <h1 className="sr-only">Your dashboard</h1>
+
         <DashboardAnnouncements />
 
         {profile && (
-          <div
-            className="rounded-2xl border border-primary/30 p-6"
-            style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
-          >
-            <div className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
-              Your shareable link
+          <div className="grid gap-4 sm:grid-cols-[1fr_11rem]">
+            <div
+              className="rounded-2xl border border-primary/30 p-5"
+              style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
+                Your shareable link
+              </div>
+              <div className="mt-1 break-all text-xl font-bold text-primary-foreground sm:text-2xl">
+                {`${typeof window !== "undefined" ? window.location.host : "yooits.me"}/${profile.username}`}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" variant="secondary" onClick={copyShareLink}>
+                  <Copy className="mr-2 h-4 w-4" /> Copy link
+                </Button>
+                <Button size="sm" variant="secondary" asChild>
+                  <a href={`/${profile.username}`} target="_blank" rel="noreferrer">
+                    <ExternalLink className="mr-2 h-4 w-4" /> Open my page
+                  </a>
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="sm:hidden"
+                  aria-expanded={showPreview}
+                  onClick={() => setShowPreview((v) => !v)}
+                >
+                  <Eye className="mr-2 h-4 w-4" /> {showPreview ? "Hide preview" : "Preview"}
+                </Button>
+              </div>
             </div>
-            <div className="mt-2 break-all text-2xl font-bold text-primary-foreground sm:text-3xl">
-              {`${typeof window !== "undefined" ? window.location.origin : ""}/${profile.username}`}
-            </div>
-            <p className="mt-2 text-sm text-primary-foreground/80">
-              Share this link anywhere — anyone who opens it sees all your social links.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={copyShareLink}>
-                <Copy className="mr-2 h-4 w-4" /> Copy link
-              </Button>
-              <Button size="sm" variant="secondary" asChild>
-                <a href={`/${profile.username}`} target="_blank" rel="noreferrer">
-                  <ExternalLink className="mr-2 h-4 w-4" /> Open my page
-                </a>
-              </Button>
+            <div className={showPreview ? "mx-auto w-44" : "hidden sm:block"}>
+              <PagePreview profile={profile} links={links} sections={sections} isPlus={isPlus} />
             </div>
           </div>
         )}
 
         {restriction && (
-          <div role="status" className="mt-8 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm">
+          <div
+            role="status"
+            className="mt-6 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm"
+          >
             {restriction === "suspended"
               ? "Your account is suspended by Yooits. Your page is hidden and changes are turned off. Your information hasn't been deleted."
               : "Your page is unpublished by Yooits, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
         )}
 
-        {userId && <BetaPanel userId={userId} />}
-
-        {userId && profile && (
-          <PlusPanel
-            plus={plus}
-            reload={reloadPlus}
-            userId={userId}
-            hideBranding={!!profile.hide_branding}
-            onHideBrandingChange={(v) => setProfile((p) => (p ? { ...p, hide_branding: v } : p))}
-          />
-        )}
-
-        <h1 className="mt-10 text-3xl font-bold">Manage your page</h1>
-
-        {/* Section shortcuts: scrolls on small screens, sticks while you scroll */}
+        {/* Sections: scrolls sideways on small screens, sticks while you scroll */}
         <nav
+          id="dashboard-tabs"
           aria-label="Dashboard sections"
-          className="sticky top-0 z-20 -mx-4 mt-4 flex gap-2 overflow-x-auto bg-background/90 px-4 py-3 backdrop-blur"
+          className="sticky top-0 z-20 -mx-4 mt-6 bg-background/90 px-4 py-3 backdrop-blur"
         >
-          {[...SECTIONS.filter((sec) => sec.id !== "earnings" || tippingOn), ...(plusPanelVisible(plus) ? [{ id: "plus", label: "Plus" }] : [])].map((sec) => (
-            <a
-              key={sec.id}
-              href={`#${sec.id}`}
-              className="shrink-0 rounded-full border border-border px-3 py-1 text-sm text-muted-foreground hover:text-foreground"
-            >
-              {sec.label}
-            </a>
-          ))}
-        </nav>
-
-        {profile && <MyAnalytics />}
-
-        {/* Profile */}
-        {profile && (
-          <div id="profile" className="mt-8 scroll-mt-20 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="mb-4 font-semibold">Profile</div>
-
-            <div className="mb-6 flex items-center gap-4">
-              <Avatar className="h-20 w-20 shrink-0 border-2 border-border">
-                <AvatarImage src={profile.avatar_url ?? undefined} alt={profile.username} className="object-cover" />
-                <AvatarFallback className="text-2xl font-semibold">
-                  {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild size="sm" variant="secondary" disabled={uploadingAvatar}>
-                  <label className="cursor-pointer">
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploadingAvatar ? "Uploading…" : profile.avatar_url ? "Change photo" : "Upload photo"}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) uploadAvatar(f);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                </Button>
-                {profile.avatar_url && (
-                  <Button size="sm" variant="ghost" onClick={removeAvatar}>
-                    <X className="mr-2 h-4 w-4" /> Remove
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input
-                  id="username"
-                  value={profile.username}
-                  onChange={(e) =>
-                    setProfile({
-                      ...profile,
-                      username: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 30),
-                    })
-                  }
-                  placeholder="yourname"
-                  maxLength={30}
-                />
-                <p className="text-xs text-muted-foreground">{USERNAME_HELP}</p>
-                <p className="text-xs text-muted-foreground">
-                  yooits.me/<span className="font-medium text-foreground">{profile.username || "yourname"}</span>
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="display">Display name</Label>
-                <Input
-                  id="display"
-                  value={profile.display_name ?? ""}
-                  onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
-                  maxLength={50}
-                  placeholder="Your name"
-                />
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={profile.bio ?? ""}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                placeholder="A short line about you"
-                rows={2}
-                maxLength={BIO_MAX}
-              />
-              <p className="text-right text-xs text-muted-foreground">
-                {(profile.bio ?? "").length}/{BIO_MAX}
-              </p>
-            </div>
-            <div className="mt-4">
-              <Button onClick={saveProfile} disabled={savingProfile}>
-                <Save className="mr-2 h-4 w-4" />
-                {savingProfile ? "Saving" : "Save profile"}
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Tips (hidden unless tipping is switched on for this deployment) */}
-        <div id="earnings" className="scroll-mt-20">
-          {profile && userId && <TipsManager userId={userId} username={profile.username} />}
-        </div>
-
-        {/* Wishlists */}
-        {profile && (
-          <div id="wishlists" className="mt-8 flex scroll-mt-20 flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div>
-              <div className="font-semibold">Wishlists</div>
-              <p className="text-sm text-muted-foreground">Share gift lists for birthdays, holidays and big days.</p>
-            </div>
-            <Button variant="secondary" asChild>
-              <Link to="/dashboard/wishlists">
-                <Gift className="mr-2 h-4 w-4" /> Manage wishlists
-              </Link>
-            </Button>
-          </div>
-        )}
-
-        {/* Theme picker */}
-        {profile && (
-          <div id="appearance" className="mt-8 scroll-mt-20 rounded-2xl border border-border bg-card p-5" style={{ boxShadow: "var(--shadow-card)" }}>
-            <div className="mb-1 font-semibold">Theme</div>
-            <p className="mb-4 text-sm text-muted-foreground">Pick a vibe for your public page. Click to apply instantly.</p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-              {THEME_PRESETS.map((t) => {
-                const active = profile.theme === t.key;
-                return (
-                  <button
-                    key={t.key}
-                    onClick={() => setTheme(t.key)}
-                    className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
-                      active ? "border-primary ring-2 ring-primary" : "border-border"
-                    }`}
-                  >
-                    <div className="h-20 rounded-lg" style={{ background: t.preview }} />
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-sm font-medium">{t.label}</span>
-                      {active && <Check className="h-4 w-4 text-primary" />}
-                    </div>
-                  </button>
-                );
-              })}
+          <div role="tablist" className="flex gap-2 overflow-x-auto">
+            {tabs.map((t) => (
               <button
-                onClick={() => setTheme("custom")}
-                className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
-                  profile.theme === "custom" ? "border-primary ring-2 ring-primary" : "border-dashed border-border"
+                key={t.id}
+                type="button"
+                role="tab"
+                id={`tab-${t.id}`}
+                aria-selected={activeTab === t.id}
+                aria-controls={`panel-${t.id}`}
+                onClick={() => setTab(t.id)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-sm transition ${
+                  activeTab === t.id
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <div className="flex h-20 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
-                  Your colors
-                </div>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className="text-sm font-medium">Custom</span>
-                  {profile.theme === "custom" && <Check className="h-4 w-4 text-primary" />}
-                </div>
+                {t.label}
               </button>
-            </div>
-
-            {(isPlus || plus?.checkoutAvailable) && (
-              <div className="mt-6">
-                <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                  Plus themes {!isPlus && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                  {PREMIUM_THEME_PRESETS.map((t) => {
-                    const active = profile.theme === t.key;
-                    return (
-                      <button
-                        key={t.key}
-                        onClick={() => {
-                          if (isPlus) setTheme(t.key);
-                          else document.getElementById("plus")?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        aria-label={isPlus ? t.label : `${t.label} (Plus)`}
-                        className={`group relative overflow-hidden rounded-xl border p-3 text-left transition-all hover:-translate-y-0.5 ${
-                          active ? "border-primary ring-2 ring-primary" : "border-border"
-                        } ${isPlus ? "" : "opacity-70"}`}
-                      >
-                        <div className="h-20 rounded-lg" style={{ background: t.preview }} />
-                        <div className="mt-2 flex items-center justify-between">
-                          <span className="text-sm font-medium">{t.label}</span>
-                          {active ? <Check className="h-4 w-4 text-primary" /> : !isPlus && <Lock className="h-3.5 w-3.5 text-muted-foreground" />}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-                {!isPlus && <p className="mt-2 text-xs text-muted-foreground">Part of Plus.</p>}
-              </div>
-            )}
-
-            <ThemeRewardsPicker
-              enabled={rewards.enabled}
-              unlocked={rewards.unlocked}
-              currentTheme={profile.theme}
-              isPlus={isPlus}
-              plusAvailable={!!plus?.checkoutAvailable}
-              progress={{ displayName: profile.display_name, bio: profile.bio, avatarUrl: profile.avatar_url, links, createdAt: profile.created_at }}
-              onPick={setTheme}
-            />
-
-            {profile.theme === "custom" && (
-              <div className="mt-6 grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Background color</Label>
-                  <Input
-                    type="color"
-                    value={(profile.custom_theme?.background as string) || "#1a1a2e"}
-                    onChange={(e) => updateCustomTheme({ background: e.target.value })}
-                    className="h-10 w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Text color</Label>
-                  <Input
-                    type="color"
-                    value={(profile.custom_theme?.foreground as string) || "#ffffff"}
-                    onChange={(e) => updateCustomTheme({ foreground: e.target.value })}
-                    className="h-10 w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Card color</Label>
-                  <Input
-                    type="color"
-                    value={(profile.custom_theme?.card as string) || "#2a2a3e"}
-                    onChange={(e) => updateCustomTheme({ card: e.target.value })}
-                    className="h-10 w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Accent color</Label>
-                  <Input
-                    type="color"
-                    value={(profile.custom_theme?.accent as string) || "#a855f7"}
-                    onChange={(e) => updateCustomTheme({ accent: e.target.value })}
-                    className="h-10 w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Button style</Label>
-                  <Select
-                    value={profile.custom_theme?.buttonStyle ?? "rounded"}
-                    onValueChange={(v) => updateCustomTheme({ buttonStyle: v as ThemeTokens["buttonStyle"] })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="rounded">Rounded</SelectItem>
-                      <SelectItem value="pill">Pill</SelectItem>
-                      <SelectItem value="square">Square</SelectItem>
-                      <SelectItem value="soft">Soft</SelectItem>
-                      <SelectItem value="outline">Outline</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Font</Label>
-                  <Select
-                    value={profile.custom_theme?.font ?? "sans"}
-                    onValueChange={(v) => updateCustomTheme({ font: v as ThemeTokens["font"] })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sans">Sans</SelectItem>
-                      <SelectItem value="serif">Serif</SelectItem>
-                      <SelectItem value="mono">Mono</SelectItem>
-                      <SelectItem value="display">Display</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="sm:col-span-2">
-                  <Button onClick={saveCustomTheme}>
-                    <Save className="mr-2 h-4 w-4" /> Save custom theme
-                  </Button>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
-        )}
+        </nav>
 
-        {/* Links */}
-        <h2 id="links" className="mt-10 scroll-mt-20 text-xl font-bold">Your links</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Empty links are hidden from your public page.</p>
+        <div
+          role="tabpanel"
+          id={`panel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          className="mt-2"
+        >
+          {activeTab === "links" && userId && (
+            <div id="links">
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 className="text-xl font-bold">My links</h2>
+                <span className="text-xs text-muted-foreground">
+                  {links.length} {links.length === 1 ? "link" : "links"}
+                </span>
+              </div>
+              <AnalyticsSummary onOpen={() => setTab("analytics")} />
+              <div className="mt-4">
+                <LinkManager
+                  userId={userId}
+                  links={links}
+                  setLinks={setLinks}
+                  sections={sections}
+                  setSections={setSections}
+                  clicks={clicks}
+                  onChanged={() => rewards.refresh()}
+                />
+              </div>
+            </div>
+          )}
 
-        <div className="mt-4 space-y-4">
-          {links.map((link, index) => {
-            const meta = getPlatform(link.platform);
-            const Icon = meta.icon;
-            return (
+          {activeTab === "appearance" && profile && userId && (
+            <div id="appearance" className="space-y-6">
+              <h2 className="text-xl font-bold">Appearance</h2>
+              <PlusPanel
+                plus={plus}
+                reload={reloadPlus}
+                userId={userId}
+                hideBranding={!!profile.hide_branding}
+                onHideBrandingChange={(v) =>
+                  setProfile((p) => (p ? { ...p, hide_branding: v } : p))
+                }
+              />
+              <AppearanceSection
+                profile={profile}
+                setProfile={
+                  setProfile as (next: Profile | ((p: Profile | null) => Profile | null)) => void
+                }
+                isPlus={isPlus}
+                plus={plus}
+                rewards={rewards}
+                links={links}
+              />
+            </div>
+          )}
+
+          {activeTab === "analytics" && (
+            <div id="analytics-tab">
+              <h2 className="text-xl font-bold">Analytics</h2>
+              <MyAnalytics />
+              {!clicks.enabled && (
+                <p className="mt-4 text-sm text-muted-foreground">
+                  Stats show here once analytics is switched on for Yooits.
+                </p>
+              )}
+            </div>
+          )}
+
+          {activeTab === "profile" && profile && (
+            <div id="profile">
+              <h2 className="mb-4 text-xl font-bold">Profile</h2>
               <div
-                key={link.id}
                 className="rounded-2xl border border-border bg-card p-5"
                 style={{ boxShadow: "var(--shadow-card)" }}
               >
-                <div className="flex items-center gap-4">
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-semibold">{meta.label}</div>
-                  </div>
-                  <div className="flex flex-col">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => move(index, -1)}
-                      disabled={index === 0 || reordering}
-                      aria-label={`Move ${meta.label} up`}
-                    >
-                      <ChevronUp className="h-4 w-4" />
+                <div className="mb-4 font-semibold">Profile</div>
+
+                <div className="mb-6 flex items-center gap-4">
+                  <Avatar className="h-20 w-20 shrink-0 border-2 border-border">
+                    <AvatarImage
+                      src={profile.avatar_url ?? undefined}
+                      alt={profile.username}
+                      className="object-cover"
+                    />
+                    <AvatarFallback className="text-2xl font-semibold">
+                      {(profile.display_name || profile.username).slice(0, 1).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild size="sm" variant="secondary" disabled={uploadingAvatar}>
+                      <label className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        {uploadingAvatar
+                          ? "Uploading…"
+                          : profile.avatar_url
+                            ? "Change photo"
+                            : "Upload photo"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          className="hidden"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (f) uploadAvatar(f);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => move(index, 1)}
-                      disabled={index === links.length - 1 || reordering}
-                      aria-label={`Move ${meta.label} down`}
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor={`en-${link.id}`} className="text-xs text-muted-foreground">Visible</Label>
-                    <Switch id={`en-${link.id}`} checked={link.enabled} onCheckedChange={(v) => updateLink(link.id, { enabled: v })} />
+                    {profile.avatar_url && (
+                      <Button size="sm" variant="ghost" onClick={removeAvatar}>
+                        <X className="mr-2 h-4 w-4" /> Remove
+                      </Button>
+                    )}
                   </div>
                 </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]">
-                  <Input
-                    value={link.url}
-                    onChange={(e) => updateLink(link.id, { url: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        void save(link);
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={profile.username}
+                      onChange={(e) =>
+                        setProfile({
+                          ...profile,
+                          username: e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9_-]/g, "")
+                            .slice(0, 30),
+                        })
                       }
-                    }}
-                    placeholder={meta.hint}
-                    aria-label={`${meta.label} link`}
+                      placeholder="yourname"
+                      maxLength={30}
+                    />
+                    <p className="text-xs text-muted-foreground">{USERNAME_HELP}</p>
+                    <p className="text-xs text-muted-foreground">
+                      yooits.me/
+                      <span className="font-medium text-foreground">
+                        {profile.username || "yourname"}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="display">Display name</Label>
+                    <Input
+                      id="display"
+                      value={profile.display_name ?? ""}
+                      onChange={(e) => setProfile({ ...profile, display_name: e.target.value })}
+                      maxLength={50}
+                      placeholder="Your name"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    value={profile.bio ?? ""}
+                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    placeholder="A short line about you"
+                    rows={2}
+                    maxLength={BIO_MAX}
                   />
-                  <Button onClick={() => save(link)} disabled={savingId === link.id}>
+                  <p className="text-right text-xs text-muted-foreground">
+                    {(profile.bio ?? "").length}/{BIO_MAX}
+                  </p>
+                </div>
+                <div className="mt-4">
+                  <Button onClick={saveProfile} disabled={savingProfile}>
                     <Save className="mr-2 h-4 w-4" />
-                    {savingId === link.id ? "Saving" : "Save"}
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(link.id)} aria-label="Delete">
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    {savingProfile ? "Saving" : "Save profile"}
                   </Button>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
 
-        <div className="mt-6 rounded-2xl border border-dashed border-border p-5">
-          <div className="mb-3 font-semibold">Add a platform</div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Select value={newPlatform} onValueChange={setNewPlatform}>
-              <SelectTrigger className="sm:w-64"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {PLATFORM_CATEGORIES.map((cat, i) => (
-                  <div key={cat.label}>
-                    {i > 0 && <SelectSeparator />}
-                    <SelectGroup>
-                      <SelectLabel>{cat.label}</SelectLabel>
-                      {cat.keys.filter((k) => PLATFORMS[k]).map((k) => {
-                        const Icon = PLATFORMS[k].icon;
-                        return (
-                          <SelectItem key={k} value={k}>
-                            <span className="flex items-center gap-2">
-                              <Icon className="h-4 w-4" />
-                              {PLATFORMS[k].label}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectGroup>
-                  </div>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void add();
-                }
-              }}
-              placeholder={getPlatform(newPlatform).hint}
-              aria-label={`New ${getPlatform(newPlatform).label} link`}
-            />
-            <Button onClick={add} disabled={adding || !newUrl.trim()}>
-              <Plus className="mr-2 h-4 w-4" /> {adding ? "Adding" : "Add"}
-            </Button>
-          </div>
-        </div>
+          {activeTab === "wishlists" && profile && (
+            <div id="wishlists">
+              <h2 className="mb-4 text-xl font-bold">Wishlists</h2>
+              <div
+                className={`${card} flex flex-wrap items-center justify-between gap-3`}
+                style={cardStyle}
+              >
+                <p className="text-sm text-muted-foreground">
+                  Share gift lists for birthdays, holidays and big days.
+                </p>
+                <Button variant="secondary" asChild>
+                  <Link to="/dashboard/wishlists">
+                    <Gift className="mr-2 h-4 w-4" /> Manage wishlists
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
 
-        {/* Account */}
-        <h2 id="account" className="mt-10 scroll-mt-20 text-xl font-bold">Account</h2>
-        <div className="mt-4 space-y-4">
-          <ChangePassword />
-          <EmailPreferences />
-          {profile && <DeleteAccount username={profile.username} />}
+          {activeTab === "messages" && (
+            <div id="messages">
+              <h2 className="mb-4 text-xl font-bold">Messages</h2>
+              <div
+                className={`${card} flex flex-wrap items-center justify-between gap-3`}
+                style={cardStyle}
+              >
+                <p className="text-sm text-muted-foreground">
+                  Read and answer messages, accept requests, and choose who can message you.
+                </p>
+                <Button variant="secondary" asChild>
+                  <Link to="/messages">
+                    <MessageCircle className="mr-2 h-4 w-4" /> Open messages
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "support" && profile && userId && (
+            <div id="support">
+              <h2 className="mb-4 text-xl font-bold">Support</h2>
+              <TipsManager userId={userId} username={profile.username} />
+            </div>
+          )}
+
+          {activeTab === "account" && (
+            <div id="account">
+              <h2 className="text-xl font-bold">Account</h2>
+              {userId && <BetaPanel userId={userId} />}
+              <div className="mt-4 space-y-4">
+                <ChangePassword />
+                <EmailPreferences />
+                {profile && <DeleteAccount username={profile.username} />}
+                <Button variant="ghost" onClick={signOut}>
+                  <LogOut className="mr-2 h-4 w-4" /> Sign out
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

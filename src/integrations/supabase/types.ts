@@ -160,8 +160,12 @@ export type Database = {
           created_at: string
           display_order: number
           enabled: boolean
+          featured: boolean
+          icon: string | null
           id: string
           platform: string
+          section_id: string | null
+          title: string | null
           updated_at: string
           url: string
           user_id: string
@@ -170,8 +174,12 @@ export type Database = {
           created_at?: string
           display_order?: number
           enabled?: boolean
+          featured?: boolean
+          icon?: string | null
           id?: string
           platform: string
+          section_id?: string | null
+          title?: string | null
           updated_at?: string
           url?: string
           user_id: string
@@ -180,10 +188,41 @@ export type Database = {
           created_at?: string
           display_order?: number
           enabled?: boolean
+          featured?: boolean
+          icon?: string | null
           id?: string
           platform?: string
+          section_id?: string | null
+          title?: string | null
           updated_at?: string
           url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      link_sections: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          title?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

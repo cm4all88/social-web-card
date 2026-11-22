@@ -89,8 +89,8 @@ test("a new person can sign up and reach their dashboard", async ({ page }) => {
 
 test("creator dashboard", async ({ page }) => {
   await signIn(page, "alice@example.com");
-  await expect(page.getByRole("heading", { name: "Manage your page" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your links" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My links" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Appearance" })).toBeVisible();
   await page.goto("/dashboard/wishlists");
   await expect(page.getByRole("heading", { name: "Wishlists" })).toBeVisible();
   await expect(page.getByText("Studio wishlist").first()).toBeVisible();

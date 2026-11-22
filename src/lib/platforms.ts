@@ -21,6 +21,16 @@ import {
   Camera,
   Music,
   Phone,
+  ShoppingBag,
+  Video,
+  Calendar,
+  Heart,
+  Star,
+  Gift,
+  BookOpen,
+  Newspaper,
+  MapPin,
+  Link as LinkIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -110,3 +120,71 @@ export const RETIRED_PLATFORM_KEYS = [
 ] as const;
 
 export const PICKABLE_PLATFORM_KEYS: string[] = PLATFORM_CATEGORIES.flatMap((c) => c.keys);
+
+/**
+ * Icons a creator can pick for a link instead of its platform's own (stored
+ * in social_links.icon). Any platform key also works as an icon.
+ */
+export const GENERIC_ICONS: Record<string, { label: string; icon: LucideIcon; color: string }> = {
+  link: { label: "Link", icon: LinkIcon, color: "from-violet-500 to-fuchsia-600" },
+  shop: { label: "Shop", icon: ShoppingBag, color: "from-amber-400 to-orange-600" },
+  video: { label: "Video", icon: Video, color: "from-red-500 to-rose-700" },
+  music: { label: "Music", icon: Music, color: "from-green-400 to-emerald-700" },
+  email: { label: "Email", icon: Mail, color: "from-sky-400 to-blue-600" },
+  phone: { label: "Phone", icon: Phone, color: "from-emerald-400 to-teal-600" },
+  calendar: { label: "Calendar", icon: Calendar, color: "from-indigo-400 to-indigo-700" },
+  heart: { label: "Heart", icon: Heart, color: "from-pink-400 to-rose-600" },
+  star: { label: "Star", icon: Star, color: "from-yellow-300 to-amber-500" },
+  gift: { label: "Gift", icon: Gift, color: "from-fuchsia-400 to-purple-700" },
+  camera: { label: "Camera", icon: Camera, color: "from-slate-500 to-slate-800" },
+  book: { label: "Book", icon: BookOpen, color: "from-orange-400 to-red-600" },
+  news: { label: "News", icon: Newspaper, color: "from-zinc-500 to-zinc-800" },
+  location: { label: "Location", icon: MapPin, color: "from-teal-400 to-cyan-700" },
+  website: { label: "Website", icon: Globe, color: "from-violet-500 to-fuchsia-600" },
+};
+
+/** Icon choices for the link editor: generic icons, then the pickable platforms. */
+export const ICON_CHOICES: { key: string; label: string; icon: LucideIcon }[] = [
+  ...Object.entries(GENERIC_ICONS).map(([key, v]) => ({ key, label: v.label, icon: v.icon })),
+  ...PICKABLE_PLATFORM_KEYS.filter((k) => !GENERIC_ICONS[k]).map((k) => ({
+    key: k,
+    label: PLATFORMS[k].label,
+    icon: PLATFORMS[k].icon,
+  })),
+];
+
+/**
+ * What a link shows: its own title (or the platform's name) and its chosen
+ * icon (or the platform's). Unknown icon keys fall back to the platform's.
+ */
+export function linkDisplay(link: {
+  platform: string;
+  title?: string | null;
+  icon?: string | null;
+}): {
+  label: string;
+  icon: LucideIcon;
+  color: string;
+} {
+  const platform = getPlatform(link.platform);
+  const title = link.title?.trim();
+  const label = title ? title : platform.label;
+  const key = link.icon?.toLowerCase();
+  const generic = key ? GENERIC_ICONS[key] : undefined;
+  if (generic) return { label, icon: generic.icon, color: generic.color };
+  const asPlatform = key ? PLATFORMS[key] : undefined;
+  if (asPlatform) return { label, icon: asPlatform.icon, color: asPlatform.color };
+  return { label, icon: platform.icon, color: platform.color };
+}
+
+export const LINK_TITLE_MAX = 80;
+
+/** A title the database will accept: no control characters, at most 80 characters, blank = none. */
+export function cleanLinkTitle(raw: string): string | null {
+  const t = raw
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ")
+    .trim()
+    .slice(0, LINK_TITLE_MAX);
+  return t.length > 0 ? t : null;
+}

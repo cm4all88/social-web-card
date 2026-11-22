@@ -2,7 +2,8 @@ import { MessageButton } from "@/components/messages/MessageButton";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { getPlatform } from "@/lib/platforms";
+import { linkDisplay } from "@/lib/platforms";
+import { groupLinks, type LinkSection } from "@/lib/links/groups";
 import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
 import { getTheme, isRewardTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { Gift, Heart, UserPlus } from "lucide-react";
@@ -44,13 +45,24 @@ type Profile = {
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
 };
-type SocialLink = { id: string; platform: string; url: string; display_order: number; enabled: boolean };
+type SocialLink = {
+  id: string;
+  platform: string;
+  url: string;
+  display_order: number;
+  enabled: boolean;
+  title?: string | null;
+  icon?: string | null;
+  featured?: boolean | null;
+  section_id?: string | null;
+};
 type WishlistSummary = { id: string; slug: string; title: string; occasion: string | null };
 
 function ProfilePage() {
   const { username } = Route.useParams();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [links, setLinks] = useState<SocialLink[]>([]);
+  const [sections, setSections] = useState<LinkSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [tipConfig, setTipConfig] = useState<PublicTipConfig | null>(null);
@@ -72,13 +84,20 @@ function ProfilePage() {
         setLoading(false);
         return;
       }
-      const [{ data: l }, isPlus, isUnlocked] = await Promise.all([
+      const [{ data: l }, { data: secs }, isPlus, isUnlocked] = await Promise.all([
         supabase
           .from("social_links")
           .select("*")
           .eq("user_id", prof.user_id)
           .eq("enabled", true)
           .order("display_order", { ascending: true }),
+        // Sections are optional: if they can't be read, links still show, unsectioned.
+        supabase
+          .from("link_sections")
+          .select("id, title, display_order")
+          .eq("user_id", prof.user_id)
+          .order("display_order", { ascending: true })
+          .then((r) => (r.error ? { data: [] } : r)),
         loadPublicPlus(prof.user_id),
         isRewardTheme(prof.theme) ? loadPublicThemeUnlocked(prof.user_id) : Promise.resolve(false),
       ]);
@@ -86,6 +105,7 @@ function ProfilePage() {
       setUnlocked(isUnlocked);
       setProfile(prof as Profile);
       setLinks((l ?? []) as SocialLink[]);
+      setSections((secs ?? []) as LinkSection[]);
       setLoading(false);
       trackVisit("profile_view", prof.user_id, { username: prof.username });
 
@@ -110,6 +130,8 @@ function ProfilePage() {
   }
 
   const visible = links.filter((l) => l.url.trim().length > 0);
+  // Featured first, then unsectioned links, then each section: the creator's saved order.
+  const groups = groupLinks(visible, sections);
   const name = profile?.display_name || profile?.username || username;
   const theme = getTheme(profile?.theme, profile?.custom_theme, { plus, unlocked });
   const showBranding = !(plus && profile?.hide_branding);
@@ -165,45 +187,72 @@ function ProfilePage() {
               No links added yet.
             </div>
           ) : (
-            visible.map((link) => {
-              const meta = getPlatform(link.platform);
-              const Icon = meta.icon;
-              const isOutline = theme.buttonStyle === "outline";
-              const href = safeLinkHref(link.url);
-              const host = linkDisplayHost(href);
-              return (
-                <a
-                  key={link.id}
-                  href={href}
-                  target={href ? "_blank" : undefined}
-                  rel="noopener noreferrer nofollow ugc"
-                  onClick={href ? () => trackVisit("link_click", profile?.user_id, { username: profile?.username, linkId: link.id }) : undefined}
-                  className="group relative flex items-center gap-4 overflow-hidden border p-4 transition-all hover:-translate-y-0.5"
-                  style={{
-                    background: isOutline ? "transparent" : theme.card,
-                    color: theme.cardForeground,
-                    borderColor: theme.border,
-                    borderRadius: radius,
-                    boxShadow: isOutline ? "none" : "0 8px 24px -12px rgba(0,0,0,0.3)",
-                  }}
-                >
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg`}>
-                    <Icon className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold">{meta.label}</div>
-                    {!href && <div className="truncate text-xs opacity-70">{link.url}</div>}
-                    {host && <div className="truncate text-xs opacity-70">{host}</div>}
-                  </div>
-                  <div
-                    className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"
-                    style={{ background: `${theme.accent}22`, color: theme.accent }}
-                  >
-                    Connect →
-                  </div>
-                </a>
-              );
-            })
+            groups.map((g) => (
+              <div key={g.key} className="space-y-3">
+                {g.section && (
+                  <h2 className="pt-3 text-center text-xs font-semibold uppercase tracking-widest opacity-70">
+                    {g.section.title}
+                  </h2>
+                )}
+                {g.links.map((link) => {
+                  const meta = linkDisplay(link);
+                  const Icon = meta.icon;
+                  const isOutline = theme.buttonStyle === "outline";
+                  const href = safeLinkHref(link.url);
+                  const host = linkDisplayHost(href);
+                  const featured = g.kind === "featured";
+                  return (
+                    <a
+                      key={link.id}
+                      href={href}
+                      target={href ? "_blank" : undefined}
+                      rel="noopener noreferrer nofollow ugc"
+                      onClick={
+                        href
+                          ? () =>
+                              trackVisit("link_click", profile?.user_id, {
+                                username: profile?.username,
+                                linkId: link.id,
+                              })
+                          : undefined
+                      }
+                      data-featured={featured || undefined}
+                      className={`group relative flex items-center gap-4 overflow-hidden border transition-all hover:-translate-y-0.5 ${
+                        featured ? "border-2 p-5" : "p-4"
+                      }`}
+                      style={{
+                        background: isOutline ? "transparent" : theme.card,
+                        color: theme.cardForeground,
+                        borderColor: featured ? theme.accent : theme.border,
+                        borderRadius: radius,
+                        boxShadow: featured
+                          ? `0 10px 30px -12px ${theme.accent}`
+                          : isOutline
+                            ? "none"
+                            : "0 8px 24px -12px rgba(0,0,0,0.3)",
+                      }}
+                    >
+                      <div
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg`}
+                      >
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="truncate font-semibold">{meta.label}</div>
+                        {!href && <div className="truncate text-xs opacity-70">{link.url}</div>}
+                        {host && <div className="truncate text-xs opacity-70">{host}</div>}
+                      </div>
+                      <div
+                        className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"
+                        style={{ background: `${theme.accent}22`, color: theme.accent }}
+                      >
+                        {featured ? "Open →" : "Connect →"}
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            ))
           )}
         </section>
 
