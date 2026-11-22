@@ -4,7 +4,7 @@
  * browser's own sign-in box. Stripe's webhook POSTs are let through because
  * Stripe signs those requests itself. Without SITE_PASSWORD it does nothing.
  */
-const OPEN_PATHS = new Set(["/api/stripe/webhook"]);
+const OPEN_PATHS = new Set(["/api/stripe/webhook", "/api/stripe/billing-webhook"]);
 
 /** Drops spaces, line breaks and one pair of quotes pasted around a value. */
 function bare(value: string): string {
