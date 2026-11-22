@@ -22,6 +22,7 @@ import { PlusPanel, plusPanelVisible, useMyPlus } from "@/components/plus/PlusPa
 import { DeleteAccount } from "@/components/account/DeleteAccount";
 import { MyAnalytics } from "@/components/analytics/MyAnalytics";
 import { Gift, Shield } from "lucide-react";
+import { DashboardAnnouncements, NotificationBell } from "@/components/notifications/DashboardNotices";
 
 /** Creator dashboard: every signed-in user manages their own page here. */
 export const Route = createFileRoute("/dashboard")({
@@ -303,6 +304,7 @@ function DashboardPage() {
           <img src="/yooits-logo.png" alt="yooits.me" className="h-9 w-auto" />
           <div className="flex items-center gap-1">
             <MessagesNavButton />
+            <NotificationBell />
             {isAdmin && (
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/owner">
@@ -315,6 +317,8 @@ function DashboardPage() {
             </Button>
           </div>
         </div>
+
+        <DashboardAnnouncements />
 
         {profile && (
           <div

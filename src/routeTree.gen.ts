@@ -28,6 +28,7 @@ import { Route as MessagesConversationIdRouteImport } from './routes/messages_.$
 import { Route as OwnerIndexRouteImport } from './routes/owner.index'
 import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
 import { Route as OwnerAnalyticsRouteImport } from './routes/owner.analytics'
+import { Route as OwnerAnnouncementsRouteImport } from './routes/owner.announcements'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
 import { Route as OwnerBlockedSitesRouteImport } from './routes/owner.blocked-sites'
 import { Route as OwnerFoundingRouteImport } from './routes/owner.founding'
@@ -136,6 +137,11 @@ const OwnerAnalyticsRoute = OwnerAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerAnnouncementsRoute = OwnerAnnouncementsRouteImport.update({
+  id: '/announcements',
+  path: '/announcements',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerAuditRoute = OwnerAuditRouteImport.update({
   id: '/audit',
   path: '/audit',
@@ -214,6 +220,7 @@ export interface FileRoutesByFullPath {
   '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
+  '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -246,6 +253,7 @@ export interface FileRoutesByTo {
   '/messages/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
+  '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -280,6 +288,7 @@ export interface FileRoutesById {
   '/messages_/$conversationId': typeof MessagesConversationIdRoute
   '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
+  '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
   '/owner/blocked-sites': typeof OwnerBlockedSitesRoute
   '/owner/founding': typeof OwnerFoundingRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/messages/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
+    | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
@@ -347,6 +357,7 @@ export interface FileRouteTypes {
     | '/messages/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
+    | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
@@ -380,6 +391,7 @@ export interface FileRouteTypes {
     | '/messages_/$conversationId'
     | '/owner/$section'
     | '/owner/analytics'
+    | '/owner/announcements'
     | '/owner/audit'
     | '/owner/blocked-sites'
     | '/owner/founding'
@@ -554,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerAnalyticsRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/announcements': {
+      id: '/owner/announcements'
+      path: '/announcements'
+      fullPath: '/owner/announcements'
+      preLoaderRoute: typeof OwnerAnnouncementsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/audit': {
       id: '/owner/audit'
       path: '/audit'
@@ -644,6 +663,7 @@ declare module '@tanstack/react-router' {
 interface OwnerRouteChildren {
   OwnerSectionRoute: typeof OwnerSectionRoute
   OwnerAnalyticsRoute: typeof OwnerAnalyticsRoute
+  OwnerAnnouncementsRoute: typeof OwnerAnnouncementsRoute
   OwnerAuditRoute: typeof OwnerAuditRoute
   OwnerBlockedSitesRoute: typeof OwnerBlockedSitesRoute
   OwnerFoundingRoute: typeof OwnerFoundingRoute
@@ -659,6 +679,7 @@ interface OwnerRouteChildren {
 const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerSectionRoute: OwnerSectionRoute,
   OwnerAnalyticsRoute: OwnerAnalyticsRoute,
+  OwnerAnnouncementsRoute: OwnerAnnouncementsRoute,
   OwnerAuditRoute: OwnerAuditRoute,
   OwnerBlockedSitesRoute: OwnerBlockedSitesRoute,
   OwnerFoundingRoute: OwnerFoundingRoute,

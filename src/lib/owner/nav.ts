@@ -21,6 +21,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
   { id: "reports", label: "Reports", to: "/owner/reports", status: "live", summary: "Pages, wishlists and messages people have reported." },
   { id: "messaging", label: "Messages", to: "/owner/messaging", status: "live", summary: "Turn direct messages on or off and see how they're used." },
   { id: "blocked-sites", label: "Blocked sites", to: "/owner/blocked-sites", status: "live", summary: "Sites links may not point to, and exceptions for mistakes." },
+  { id: "announcements", label: "Announcements", to: "/owner/announcements", status: "live", summary: "Dashboard announcements and the notifications switch." },
   { id: "audit", label: "Audit log", to: "/owner/audit", status: "live", summary: "Every owner action, newest first." },
   { id: "wishlists", label: "Wishlists", to: "/owner/wishlists", status: "planned", summary: "Retailers, affiliate tags and wishlist moderation." },
   { id: "promotions", label: "Promotions", to: "/owner/promotions", status: "planned", summary: "House promotions shown across Yooits." },

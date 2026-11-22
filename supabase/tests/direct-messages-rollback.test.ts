@@ -3,7 +3,7 @@
  * puts the schema (functions, columns, constraints, policies) back exactly.
  */
 import { PGlite } from "@electric-sql/pglite";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { migrationSql, SUPABASE_GRANTS, SUPABASE_STUBS } from "./supabase-stubs";
 
@@ -108,6 +108,16 @@ describe("direct messages migration", () => {
     await db.exec(`RESET ROLE; RESET request.jwt.claim.sub;`);
     expect(await one(db, `SELECT count(*)::text AS v FROM abuse_reports`)).toBe("2");
 
+    // Later migrations go first, newest first, so the comparison below is
+    // about this migration alone.
+    const later = readdirSync(new URL("../migrations/", import.meta.url))
+      .filter((f) => f.endsWith(".sql") && f > "20261122140000_direct_messages.sql")
+      .sort()
+      .reverse();
+    for (const f of later) {
+      const down = new URL(`../rollbacks/${f.replace(/\.sql$/, ".down.sql")}`, import.meta.url);
+      if (existsSync(down)) await db.exec(readFileSync(down, "utf8"));
+    }
     await db.exec(
       readFileSync(
         new URL("../rollbacks/20261122140000_direct_messages.down.sql", import.meta.url),

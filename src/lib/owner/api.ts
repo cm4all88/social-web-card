@@ -213,6 +213,12 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "messaging.suspended": "Messaging suspended for a person",
   "messaging.unsuspended": "Messaging restored for a person",
   "message.removed": "Message removed",
+  "announcement.created": "Announcement created",
+  "announcement.edited": "Announcement edited",
+  "announcement.archived": "Announcement archived",
+  "announcement.restored": "Announcement restored",
+  "feature_flag.enabled": "Feature switched on",
+  "feature_flag.disabled": "Feature switched off",
 };
 
 export function auditLabel(action: string): string {
