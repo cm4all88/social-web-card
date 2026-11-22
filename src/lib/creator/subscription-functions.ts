@@ -7,7 +7,8 @@
  * Switched off three ways: the owner's checkout switch
  * (creator_subscription_settings.checkout_enabled, false), the server's
  * Stripe Connect settings (TIPPING_ENABLED and a Stripe key), and live keys
- * until live payments are approved. No page shows a subscribe button yet.
+ * until live payments are approved. The subscribe button shows only when
+ * getPublicCreatorSubscription says a checkout would work.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
@@ -15,7 +16,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { attachSupabaseAuth } from "@/integrations/supabase/attach-auth";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getTippingConfig, isLiveKey, TippingUnavailableError } from "@/lib/tipping/config.server";
+import {
+  getTippingConfig,
+  isLiveKey,
+  isTippingEnabled,
+  TippingUnavailableError,
+} from "@/lib/tipping/config.server";
 import { getStripe } from "@/lib/tipping/stripe.server";
 import { buildCreatorSubscriptionCheckoutParams } from "./subscription-checkout";
 import { planCreatorSubscriptionCheckout, SubscriptionCheckoutError } from "./subscription-plan";
@@ -39,15 +45,88 @@ const db = supabaseAdmin as unknown as {
 
 const authed = [attachSupabaseAuth, requireSupabaseAuth] as const;
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9._-]{1,30}$/);
+
+export type PublicCreatorSubscription =
+  | { available: false }
+  | {
+      available: true;
+      username: string;
+      displayName: string;
+      description: string;
+      priceCents: number;
+      serviceFeeCents: number;
+      totalCents: number;
+    };
+
+/**
+ * Public: may this profile show a subscribe button? Only when every switch
+ * is on and the creator could actually be paid, so nothing is offered that
+ * can't be bought. On yooits.me this is off until Stripe approves payments.
+ */
+export const getPublicCreatorSubscription = createServerFn({ method: "GET" })
+  .inputValidator(z.object({ username: usernameSchema }))
+  .handler(async ({ data }): Promise<PublicCreatorSubscription> => {
+    const off = { available: false as const };
+    if (!isTippingEnabled()) return off;
+    try {
+      const cfg = getTippingConfig();
+      const { data: raw, error } = await db.rpc("creator_subscription_public_offer", {
+        _username: data.username,
+      });
+      if (error) throw error;
+      const plan = planCreatorSubscriptionCheckout(raw, { livemode: isLiveKey(cfg.secretKey) });
+      const description = (raw as { description?: unknown }).description;
+      return {
+        available: true,
+        username: plan.username,
+        displayName: plan.displayName,
+        description: typeof description === "string" ? description : "",
+        priceCents: plan.breakdown.creatorPrice,
+        serviceFeeCents: plan.breakdown.serviceFee,
+        totalCents: plan.breakdown.total,
+      };
+    } catch (e) {
+      if (!(e instanceof SubscriptionCheckoutError || e instanceof TippingUnavailableError)) {
+        console.error("[creator-subscriptions] offer", e instanceof Error ? e.message : e);
+      }
+      return off;
+    }
+  });
+
+/** After Stripe sends the subscriber back: did their subscription start? */
+export const getMyCreatorSubscriptionCheckout = createServerFn({ method: "GET" })
+  .middleware([...authed])
+  .inputValidator(z.object({ sessionId: z.string().min(1).max(300) }))
+  .handler(async ({ context, data }) => {
+    const { data: row } = await db
+      .from("creator_subscriptions")
+      .select("status, total_cents, price_cents, current_period_end")
+      .eq("checkout_session_id", data.sessionId)
+      .eq("subscriber_user_id", context.userId)
+      .maybeSingle();
+    if (!row) return { status: "unknown" as const };
+    if (row.status === "active" || row.status === "past_due") {
+      return {
+        status: "active" as const,
+        totalCents: row.total_cents as number,
+        priceCents: row.price_cents as number,
+        renewsAt: (row.current_period_end as string | null) ?? null,
+      };
+    }
+    if (row.status === "incomplete") return { status: "processing" as const };
+    return { status: "not_started" as const };
+  });
+
 export const createCreatorSubscriptionCheckout = createServerFn({ method: "POST" })
   .middleware([...authed])
   .inputValidator(
     z.object({
-      username: z
-        .string()
-        .trim()
-        .toLowerCase()
-        .regex(/^[a-z0-9._-]{1,30}$/),
+      username: usernameSchema,
       // The subscriber confirms they are 18 or older, every time.
       adultConfirmed: z.literal(true),
     }),

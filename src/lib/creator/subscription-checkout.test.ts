@@ -166,7 +166,7 @@ describe("checkout session parameters", () => {
     expect(params.subscription_data!.metadata!.yooits_creator_subscription_id).toBe("row-1");
     expect(params.client_reference_id).toBe("row-1");
     expect(params.success_url).toBe(
-      "https://yooits.me/alice?subscription=success&session_id={CHECKOUT_SESSION_ID}",
+      "https://yooits.me/alice/subscribe?status=success&session_id={CHECKOUT_SESSION_ID}",
     );
   });
 

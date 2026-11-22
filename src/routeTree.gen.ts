@@ -18,6 +18,7 @@ import { Route as OwnerRouteImport } from './routes/owner'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UsernameSubscribeRouteImport } from './routes/$username_.subscribe'
 import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
@@ -94,6 +95,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsernameSubscribeRoute = UsernameSubscribeRouteImport.update({
+  id: '/$username_/subscribe',
+  path: '/$username/subscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const UsernameTipRoute = UsernameTipRouteImport.update({
@@ -267,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/$username/subscribe': typeof UsernameSubscribeRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
@@ -309,6 +316,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/$username/subscribe': typeof UsernameSubscribeRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
@@ -353,6 +361,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/terms': typeof TermsRoute
+  '/$username_/subscribe': typeof UsernameSubscribeRoute
   '/$username_/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
   '/dashboard_/wishlists': typeof DashboardWishlistsRoute
@@ -398,6 +407,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/$username/subscribe'
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
@@ -440,6 +450,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/$username/subscribe'
     | '/$username/tip'
     | '/admin/$'
     | '/dashboard/wishlists'
@@ -483,6 +494,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/reset-password'
     | '/terms'
+    | '/$username_/subscribe'
     | '/$username_/tip'
     | '/admin/$'
     | '/dashboard_/wishlists'
@@ -527,6 +539,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   TermsRoute: typeof TermsRoute
+  UsernameSubscribeRoute: typeof UsernameSubscribeRoute
   UsernameTipRoute: typeof UsernameTipRoute
   AdminSplatRoute: typeof AdminSplatRoute
   DashboardWishlistsRoute: typeof DashboardWishlistsRoute
@@ -608,6 +621,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$username_/subscribe': {
+      id: '/$username_/subscribe'
+      path: '/$username/subscribe'
+      fullPath: '/$username/subscribe'
+      preLoaderRoute: typeof UsernameSubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$username_/tip': {
@@ -887,6 +907,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   TermsRoute: TermsRoute,
+  UsernameSubscribeRoute: UsernameSubscribeRoute,
   UsernameTipRoute: UsernameTipRoute,
   AdminSplatRoute: AdminSplatRoute,
   DashboardWishlistsRoute: DashboardWishlistsRoute,

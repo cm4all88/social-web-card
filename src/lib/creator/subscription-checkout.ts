@@ -94,7 +94,7 @@ export function buildCreatorSubscriptionCheckoutParams(opts: {
       metadata,
     },
     metadata,
-    success_url: `${baseUrl}/${handle}?subscription=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${baseUrl}/${handle}?subscription=cancelled`,
+    success_url: `${baseUrl}/${handle}/subscribe?status=success&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${baseUrl}/${handle}/subscribe?status=cancelled`,
   };
 }

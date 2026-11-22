@@ -13,6 +13,8 @@ import { readableTextOn } from "@/lib/contrast";
 import { ReportLink } from "@/components/reports/ReportLink";
 import { Toaster } from "@/components/ui/sonner";
 import { getPublicTipConfig } from "@/lib/tipping/functions";
+import { getPublicCreatorSubscription } from "@/lib/creator/subscription-functions";
+import { formatUsd } from "@/lib/tipping/money";
 import { loadPublicPlus, loadPublicSkinState, loadPublicThemeUnlocked } from "@/lib/billing/public";
 import { SkinLayer } from "@/components/skins/SkinLayer";
 import { findSkin, parseSkinState, resolveSkin, THEME_DEFAULT_SKIN } from "@/lib/skins";
@@ -72,6 +74,7 @@ function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
   const [tipConfig, setTipConfig] = useState<PublicTipConfig | null>(null);
+  const [subTotal, setSubTotal] = useState<number | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
   const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
   // Plus settings (premium theme, hidden branding) count only while on Plus.
@@ -132,6 +135,10 @@ function ProfilePage() {
       getPublicTipConfig({ data: { username: prof.username } })
         .then((cfg) => setTipConfig(cfg.available && cfg.showOnProfile ? cfg : null))
         .catch(() => setTipConfig(null));
+      // Shown only where a subscription checkout would actually work.
+      getPublicCreatorSubscription({ data: { username: prof.username } })
+        .then((o) => setSubTotal(o.available ? o.totalCents : null))
+        .catch(() => setSubTotal(null));
       supabase
         .from("wishlists")
         .select("id, slug, title, occasion")
@@ -333,6 +340,19 @@ function ProfilePage() {
                 <Heart className="h-5 w-5" /> {tipConfig.buttonText}
               </button>
             )}
+          </section>
+        )}
+
+        {subTotal !== null && (
+          <section className="mt-6 w-full">
+            <Link
+              to="/$username/subscribe"
+              params={{ username: profile?.username ?? username }}
+              className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
+              style={{ borderColor: theme.accent, color: theme.accent, borderRadius: radius }}
+            >
+              <UserPlus className="h-5 w-5" /> Subscribe · {formatUsd(subTotal)}/month
+            </Link>
           </section>
         )}
 
