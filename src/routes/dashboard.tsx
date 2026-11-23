@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
-import { type ThemeTokens } from "@/lib/themes";
+import { getTheme, type ThemeTokens } from "@/lib/themes";
+import { ShareSheet } from "@/components/share/ShareSheet";
+import { recordShare } from "@/lib/share/track";
 import {
   LogOut,
   ArrowLeft,
@@ -20,6 +22,8 @@ import {
   X,
   Eye,
   MessageCircle,
+  Share2,
+  PartyPopper,
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { TipsManager } from "@/components/tipping/TipsManager";
@@ -101,6 +105,9 @@ function DashboardPage() {
   const [clicks, setClicks] = useState<LinkClicks>({ enabled: false, byLink: {} });
   const [tab, setTabState] = useState<TabId>("links");
   const [showPreview, setShowPreview] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  // "Your page is live" prompt: until they share once or close it (this browser).
+  const [sharePrompt, setSharePrompt] = useState(false);
   const [messagesOn, setMessagesOn] = useState(false);
   const { plus, reload: reloadPlus } = useMyPlus();
   const isPlus = plus?.plan === "plus";
@@ -325,13 +332,44 @@ function DashboardPage() {
     }
   };
 
-  const copyShareLink = () => {
+  const shareKey = userId ? `yooits_shared_${userId}` : null;
+  const markShared = () => {
+    setSharePrompt(false);
+    try {
+      if (shareKey) window.localStorage.setItem(shareKey, "1");
+    } catch {
+      /* storage blocked: the prompt just shows again next time */
+    }
+  };
+  const onShared = () => {
+    rewards.recordShare();
+    markShared();
+  };
+
+  const copyShareLink = async () => {
     if (!profile) return;
     const url = `${window.location.origin}/${profile.username}`;
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied!");
-    rewards.recordShare();
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied!");
+      recordShare(profile.username, "copy");
+      onShared();
+    } catch {
+      toast.error("Couldn't copy. Open Share to copy it another way.");
+    }
   };
+
+  // A published page (has at least one link) that hasn't been shared yet gets the prompt.
+  const livePage =
+    !!profile && !restriction && links.some((l) => l.enabled && l.url.trim().length > 0);
+  useEffect(() => {
+    if (!livePage || !shareKey) return;
+    try {
+      setSharePrompt(window.localStorage.getItem(shareKey) !== "1");
+    } catch {
+      setSharePrompt(true);
+    }
+  }, [livePage, shareKey]);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -396,6 +434,13 @@ function DashboardPage() {
                 {`${typeof window !== "undefined" ? window.location.host : "yooits.me"}/${profile.username}`}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  className="bg-white text-black hover:bg-white/90"
+                  onClick={() => setShareOpen(true)}
+                >
+                  <Share2 className="mr-2 h-4 w-4" /> Share
+                </Button>
                 <Button size="sm" variant="secondary" onClick={copyShareLink}>
                   <Copy className="mr-2 h-4 w-4" /> Copy link
                 </Button>
@@ -423,6 +468,45 @@ function DashboardPage() {
                 isPlus={isPlus}
                 background={isPlus || rewards.popular ? profile.background_url : null}
               />
+            </div>
+          </div>
+        )}
+
+        {profile && (
+          <ShareSheet
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            username={profile.username}
+            name={profile.display_name || profile.username}
+            bio={profile.bio}
+            avatarUrl={profile.avatar_url}
+            theme={getTheme(profile.theme, profile.custom_theme, { plus: isPlus, unlocked: true })}
+            links={links.filter((l) => l.enabled && l.url.trim().length > 0)}
+            showBranding={!(isPlus && profile.hide_branding)}
+            own
+            onShared={onShared}
+          />
+        )}
+
+        {profile && livePage && sharePrompt && (
+          <div
+            role="status"
+            className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/40 bg-primary/10 p-4"
+          >
+            <PartyPopper className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div className="min-w-0 flex-1 text-sm">
+              <div className="font-semibold">Your page is live.</div>
+              <div className="text-muted-foreground">
+                Share it so people can find you: your bio, your story, or a text to friends.
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => setShareOpen(true)}>
+                <Share2 className="mr-2 h-4 w-4" /> Share my page
+              </Button>
+              <Button size="sm" variant="ghost" onClick={markShared} aria-label="Not now">
+                <X className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         )}

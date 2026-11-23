@@ -1,13 +1,21 @@
 import { MessageButton } from "@/components/messages/MessageButton";
 import { captureReferrer } from "@/lib/marketing/attribution";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { linkDisplay } from "@/lib/platforms";
 import { groupLinks, type LinkSection } from "@/lib/links/groups";
 import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
-import { getTheme, isRewardTheme, fontFamilyFor, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
-import { Gift, Heart, UserPlus } from "lucide-react";
+import {
+  getTheme,
+  isRewardTheme,
+  fontFamilyFor,
+  buttonRadiusFor,
+  type ThemeTokens,
+} from "@/lib/themes";
+import { Gift, Heart, Share2, UserPlus } from "lucide-react";
+import { trackedProfileUrl } from "@/lib/share/links";
+import { recordShare } from "@/lib/share/track";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
 import { CreatorPosts } from "@/components/creator/CreatorPosts";
 import { readableTextOn } from "@/lib/contrast";
@@ -22,24 +30,79 @@ import { findSkin, parseSkinState, resolveSkin, THEME_DEFAULT_SKIN } from "@/lib
 import { backgroundScrim, safeBackgroundUrl } from "@/lib/backgrounds";
 import { trackVisit } from "@/lib/analytics/track";
 
+// The share sheet loads only when someone opens it, so the page stays light.
+const ShareSheet = lazy(() =>
+  import("@/components/share/ShareSheet").then((m) => ({ default: m.ShareSheet })),
+);
+
 export const Route = createFileRoute("/$username")({
   component: ProfilePage,
-  head: ({ params }) => ({
-    meta: [
-      { title: `@${params.username} — Yooits` },
-      { name: "description", content: `Connect with @${params.username} across all their social platforms.` },
-      { property: "og:title", content: `@${params.username}` },
-      { property: "og:description", content: `Find @${params.username} on every platform.` },
-    ],
-  }),
+  // Only for the link preview apps show when the page is shared (name, bio,
+  // photo). The page itself still loads its data in the browser, and a slow
+  // or failed read here just falls back to the plain preview.
+  loader: async ({ params }) => ({ og: await loadPreview(params.username) }),
+  head: ({ params, loaderData }) => {
+    const og = loaderData?.og ?? null;
+    const handle = `@${og?.username ?? params.username}`;
+    const title = og?.display_name ? `${og.display_name} (${handle})` : handle;
+    const description = og?.bio?.trim()
+      ? og.bio.trim().slice(0, 200)
+      : `Find ${og?.display_name || handle} on every platform, all in one link.`;
+    const image = og?.avatar_url && /^https:\/\//i.test(og.avatar_url) ? og.avatar_url : null;
+    return {
+      meta: [
+        { title: `${title} — Yooits` },
+        { name: "description", content: description },
+        { property: "og:title", content: `${title} on Yooits` },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "profile" },
+        ...(og ? [{ property: "og:url", content: `https://yooits.me/${og.username}` }] : []),
+        ...(image
+          ? [
+              { property: "og:image", content: image },
+              { name: "twitter:image", content: image },
+            ]
+          : []),
+        { name: "twitter:title", content: `${title} on Yooits` },
+        { name: "twitter:description", content: description },
+      ],
+    };
+  },
   notFoundComponent: () => (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 text-center">
       <h1 className="text-3xl font-bold">User not found</h1>
       <p className="mt-2 text-muted-foreground">No one has claimed this link yet.</p>
-      <Link to="/" className="mt-6 text-primary hover:underline">← Home</Link>
+      <Link to="/" className="mt-6 text-primary hover:underline">
+        ← Home
+      </Link>
     </div>
   ),
 });
+
+type Preview = {
+  username: string;
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+};
+
+/** The public name, bio and photo for link previews; null when missing, slow or failing. */
+async function loadPreview(username: string): Promise<Preview | null> {
+  const name = username.toLowerCase();
+  if (!/^[a-z0-9._-]{1,30}$/.test(name)) return null;
+  try {
+    const read = supabase
+      .from("profiles")
+      .select("username, display_name, bio, avatar_url")
+      .eq("username", name)
+      .maybeSingle()
+      .then(({ data }) => (data as Preview | null) ?? null);
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+    return await Promise.race([read, timeout]);
+  } catch {
+    return null;
+  }
+}
 
 type Profile = {
   id: string;
@@ -77,6 +140,7 @@ function ProfilePage() {
   const [tipConfig, setTipConfig] = useState<PublicTipConfig | null>(null);
   const [subTotal, setSubTotal] = useState<number | null>(null);
   const [tipOpen, setTipOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
   // Plus settings (premium theme, hidden branding) count only while on Plus.
   const [plus, setPlus] = useState(false);
@@ -178,6 +242,27 @@ function ProfilePage() {
   // The creator's own photo, while they have Plus or the popular reward.
   const bg = skinState.background ? safeBackgroundUrl(profile?.background_url) : null;
 
+  // Phones open their own share sheet in one tap; elsewhere, ours.
+  const sharePage = async () => {
+    if (!profile) return;
+    if (
+      typeof navigator.share === "function" &&
+      /Mobi|iPhone|iPad|Android/i.test(navigator.userAgent)
+    ) {
+      try {
+        await navigator.share({
+          title: `${name} on Yooits`,
+          url: trackedProfileUrl(window.location.origin, profile.username, "native"),
+        });
+        recordShare(profile.username, "native");
+      } catch {
+        /* closed without sharing */
+      }
+      return;
+    }
+    setShareOpen(true);
+  };
+
   return (
     <div
       className="relative min-h-screen overflow-hidden"
@@ -207,6 +292,31 @@ function ProfilePage() {
           Previewing {preview.label}
         </div>
       )}
+      {profile && (
+        <button
+          type="button"
+          onClick={sharePage}
+          aria-label={`Share ${name}'s page`}
+          className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border transition hover:-translate-y-0.5"
+          style={{ background: theme.card, color: theme.cardForeground, borderColor: theme.border }}
+        >
+          <Share2 className="h-4 w-4" />
+        </button>
+      )}
+      {profile && shareOpen && (
+        <Suspense fallback={null}>
+          <ShareSheet
+            open={shareOpen}
+            onOpenChange={setShareOpen}
+            username={profile.username}
+            name={name}
+            theme={theme}
+            links={[]}
+            showBranding={showBranding}
+            own={false}
+          />
+        </Suspense>
+      )}
       <main className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col items-center px-6 py-16">
         <div
           className="mb-5 h-28 w-28 rounded-full p-1"
@@ -225,9 +335,7 @@ function ProfilePage() {
         </div>
         <h1 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>
         <p className="mt-1 text-sm opacity-70">@{profile?.username ?? username}</p>
-        {profile?.bio && (
-          <p className="mt-4 max-w-md text-center opacity-80">{profile.bio}</p>
-        )}
+        {profile?.bio && <p className="mt-4 max-w-md text-center opacity-80">{profile.bio}</p>}
         {profile && (
           <MessageButton
             username={profile.username}
@@ -240,7 +348,11 @@ function ProfilePage() {
           {loading ? (
             <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-16 animate-pulse rounded-2xl opacity-30" style={{ background: theme.card }} />
+                <div
+                  key={i}
+                  className="h-16 animate-pulse rounded-2xl opacity-30"
+                  style={{ background: theme.card }}
+                />
               ))}
             </div>
           ) : visible.length === 0 ? (
@@ -415,4 +527,3 @@ function ProfilePage() {
     </div>
   );
 }
-

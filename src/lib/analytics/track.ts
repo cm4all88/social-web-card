@@ -8,7 +8,7 @@ import { trackEvent } from "./functions";
 
 type Extra = { username?: string | null; linkId?: string | null; wishlistSlug?: string | null };
 
-function browserOptedOut(): boolean {
+export function browserOptedOut(): boolean {
   if (typeof navigator === "undefined") return true;
   const n = navigator as Navigator & { globalPrivacyControl?: boolean; msDoNotTrack?: string };
   const w =

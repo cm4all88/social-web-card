@@ -34,7 +34,7 @@ import {
 import type { GraphicSize } from "./platforms";
 import type { GraphicLayout, GraphicSpec, GraphicTheme, MockLink, MockItem } from "./types";
 
-const FONT = "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+export const FONT = "'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif";
 
 /** Break text into lines of at most `max` characters, on word boundaries. */
 export function wrap(text: string, max: number, maxLines = 4): string[] {
@@ -175,7 +175,7 @@ const PALETTES: Record<GraphicTheme, Palette> = {
   },
 };
 
-function Backdrop({
+export function Backdrop({
   theme,
   w,
   h,
@@ -268,7 +268,7 @@ function Flakes({
   return <g>{out}</g>;
 }
 
-function BrandGradient({ id }: { id: string }) {
+export function BrandGradient({ id }: { id: string }) {
   return (
     <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stopColor={BRAND.grad[0]} />
@@ -328,7 +328,7 @@ export function YoMark({
 }
 
 /** Mark plus "yooits.me", `h` tall. */
-function Lockup({
+export function Lockup({
   x,
   y,
   h,
@@ -401,7 +401,7 @@ function Cta({
 // Page backgrounds (theme CSS) as SVG
 // ---------------------------------------------------------------------------
 
-function Paint({
+export function Paint({
   layers,
   x,
   y,
@@ -487,7 +487,7 @@ function Paint({
   );
 }
 
-const fillOf = (css: string) => {
+export const fillOf = (css: string) => {
   const c = parseColor(css);
   return c ? { fill: c.hex, fillOpacity: c.a } : { fill: solid(css), fillOpacity: 1 };
 };
@@ -523,14 +523,14 @@ const radiusPx = (style: ThemeTokens["buttonStyle"], h: number) => {
 // with the page's own spacing, then scaled into the frame.
 // ---------------------------------------------------------------------------
 
-const SCREEN_W = 390;
-const SCREEN_H = 844;
+export const SCREEN_W = 390;
+export const SCREEN_H = 844;
 const BEZEL = 14;
 const PHONE_W = SCREEN_W + BEZEL * 2;
 const PHONE_H = SCREEN_H + BEZEL * 2;
 export const PHONE_RATIO = PHONE_H / PHONE_W;
 
-function Phone({
+export function Phone({
   x,
   y,
   w,
@@ -578,7 +578,7 @@ function Phone({
   );
 }
 
-function StatusBar({ color }: { color: string }) {
+export function StatusBar({ color }: { color: string }) {
   return (
     <g fill={color}>
       <text x={34} y={33} fontFamily={FONT} fontWeight={600} fontSize={16}>
@@ -638,7 +638,7 @@ const DEFAULT_LINKS: MockLink[] = [
 ];
 
 /** A link button as the profile page draws it. Returns its height. */
-function LinkCard({
+export function LinkCard({
   link,
   y,
   t,

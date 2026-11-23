@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { attachSupabaseAuth } from "@/integrations/supabase/attach-auth";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { EVENT_KINDS, recordEvent, visitorHash } from "./record.server";
+import { deviceFromUserAgent, isBot, optedOut } from "./source";
+import { isShareChannel } from "@/lib/share/links";
 
 const input = z.object({
   kind: z.enum(EVENT_KINDS),
@@ -83,6 +85,62 @@ export const markCreatorPresence = createServerFn({ method: "POST" })
       return { status: "ok" as const };
     } catch (e) {
       console.error("[creator-presence]", e instanceof Error ? e.message : e);
+      return { status: "error" as const };
+    }
+  });
+
+const shareInput = z.object({
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9._-]{1,30}$/),
+  channel: z.string().trim().toLowerCase().regex(/^[a-z0-9_]{1,24}$/),
+});
+
+/**
+ * Counts one share of a page (profile_shares). Anyone may share a page; the
+ * share counts as the owner's own only when the signed-in user owns it,
+ * checked here from their token, never taken from the browser's word.
+ */
+export const trackShare = createServerFn({ method: "POST" })
+  .middleware([attachSupabaseAuth])
+  .inputValidator(shareInput)
+  .handler(async ({ data }) => {
+    try {
+      if (!isShareChannel(data.channel)) return { status: "bad_channel" as const };
+      const ua = getRequestHeader("user-agent") ?? null;
+      if (optedOut({ dnt: getRequestHeader("dnt"), gpc: getRequestHeader("sec-gpc") }))
+        return { status: "skipped" as const };
+      if (isBot(ua)) return { status: "skipped" as const };
+      const s = salt();
+      const ip = getRequestHeader("x-real-ip") ?? getRequestIP({ xForwardedFor: true }) ?? null;
+      const hash = s && ip && ip !== "unknown" && ua ? await visitorHash(ip, ua, s) : null;
+
+      let actor: string | null = null;
+      const auth = getRequestHeader("authorization");
+      if (auth?.startsWith("Bearer ")) {
+        const { data: u } = await supabaseAdmin.auth.getUser(auth.slice(7));
+        actor = u.user?.id ?? null;
+      }
+      const { data: status, error } = await (
+        supabaseAdmin as unknown as {
+          rpc: (
+            f: string,
+            a: object,
+          ) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+        }
+      ).rpc("record_profile_share_event", {
+        _username: data.username,
+        _channel: data.channel,
+        _actor: actor,
+        _device: deviceFromUserAgent(ua),
+        _visitor_hash: hash,
+      });
+      if (error) throw new Error(error.message);
+      return { status: String(status ?? "ok") };
+    } catch (e) {
+      console.error("[share]", e instanceof Error ? e.message : e);
       return { status: "error" as const };
     }
   });

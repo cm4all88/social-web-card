@@ -11,6 +11,7 @@ import {
   type Range,
 } from "@/lib/analytics/api";
 import { DailyBars, RangePicker, RankList, Stat } from "@/components/analytics/Charts";
+import { loadOwnerShareStats, type OwnerShareStats } from "@/lib/share/track";
 
 export const Route = createFileRoute("/owner/analytics")({
   component: OwnerAnalyticsPage,
@@ -24,6 +25,19 @@ function OwnerAnalyticsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [reload, setReload] = useState(0);
+  const [shares, setShares] = useState<OwnerShareStats | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    // Sharing numbers are extra: if they can't load, the rest of the page still shows.
+    loadOwnerShareStats(days).then(
+      (d) => !cancelled && setShares(d),
+      () => !cancelled && setShares(null),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [days, reload]);
 
   useEffect(() => {
     let cancelled = false;
@@ -143,6 +157,50 @@ function OwnerAnalyticsPage() {
               note="Home page and profile footers"
             />
           </div>
+
+          {shares && (
+            <>
+              <h2 className="mt-8 text-lg font-semibold">Sharing</h2>
+              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
+                <Stat
+                  label="Shares"
+                  value={shares.shares}
+                  note={`${shares.owner_shares} by page owners, ${shares.visitor_shares} by visitors`}
+                />
+                <Stat
+                  label="Profiles shared"
+                  value={shares.profiles_shared}
+                  note="Shared by their owner; owner accounts left out"
+                />
+                <Stat
+                  label="Visits from shares"
+                  value={shares.share_visits}
+                  note="Profile views from share links"
+                />
+                <Stat
+                  label="Referred sign-ups"
+                  value={shares.referred_signups}
+                  note={'From "Get your own Yooits" on a page'}
+                />
+              </div>
+              <div className="mt-4 grid gap-6 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">
+                <RankList
+                  title="How pages were shared"
+                  empty="No shares yet."
+                  rows={shares.channels.map((c) => ({ label: c.channel, value: c.shares }))}
+                />
+                <RankList
+                  title="Most shared pages"
+                  empty="No shares yet."
+                  rows={shares.pages.map((p) => ({
+                    label: `@${p.username}`,
+                    note: p.admin ? "owner account" : `${p.owner_shares} by its owner`,
+                    value: p.shares,
+                  }))}
+                />
+              </div>
+            </>
+          )}
 
           <h2 className="mt-8 text-lg font-semibold">Growth</h2>
           <div className="mt-3 rounded-2xl border border-border bg-card p-4">
