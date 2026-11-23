@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ExternalLink, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -268,6 +268,9 @@ function Queue({
   const [status, setStatusFilter] = useState<PostStatus | "all" | "due">("all");
   const [platform, setPlatform] = useState<PlatformId | "all">("all");
   const [campaign, setCampaign] = useState<string>("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [exporting, setExporting] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [open, setOpen] = useState<string | null>(null);
   const now = Date.now();
@@ -286,9 +289,10 @@ function Queue({
               : p.status === status,
         )
         .filter((p) => platform === "all" || p.platform === platform)
-        .filter((p) => campaign === "all" || p.campaign_id === campaign),
+        .filter((p) => campaign === "all" || p.campaign_id === campaign)
+        .filter((p) => inRange(p.scheduled_at, from, to)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state.posts, status, platform, campaign],
+    [state.posts, status, platform, campaign, from, to],
   );
   const chosen = posts.filter((p) => selected.has(p.id));
   const toggle = (id: string) =>
@@ -311,6 +315,20 @@ function Queue({
     setSelected(new Set());
   };
   const dueCount = state.posts.filter(isDue).length;
+  const exportList = chosen.length ? chosen : posts;
+  const runExport = async () => {
+    if (!exportList.length || exporting) return;
+    setExporting(`0 of ${exportList.length}`);
+    try {
+      const { exportForReview } = await import("@/components/marketing/exportPosts");
+      await exportForReview(exportList, slugOf, (d, t) => setExporting(`${d} of ${t}`));
+      toast.success(`Exported ${exportList.length} post${exportList.length === 1 ? "" : "s"}.`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Export failed.");
+    } finally {
+      setExporting(null);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -351,6 +369,42 @@ function Queue({
             ...state.campaigns.map((c) => [c.id, c.name] as [string, string]),
           ]}
         />
+        <label className="space-y-1">
+          <span className="block text-xs text-muted-foreground">From</span>
+          <Input
+            type="date"
+            className="h-9 w-40"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="block text-xs text-muted-foreground">To</span>
+          <Input
+            type="date"
+            className="h-9 w-40"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </label>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="ml-auto h-9"
+          disabled={!exportList.length || !!exporting}
+          onClick={runExport}
+          title="Download every post shown (or just the ones you ticked) as graphics, a review page and a spreadsheet. Changes nothing."
+        >
+          {exporting ? (
+            <>
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" /> Exporting {exporting}
+            </>
+          ) : (
+            <>
+              <Download className="mr-1 h-4 w-4" /> Export for review ({exportList.length})
+            </>
+          )}
+        </Button>
       </div>
       {chosen.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-2 text-sm">
@@ -561,6 +615,16 @@ function PostRow({
       )}
     </div>
   );
+}
+
+/** Is the post's time within the chosen days (inclusive, local time)? Unscheduled posts only match an open range. */
+function inRange(at: string | null, from: string, to: string) {
+  if (!from && !to) return true;
+  if (!at) return false;
+  const t = new Date(at).getTime();
+  if (from && t < new Date(`${from}T00:00:00`).getTime()) return false;
+  if (to && t >= new Date(`${to}T00:00:00`).getTime() + 86_400_000) return false;
+  return true;
 }
 
 function Select({
