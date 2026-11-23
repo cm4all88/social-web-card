@@ -203,7 +203,7 @@ export function ShareSheet(props: ShareSheetProps) {
               >
                 <p>
                   {t.label} doesn't let websites share to it, so this takes two steps.{" "}
-                  {own ? t.how : `Copy the link, then paste it into a ${t.label} message or story.`}
+                  {own ? t.how : `Copy the link, then paste it into your ${t.label} story or a message.`}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button
