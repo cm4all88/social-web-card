@@ -12,12 +12,25 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { checkClaims, postText } from "@/lib/marketing/claims";
 import { marketingAiRewrite, marketingVerifyPost } from "@/lib/marketing/functions";
-import { downloadGraphic } from "@/lib/marketing/graphics";
+import {
+  AD_LOOKS,
+  BACKDROP_LABELS,
+  downloadGraphic,
+  LAYOUT_LABELS,
+  layoutOf,
+} from "@/lib/marketing/graphics";
 import { PLATFORMS, graphicSize, urlMatchesPlatform } from "@/lib/marketing/platforms";
-import type { GraphicSpec, GraphicTemplate, GraphicTheme } from "@/lib/marketing/types";
+import type {
+  GraphicLayout,
+  GraphicSpec,
+  GraphicTheme,
+  MockItem,
+  MockLink,
+} from "@/lib/marketing/types";
 import { STATUS_LABELS } from "@/lib/marketing/types";
 import { rpc, type HistoryRow, type Post } from "./api";
 import { finalCaption, hasGraphic, postLink, PostPreview } from "./PostPreview";
@@ -73,17 +86,29 @@ export function PostEditor({
   const [draft, setDraft] = useState<Post | null>(post);
   const [saving, setSaving] = useState(false);
   const [rewriting, setRewriting] = useState(false);
-  useEffect(() => setDraft(post), [post]);
+  const [tagText, setTagText] = useState("");
+  const [linkText, setLinkText] = useState("");
+  const [itemText, setItemText] = useState("");
+  useEffect(() => {
+    setDraft(post);
+    setTagText(post?.hashtags.join(" ") ?? "");
+    const pg = post && hasGraphic(post.graphic) ? post.graphic : null;
+    setLinkText(linksToText(pg?.links));
+    setItemText(itemsToText(pg?.list?.items));
+  }, [post]);
   if (!draft || !post) return null;
   const g: GraphicSpec = hasGraphic(draft.graphic)
     ? draft.graphic
-    : { template: "headline", theme: "night", headline: "" };
+    : { layout: "statement", theme: "brand", headline: "" };
   const setG = (patch: Partial<GraphicSpec>) => setDraft({ ...draft, graphic: { ...g, ...patch } });
+  const layout = layoutOf(g);
+  const setList = (patch: Partial<NonNullable<GraphicSpec["list"]>>) =>
+    setG({ list: { title: "Holiday list", items: [], ...g.list, ...patch } });
   const locked = post.status === "publishing" || post.status === "published";
   const wordsChanged =
     draft.caption !== post.caption ||
     draft.script !== post.script ||
-    JSON.stringify(draft.hashtags) !== JSON.stringify(post.hashtags) ||
+    JSON.stringify(parseTags(tagText)) !== JSON.stringify(post.hashtags) ||
     JSON.stringify(draft.graphic) !== JSON.stringify(post.graphic);
 
   const save = async () => {
@@ -93,7 +118,7 @@ export function PostEditor({
       _patch: {
         title: draft.title,
         caption: draft.caption,
-        hashtags: draft.hashtags,
+        hashtags: parseTags(tagText),
         script: draft.script ?? "",
         graphic: draft.graphic,
         landing_path: draft.landing_path,
@@ -133,9 +158,14 @@ export function PostEditor({
     }
   };
 
+  const show = (l: GraphicLayout[]) => l.includes(layout);
+  const field = "h-10 text-base";
+  const select =
+    "h-10 w-full rounded-md border border-input bg-background px-3 text-base disabled:opacity-60";
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
+      <DialogContent className="max-h-[94vh] w-[96vw] max-w-6xl overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Edit post</DialogTitle>
           <DialogDescription>
@@ -143,158 +173,326 @@ export function PostEditor({
             {locked && " · this post is going out or live, so it can't be edited"}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-3">
-            <div>
-              <Label>Title (only you see this, except on YouTube)</Label>
-              <Input
-                value={draft.title}
-                maxLength={120}
-                disabled={locked}
-                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <Label>Caption</Label>
-                <Button size="sm" variant="ghost" disabled={locked || rewriting} onClick={rewrite}>
-                  {rewriting ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3 w-3" />
-                  )}{" "}
-                  Rewrite with AI
-                </Button>
-              </div>
-              <Textarea
-                rows={7}
-                value={draft.caption}
-                disabled={locked}
-                onChange={(e) => setDraft({ ...draft, caption: e.target.value })}
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {"{link}"} becomes this post's own campaign link.
-              </p>
-            </div>
-            <div>
-              <Label>Hashtags (space separated, no #)</Label>
-              <Input
-                value={draft.hashtags.join(" ")}
-                disabled={locked}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    hashtags: e.target.value
-                      .split(/[\s,]+/)
-                      .map((t) => t.replace(/^#/, ""))
-                      .filter(Boolean)
-                      .slice(0, 30),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <Label>Video script</Label>
-              <Textarea
-                rows={5}
-                value={draft.script ?? ""}
-                disabled={locked}
-                onChange={(e) => setDraft({ ...draft, script: e.target.value || null })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Graphic layout</Label>
-                <select
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div className="lg:sticky lg:top-0 lg:self-start">
+            <PostPreview post={draft} slug={slug} className="max-w-xl" />
+          </div>
+          <Tabs defaultValue="words" className="space-y-4">
+            <TabsList className="grid h-11 w-full grid-cols-4">
+              <TabsTrigger value="words" className="text-base">Words</TabsTrigger>
+              <TabsTrigger value="graphic" className="text-base">Graphic</TabsTrigger>
+              <TabsTrigger value="video" className="text-base">Video</TabsTrigger>
+              <TabsTrigger value="timing" className="text-base">When</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="words" className="space-y-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm">Caption</Label>
+                  <Button size="sm" variant="ghost" disabled={locked || rewriting} onClick={rewrite}>
+                    {rewriting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}{" "}
+                    Rewrite with AI
+                  </Button>
+                </div>
+                <Textarea
+                  rows={10}
+                  className="text-base leading-relaxed"
+                  value={draft.caption}
                   disabled={locked}
-                  value={g.template}
-                  onChange={(e) => setG({ template: e.target.value as GraphicTemplate })}
-                >
-                  {(["headline", "list", "steps", "wishlist", "profile"] as GraphicTemplate[]).map(
-                    (t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ),
-                  )}
-                </select>
+                  onChange={(e) => setDraft({ ...draft, caption: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {"{link}"} becomes this post's own link to yooits.me.
+                </p>
               </div>
-              <div>
-                <Label>Colors</Label>
-                <select
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
-                  disabled={locked}
-                  value={g.theme}
-                  onChange={(e) => setG({ theme: e.target.value as GraphicTheme })}
-                >
-                  <option value="night">Yooits night</option>
-                  <option value="snow">Winter</option>
-                  <option value="warm">Warm</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label>Graphic headline</Label>
-              <Input
-                value={g.headline}
-                disabled={locked}
-                maxLength={80}
-                onChange={(e) => setG({ headline: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Graphic line under it</Label>
-              <Input
-                value={g.sub ?? ""}
-                disabled={locked}
-                maxLength={90}
-                onChange={(e) => setG({ sub: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label>Graphic rows (one per line)</Label>
-              <Textarea
-                rows={3}
-                value={(g.items ?? []).join("\n")}
-                disabled={locked}
-                onChange={(e) =>
-                  setG({
-                    items: e.target.value
-                      .split("\n")
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                      .slice(0, 5),
-                  })
-                }
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Post time</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Hashtags</Label>
                 <Input
-                  type="datetime-local"
+                  className={field}
+                  value={tagText}
                   disabled={locked}
-                  value={toLocalInput(draft.scheduled_at)}
-                  onChange={(e) =>
-                    setDraft({ ...draft, scheduled_at: fromLocalInput(e.target.value) })
-                  }
+                  placeholder="linkinbio creators"
+                  onChange={(e) => setTagText(e.target.value)}
+                  onBlur={() => setDraft({ ...draft, hashtags: parseTags(tagText) })}
+                />
+                <div className="flex flex-wrap gap-1.5">
+                  {parseTags(tagText).map((t) => (
+                    <span key={t} className="rounded-full bg-muted px-2.5 py-1 text-xs">
+                      #{t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Title (only you see this, except on YouTube)</Label>
+                <Input
+                  className={field}
+                  value={draft.title}
+                  maxLength={120}
+                  disabled={locked}
+                  onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                 />
               </div>
-              <div>
-                <Label>Link goes to</Label>
+            </TabsContent>
+
+            <TabsContent value="graphic" className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Layout</Label>
+                  <select
+                    className={select}
+                    disabled={locked}
+                    value={layout}
+                    onChange={(e) => setG({ layout: e.target.value as GraphicLayout, template: undefined })}
+                  >
+                    {(Object.keys(LAYOUT_LABELS) as GraphicLayout[]).map((l) => (
+                      <option key={l} value={l}>
+                        {LAYOUT_LABELS[l]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Background</Label>
+                  <select
+                    className={select}
+                    disabled={locked}
+                    value={g.theme}
+                    onChange={(e) => setG({ theme: e.target.value as GraphicTheme })}
+                  >
+                    {(Object.keys(BACKDROP_LABELS) as GraphicTheme[]).map((t) => (
+                      <option key={t} value={t}>
+                        {BACKDROP_LABELS[t]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Headline</Label>
                 <Input
+                  className={field}
+                  value={g.headline}
+                  disabled={locked}
+                  maxLength={80}
+                  onChange={(e) => setG({ headline: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Put *stars* around words to color them with the Yooits gradient.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Small line above</Label>
+                  <Input
+                    className={field}
+                    value={g.eyebrow ?? ""}
+                    disabled={locked}
+                    maxLength={30}
+                    onChange={(e) => setG({ eyebrow: e.target.value || undefined })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Button</Label>
+                  <Input
+                    className={field}
+                    value={g.cta ?? ""}
+                    placeholder="Make yours at yooits.me"
+                    disabled={locked}
+                    maxLength={32}
+                    onChange={(e) => setG({ cta: e.target.value || undefined })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Line under the headline</Label>
+                <Input
+                  className={field}
+                  value={g.sub ?? ""}
+                  disabled={locked}
+                  maxLength={90}
+                  onChange={(e) => setG({ sub: e.target.value || undefined })}
+                />
+              </div>
+              {show(["steps", "compare"]) && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">{layout === "steps" ? "Steps" : "Before lines"} (one per line)</Label>
+                  <Textarea
+                    rows={4}
+                    className="text-base"
+                    value={(g.items ?? []).join("\n")}
+                    disabled={locked}
+                    onChange={(e) => setG({ items: lines(e.target.value).slice(0, 4) })}
+                  />
+                </div>
+              )}
+              {show(["profile", "compare", "wishlist"]) && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Page theme on the phone</Label>
+                    <select
+                      className={select}
+                      disabled={locked}
+                      value={g.look ?? ""}
+                      onChange={(e) => setG({ look: e.target.value || undefined })}
+                    >
+                      <option value="">Midnight (default)</option>
+                      {AD_LOOKS.map((l) => (
+                        <option key={l.key} value={l.key}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {layout !== "wishlist" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Effect</Label>
+                      <select
+                        className={select}
+                        disabled={locked}
+                        value={g.effect ?? ""}
+                        onChange={(e) => setG({ effect: (e.target.value || undefined) as GraphicSpec["effect"] })}
+                      >
+                        <option value="">None</option>
+                        <option value="snow">Snow</option>
+                        <option value="stars">Stars</option>
+                        <option value="hearts">Hearts</option>
+                        <option value="leaves">Leaves</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+              {show(["hero", "themes"]) && (
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Page themes on the phones</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[0, 1, 2].map((i) => (
+                      <select
+                        key={i}
+                        className={select}
+                        disabled={locked}
+                        value={g.looks?.[i] ?? ""}
+                        onChange={(e) => {
+                          const looks = [...(g.looks ?? ["", "", ""])];
+                          looks[i] = e.target.value;
+                          setG({ looks: looks.filter(Boolean).length ? looks : undefined });
+                        }}
+                      >
+                        <option value="">Default</option>
+                        {AD_LOOKS.map((l) => (
+                          <option key={l.key} value={l.key}>
+                            {l.label}
+                          </option>
+                        ))}
+                      </select>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {show(["profile", "compare", "hero", "themes"]) && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Bio on the phone</Label>
+                    <Input
+                      className={field}
+                      value={g.bio ?? ""}
+                      disabled={locked}
+                      maxLength={80}
+                      onChange={(e) => setG({ bio: e.target.value || undefined })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Links on the phone (one per line: name | platform | site)</Label>
+                    <Textarea
+                      rows={5}
+                      className="font-mono text-sm"
+                      value={linkText}
+                      disabled={locked}
+                      placeholder={"Instagram | instagram | instagram.com\nMy shop | shop | etsy.com"}
+                      onChange={(e) => setLinkText(e.target.value)}
+                      onBlur={() => setG({ links: parseLinks(linkText) })}
+                    />
+                  </div>
+                </>
+              )}
+              {layout === "wishlist" && (
+                <>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">List title</Label>
+                      <Input
+                        className={field}
+                        value={g.list?.title ?? ""}
+                        disabled={locked}
+                        maxLength={30}
+                        onChange={(e) => setList({ title: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Occasion</Label>
+                      <Input
+                        className={field}
+                        value={g.list?.occasion ?? ""}
+                        disabled={locked}
+                        maxLength={30}
+                        onChange={(e) => setList({ occasion: e.target.value || undefined })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Items (one per line: name | price | site | taken)</Label>
+                    <Textarea
+                      rows={5}
+                      className="font-mono text-sm"
+                      value={itemText}
+                      disabled={locked}
+                      onChange={(e) => setItemText(e.target.value)}
+                      onBlur={() => setList({ items: parseItems(itemText) })}
+                    />
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="video" className="space-y-1.5">
+              <Label className="text-sm">Video script</Label>
+              <Textarea
+                rows={16}
+                className="text-base leading-relaxed"
+                value={draft.script ?? ""}
+                disabled={locked}
+                placeholder="One beat per line: what's on screen, then what's said."
+                onChange={(e) => setDraft({ ...draft, script: e.target.value || null })}
+              />
+              <p className="text-xs text-muted-foreground">
+                Shown to you only. Film it, then post the video with the caption.
+              </p>
+            </TabsContent>
+
+            <TabsContent value="timing" className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Post time</Label>
+                <Input
+                  type="datetime-local"
+                  className={field}
+                  disabled={locked}
+                  value={toLocalInput(draft.scheduled_at)}
+                  onChange={(e) => setDraft({ ...draft, scheduled_at: fromLocalInput(e.target.value) })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Link goes to (page on yooits.me)</Label>
+                <Input
+                  className={field}
                   value={draft.landing_path}
                   disabled={locked}
                   onChange={(e) => setDraft({ ...draft, landing_path: e.target.value || "/" })}
                 />
               </div>
-            </div>
+            </TabsContent>
             <ClaimNotes text={postText(draft)} />
-          </div>
-          <div className="space-y-2">
-            <PostPreview post={draft} slug={slug} />
-          </div>
+          </Tabs>
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>
@@ -308,6 +506,43 @@ export function PostEditor({
     </Dialog>
   );
 }
+
+const lines = (v: string) =>
+  v
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+function parseTags(v: string) {
+  return [...new Set(v.split(/[\s,]+/).map((t) => t.replace(/^#/, "")).filter(Boolean))].slice(0, 30);
+}
+
+function parseLinks(v: string): MockLink[] | undefined {
+  const out = lines(v)
+    .slice(0, 6)
+    .map((l) => {
+      const [label, icon, host] = l.split("|").map((s) => s.trim());
+      return { label, icon: (icon || "website").toLowerCase(), host: host || undefined };
+    })
+    .filter((l) => l.label);
+  return out.length ? out : undefined;
+}
+
+const linksToText = (links?: MockLink[]) =>
+  (links ?? []).map((l) => [l.label, l.icon, l.host].filter(Boolean).join(" | ")).join("\n");
+
+function parseItems(v: string): MockItem[] {
+  return lines(v)
+    .slice(0, 4)
+    .map((l) => {
+      const [name, price, host, taken] = l.split("|").map((s) => s.trim());
+      return { name, price: price || undefined, host: host || undefined, taken: /^(taken|yes|claimed)$/i.test(taken ?? "") };
+    })
+    .filter((i) => i.name);
+}
+
+const itemsToText = (items?: MockItem[]) =>
+  (items ?? []).map((i) => [i.name, i.price ?? "", i.host ?? "", i.taken ? "taken" : ""].join(" | ").replace(/( \| )+$/, "")).join("\n");
 
 // ---------------------------------------------------------------------------
 // Post it by hand, then record and verify the live address

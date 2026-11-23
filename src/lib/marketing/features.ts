@@ -38,7 +38,7 @@ export const FEATURES: Record<FeatureId, Feature> = {
   page: {
     id: "page",
     name: "Your own page",
-    claim: "Everyone gets a free page at yooits.me/yourname.",
+    claim: "Everyone gets a free page on yooits.me, with their own name in the address.",
     facts: ["Free to join", "You pick the username", "One link for your bio"],
     demo: "Type yooits.me/ and a username, and the page opens with every link on it.",
   },

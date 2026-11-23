@@ -40,10 +40,12 @@ export function PostPreview({
   post,
   slug,
   graphicId,
+  className = "max-w-sm",
 }: {
   post: Post;
   slug: string | null | undefined;
   graphicId?: string;
+  className?: string;
 }) {
   const spec = PLATFORMS[post.platform];
   const size = graphicSize(post.platform, post.format);
@@ -53,7 +55,7 @@ export function PostPreview({
   const above = [...text].slice(0, spec.foldAt).join("");
   const below = [...text].slice(spec.foldAt).join("");
   return (
-    <div className="mx-auto w-full max-w-sm overflow-hidden rounded-2xl border border-border bg-card">
+    <div className={`mx-auto w-full ${className} overflow-hidden rounded-2xl border border-border bg-card`}>
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
         <span className="font-semibold">{spec.label}</span>
         <span className="text-muted-foreground">

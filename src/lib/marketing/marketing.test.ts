@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { isPremiumTheme, isRewardTheme } from "@/lib/themes";
 import { checkClaims, hasBlockedClaim, postText } from "./claims";
 import { generateConcepts, conceptsToPosts, renderConcept } from "./generator";
 import { LAUNCH_CONCEPTS, launchPosts, planTime } from "./launch-plan";
@@ -109,6 +110,25 @@ describe("launch plan", () => {
     expect(new Set(hooks).size).toBe(hooks.length);
     const keys = posts.map((p) => `${p.platform}:${p.caption.toLowerCase()}`);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+  it("uses no made-up usernames or pages, and every link goes to yooits.me", () => {
+    for (const p of posts) {
+      const words = `${postText(p)} ${p.script ?? ""} ${JSON.stringify(p.graphic)}`;
+      expect(words, p.title).not.toMatch(/yourname|yooits\.me\/[a-z]/i);
+      expect(p.landing_path).toBe("/");
+    }
+  });
+  it("uses at least six different graphic layouts, no more than three days running", () => {
+    const layouts = LAUNCH_CONCEPTS.map((c) => c.graphic.layout);
+    expect(layouts.every(Boolean)).toBe(true);
+    expect(new Set(layouts).size).toBeGreaterThanOrEqual(6);
+    for (let i = 2; i < layouts.length; i++)
+      expect(layouts[i] === layouts[i - 1] && layouts[i] === layouts[i - 2]).toBe(false);
+  });
+  it("shows only free page themes in graphics", () => {
+    for (const c of LAUNCH_CONCEPTS)
+      for (const k of [c.graphic.look, ...(c.graphic.looks ?? [])].filter(Boolean))
+        expect(isPremiumTheme(k) || isRewardTheme(k), `${c.title}: ${k}`).toBe(false);
   });
   it("fits each platform", () => {
     for (const p of posts) {

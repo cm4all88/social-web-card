@@ -7,7 +7,7 @@
 import { AUDIENCES, FEATURES, type Audience, type FeatureId } from "./features";
 import { LINK_TOKEN, countedLength } from "./links";
 import { PLATFORMS, type PlatformId, type PostFormat } from "./platforms";
-import type { Concept, DraftPost, GraphicTheme, PostKind } from "./types";
+import type { Concept, DraftPost, GraphicLayout, GraphicTheme, PostKind } from "./types";
 
 const VIDEO_FORMAT: Partial<Record<PlatformId, PostFormat>> = {
   tiktok: "video",
@@ -96,7 +96,7 @@ export function renderConcept(
     caption: clip(caption, spec.captionMax),
     hashtags,
     script: usesScript ? scriptText(c.script!) : null,
-    graphic: { ...c.graphic, theme: c.graphic.theme ?? campaignTheme ?? "night" },
+    graphic: { ...c.graphic, theme: c.graphic.theme ?? campaignTheme ?? "brand" },
     features: c.features,
     landing_path: c.landing ?? "/",
     source: "launch_plan",
@@ -112,10 +112,10 @@ const FEATURE_COPY: Record<FeatureId, { hooks: string[]; steps: string[]; tag: s
   page: {
     hooks: [
       "Your bio gets one link. Make it the one that has everything.",
-      "yooits.me/yourname is free, and it takes about a minute.",
+      "Your own Yooits page is free, and it takes about a minute.",
       'If people keep asking "where else are you?", send them here.',
     ],
-    steps: ["Pick a username", "Add your links", "Put yooits.me/yourname in your bio"],
+    steps: ["Pick a username", "Add your links", "Put your Yooits link in your bio"],
     tag: "linkinbio",
   },
   links: {
@@ -287,6 +287,57 @@ export type GenerateInput = {
   theme?: GraphicTheme;
 };
 
+/** Each feature's natural picture, so generated graphics vary like the launch plan's. */
+const FEATURE_LAYOUT: Record<FeatureId, GraphicLayout> = {
+  page: "hero",
+  links: "profile",
+  themes: "themes",
+  seasonal: "profile",
+  effects: "themes",
+  rewards: "steps",
+  background: "statement",
+  wishlists: "wishlist",
+  gift_claims: "wishlist",
+  messages: "statement",
+  analytics: "analytics",
+  safety: "statement",
+};
+const BACKDROPS: GraphicTheme[] = ["brand", "night", "light", "warm"];
+
+/** Short headline from a hook: its first sentence, with its last two words in the brand gradient. */
+function headlineFrom(hook: string): string {
+  const first = (hook.match(/^[^.!?]+[.!?]?/)?.[0] ?? hook).trim();
+  const words = first.split(" ");
+  if (words.length > 9 || words.length < 3) return first;
+  return `${words.slice(0, -2).join(" ")} *${words.slice(-2).join(" ")}*`;
+}
+
+function graphicFor(
+  fid: FeatureId,
+  kind: PostKind,
+  hook: string,
+  claim: string,
+  steps: string[],
+  facts: string[],
+  i: number,
+  theme?: GraphicTheme,
+): Concept["graphic"] {
+  const backdrop =
+    theme ?? (fid === "seasonal" ? "snow" : BACKDROPS[i % BACKDROPS.length]);
+  if (kind === "tutorial" || kind === "tip")
+    return { layout: "steps", theme: backdrop, headline: headlineFrom(hook), items: steps };
+  const layout = FEATURE_LAYOUT[fid];
+  return {
+    layout,
+    theme: backdrop,
+    headline: headlineFrom(hook),
+    sub: layout === "statement" || layout === "steps" ? undefined : claim,
+    items: layout === "steps" ? facts : undefined,
+    look: fid === "seasonal" ? "snowfall" : undefined,
+    effect: fid === "seasonal" ? "snow" : fid === "effects" ? "stars" : undefined,
+  };
+}
+
 export function generateConcepts(input: GenerateInput): Concept[] {
   const r = rng(input.seed ?? Date.now());
   const features = input.features.length ? input.features : AUDIENCES[input.audience].angle;
@@ -319,14 +370,10 @@ export function generateConcepts(input: GenerateInput): Concept[] {
             `0-2s: on screen "${hook}"`,
             `2-8s: screen recording. ${f.demo}`,
             ...copy.steps.map((s, n) => `${8 + n * 3}-${11 + n * 3}s: ${s}`),
-            `End card: yooits.me/yourname, free`,
+            `End card: "Yo, it's me. yooits.me"`,
           ]
         : undefined,
-      graphic: isSteps
-        ? { template: "steps", headline: f.name, sub: hook, items: copy.steps, theme: input.theme }
-        : facts.length >= 3 && kind !== "invite"
-          ? { template: "list", headline: f.name, sub: f.claim, items: facts, theme: input.theme }
-          : { template: "headline", headline: hook, sub: "yooits.me/yourname", theme: input.theme },
+      graphic: graphicFor(fid, kind, hook, f.claim, copy.steps, facts, i, input.theme),
       tags: [
         copy.tag,
         input.audience === "small_business"
