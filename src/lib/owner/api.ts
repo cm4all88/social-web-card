@@ -427,6 +427,17 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "marketing.posts_failed": "Marketing posts marked failed",
   "marketing.post_published": "Marketing post marked live",
   "marketing.account_saved": "Social account details saved",
+  "invite.codes_created": "Invite codes created",
+  "invite.code_revoked": "Invite code revoked",
+  "invite.label_changed": "Invite note changed",
+  "invite.redeemed": "Invite or promotion code used",
+  "promotion.created": "Promotion created",
+  "promotion.updated": "Promotion changed",
+  "site_settings.updated": "Site settings changed",
+  "app_flag.enabled": "App switch turned on",
+  "app_flag.disabled": "App switch turned off",
+  "wishlist.visibility_changed": "Wishlist visibility changed",
+  "user.username_assigned": "Username assigned",
 };
 
 export function auditLabel(action: string): string {

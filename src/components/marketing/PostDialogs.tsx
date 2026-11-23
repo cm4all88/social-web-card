@@ -20,7 +20,7 @@ import { PLATFORMS, graphicSize, urlMatchesPlatform } from "@/lib/marketing/plat
 import type { GraphicSpec, GraphicTemplate, GraphicTheme } from "@/lib/marketing/types";
 import { STATUS_LABELS } from "@/lib/marketing/types";
 import { rpc, type HistoryRow, type Post } from "./api";
-import { finalCaption, hasGraphic, PostPreview } from "./PostPreview";
+import { finalCaption, hasGraphic, postLink, PostPreview } from "./PostPreview";
 
 const toLocalInput = (iso: string | null) => {
   if (!iso) return "";
@@ -390,6 +390,9 @@ export function PublishDialog({
               <Button size="sm" variant="secondary" onClick={() => copy(text, "Caption")}>
                 <Copy className="h-3 w-3" /> Copy caption
               </Button>
+              <Button size="sm" variant="secondary" onClick={() => copy(postLink(post, slug), "Link")}>
+                <Copy className="h-3 w-3" /> Copy link
+              </Button>
               {post.script && (
                 <Button size="sm" variant="secondary" onClick={() => copy(post.script!, "Script")}>
                   <Copy className="h-3 w-3" /> Copy script
@@ -422,6 +425,10 @@ export function PublishDialog({
               </pre>
             )}
             <div className="space-y-2">
+              <p className="break-all rounded-md bg-muted p-2 font-mono text-xs">{postLink(post, slug)}</p>
+              <p className="text-xs text-muted-foreground">
+                That link tracks visits and sign-ups from this post. Put it in the post or your bio.
+              </p>
               <Label>Address of the live post</Label>
               <Input
                 placeholder={`https://… (${spec.label})`}

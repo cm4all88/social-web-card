@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 
 import { useEffect } from "react";
 import { captureTouch } from "@/lib/marketing/attribution";
+import { useThemeColor } from "@/lib/site/settings";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -71,5 +72,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   // Remember the first campaign link someone arrived from, for sign-up attribution.
   useEffect(() => captureTouch(), []);
+  // The browser bar colour picked on Owner > Settings, if any.
+  useThemeColor();
   return <Outlet />;
 }

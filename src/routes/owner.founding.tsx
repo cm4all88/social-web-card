@@ -24,6 +24,7 @@ import {
   type BetaOverview,
 } from "@/lib/beta/api";
 import { betaInviteLink } from "@/lib/beta/invite";
+import { LabelEdit } from "@/components/owner/InviteCodes";
 
 /**
  * Founding Members (launch promotion): codes, who joined, who's active, and feedback.
@@ -302,14 +303,36 @@ function BetaPage() {
         </div>
       )}
 
-      <h2 className="mt-10 text-xl font-bold">Invitations</h2>
+      <div className="mt-10 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xl font-bold">Invitations</h2>
+        {(invites ?? []).filter((i) => i.status === "open").length > 1 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              copy(
+                (invites ?? [])
+                  .filter((i) => i.status === "open")
+                  .map((i) => betaInviteLink(i.code, origin))
+                  .join("\n"),
+                "Open links",
+              )
+            }
+          >
+            <Copy className="mr-1 h-3 w-3" /> Copy all open links
+          </Button>
+        )}
+      </div>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Copying a link sends nothing. Each code works once and gives 3 months of Plus, with no card and no renewal.
+      </p>
       <div className="mt-3 overflow-x-auto rounded-2xl border border-border">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="p-3">Code</th>
               <th className="p-3">For</th>
-              <th className="p-3">Sent by</th>
+              <th className="p-3">Shared by</th>
               <th className="p-3">Status</th>
               <th className="p-3">Dates</th>
               <th className="p-3" />
@@ -326,7 +349,15 @@ function BetaPage() {
             {invites?.map((i) => (
               <tr key={i.id} className="border-t border-border">
                 <td className="p-3 font-mono text-xs">{i.code}</td>
-                <td className="p-3">{i.label}</td>
+                <td className="p-3">
+                  <LabelEdit
+                    id={i.id}
+                    label={i.label}
+                    onSaved={(l) =>
+                      setInvites((p) => (p ?? []).map((x) => (x.id === i.id ? { ...x, label: l } : x)))
+                    }
+                  />
+                </td>
                 <td className="p-3">{CHANNELS.find((c) => c.value === i.channel)?.label}</td>
                 <td className="p-3">
                   {i.status === "redeemed"
@@ -337,7 +368,7 @@ function BetaPage() {
                   )}
                 </td>
                 <td className="p-3 text-xs text-muted-foreground">
-                  Sent {fmtDate(i.created_at)}
+                  Created {fmtDate(i.created_at)}
                   {i.status === "redeemed"
                     ? ` · used ${fmtDate(i.used_at)}`
                     : i.expires_at

@@ -4,6 +4,7 @@ import logo from "@/assets/yooits-logo.png";
 import { LegalLinks } from "@/components/legal/LegalPage";
 import { useEffect } from "react";
 import { track } from "@/lib/analytics/track";
+import { useSiteSettings } from "@/lib/site/settings";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   useEffect(() => track("home_view"), []);
+  const site = useSiteSettings();
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="pointer-events-none absolute inset-0 -z-10">
@@ -35,7 +37,7 @@ function Home() {
       <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
         <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card/40 px-3 py-1 text-xs text-muted-foreground backdrop-blur">
           <Sparkles className="h-3 w-3 text-accent" />
-          One link. All your socials.
+          {site.tagline}
         </div>
         <img
           src={logo}

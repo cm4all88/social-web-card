@@ -6,6 +6,7 @@ import { safeLinkHref } from "@/lib/safe-url";
 import { AccountControls } from "@/components/owner/AccountControls";
 import { MessagingControls } from "@/components/owner/MessagingControls";
 import { BackgroundControl } from "@/components/owner/BackgroundControl";
+import { UsernameControl } from "@/components/owner/UsernameControl";
 
 export const Route = createFileRoute("/owner/users_/$userId")({
   component: UserDetailPage,
@@ -61,6 +62,9 @@ function UserDetailPage() {
           )}
 
           <AccountControls user={user} onChanged={load} />
+          {user.profile && (
+            <UsernameControl userId={user.user_id} username={user.profile.username} onChanged={load} />
+          )}
           <MessagingControls userId={user.user_id} />
           <BackgroundControl userId={user.user_id} />
 

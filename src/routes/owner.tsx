@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
-import { OWNER_SECTIONS } from "@/lib/owner/nav";
+import { OWNER_GROUPS, sectionsIn } from "@/lib/owner/nav";
 
 /**
  * Owner console layout (Yooits admins only). This check only decides what the
@@ -20,23 +20,23 @@ export const Route = createFileRoute("/owner")({
 
 function OwnerNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav aria-label="Owner console" className="flex flex-col gap-1">
-      {OWNER_SECTIONS.map((s) => (
-        <Link
-          key={s.id}
-          to={s.to}
-          onClick={onNavigate}
-          activeOptions={{ exact: s.to === "/owner" }}
-          className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          activeProps={{ className: "bg-muted font-medium text-foreground" }}
-        >
-          <span>{s.label}</span>
-          {s.status === "planned" && (
-            <span className="rounded-full border border-border px-2 text-[10px] uppercase tracking-wide">
-              Soon
-            </span>
-          )}
-        </Link>
+    <nav aria-label="Owner console" className="flex flex-col gap-4">
+      {OWNER_GROUPS.map((g) => (
+        <div key={g} className="flex flex-col gap-1">
+          <div className="px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g}</div>
+          {sectionsIn(g).map((s) => (
+            <Link
+              key={s.id}
+              to={s.to}
+              onClick={onNavigate}
+              activeOptions={{ exact: s.to === "/owner" }}
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              activeProps={{ className: "bg-muted font-medium text-foreground" }}
+            >
+              {s.label}
+            </Link>
+          ))}
+        </div>
       ))}
     </nav>
   );

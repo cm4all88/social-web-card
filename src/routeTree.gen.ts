@@ -28,7 +28,6 @@ import { Route as LegalIndexRouteImport } from './routes/legal.index'
 import { Route as LegalDocRouteImport } from './routes/legal.$doc'
 import { Route as MessagesConversationIdRouteImport } from './routes/messages_.$conversationId'
 import { Route as OwnerIndexRouteImport } from './routes/owner.index'
-import { Route as OwnerSectionRouteImport } from './routes/owner.$section'
 import { Route as OwnerAnalyticsRouteImport } from './routes/owner.analytics'
 import { Route as OwnerAnnouncementsRouteImport } from './routes/owner.announcements'
 import { Route as OwnerAuditRouteImport } from './routes/owner.audit'
@@ -41,9 +40,12 @@ import { Route as OwnerMailRouteImport } from './routes/owner.mail'
 import { Route as OwnerMarketingRouteImport } from './routes/owner.marketing'
 import { Route as OwnerMessagingRouteImport } from './routes/owner.messaging'
 import { Route as OwnerPaymentsRouteImport } from './routes/owner.payments'
+import { Route as OwnerPromotionsRouteImport } from './routes/owner.promotions'
 import { Route as OwnerReportsRouteImport } from './routes/owner.reports'
 import { Route as OwnerRevenueRouteImport } from './routes/owner.revenue'
+import { Route as OwnerSettingsRouteImport } from './routes/owner.settings'
 import { Route as OwnerUsersRouteImport } from './routes/owner.users'
+import { Route as OwnerWishlistsRouteImport } from './routes/owner.wishlists'
 import { Route as UsernameWishlistSlugRouteImport } from './routes/$username_.wishlist.$slug'
 import { Route as ApiEmailDispatchRouteImport } from './routes/api/email/dispatch'
 import { Route as ApiEmailResendWebhookRouteImport } from './routes/api/email/resend-webhook'
@@ -149,11 +151,6 @@ const OwnerIndexRoute = OwnerIndexRouteImport.update({
   path: '/',
   getParentRoute: () => OwnerRoute,
 } as any)
-const OwnerSectionRoute = OwnerSectionRouteImport.update({
-  id: '/$section',
-  path: '/$section',
-  getParentRoute: () => OwnerRoute,
-} as any)
 const OwnerAnalyticsRoute = OwnerAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -214,6 +211,11 @@ const OwnerPaymentsRoute = OwnerPaymentsRouteImport.update({
   path: '/payments',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerPromotionsRoute = OwnerPromotionsRouteImport.update({
+  id: '/promotions',
+  path: '/promotions',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerReportsRoute = OwnerReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -224,9 +226,19 @@ const OwnerRevenueRoute = OwnerRevenueRouteImport.update({
   path: '/revenue',
   getParentRoute: () => OwnerRoute,
 } as any)
+const OwnerSettingsRoute = OwnerSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => OwnerRoute,
+} as any)
 const OwnerUsersRoute = OwnerUsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => OwnerRoute,
+} as any)
+const OwnerWishlistsRoute = OwnerWishlistsRouteImport.update({
+  id: '/wishlists',
+  path: '/wishlists',
   getParentRoute: () => OwnerRoute,
 } as any)
 const UsernameWishlistSlugRoute = UsernameWishlistSlugRouteImport.update({
@@ -292,7 +304,6 @@ export interface FileRoutesByFullPath {
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages/$conversationId': typeof MessagesConversationIdRoute
-  '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
@@ -305,9 +316,12 @@ export interface FileRoutesByFullPath {
   '/owner/marketing': typeof OwnerMarketingRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/promotions': typeof OwnerPromotionsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/settings': typeof OwnerSettingsRoute
   '/owner/users': typeof OwnerUsersRoute
+  '/owner/wishlists': typeof OwnerWishlistsRoute
   '/admin/': typeof AdminIndexRoute
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
@@ -337,7 +351,6 @@ export interface FileRoutesByTo {
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages/$conversationId': typeof MessagesConversationIdRoute
-  '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
@@ -350,9 +363,12 @@ export interface FileRoutesByTo {
   '/owner/marketing': typeof OwnerMarketingRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/promotions': typeof OwnerPromotionsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/settings': typeof OwnerSettingsRoute
   '/owner/users': typeof OwnerUsersRoute
+  '/owner/wishlists': typeof OwnerWishlistsRoute
   '/admin': typeof AdminIndexRoute
   '/legal': typeof LegalIndexRoute
   '/owner': typeof OwnerIndexRoute
@@ -384,7 +400,6 @@ export interface FileRoutesById {
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
   '/messages_/$conversationId': typeof MessagesConversationIdRoute
-  '/owner/$section': typeof OwnerSectionRoute
   '/owner/analytics': typeof OwnerAnalyticsRoute
   '/owner/announcements': typeof OwnerAnnouncementsRoute
   '/owner/audit': typeof OwnerAuditRoute
@@ -397,9 +412,12 @@ export interface FileRoutesById {
   '/owner/marketing': typeof OwnerMarketingRoute
   '/owner/messaging': typeof OwnerMessagingRoute
   '/owner/payments': typeof OwnerPaymentsRoute
+  '/owner/promotions': typeof OwnerPromotionsRoute
   '/owner/reports': typeof OwnerReportsRoute
   '/owner/revenue': typeof OwnerRevenueRoute
+  '/owner/settings': typeof OwnerSettingsRoute
   '/owner/users': typeof OwnerUsersRoute
+  '/owner/wishlists': typeof OwnerWishlistsRoute
   '/admin/': typeof AdminIndexRoute
   '/legal/': typeof LegalIndexRoute
   '/owner/': typeof OwnerIndexRoute
@@ -432,7 +450,6 @@ export interface FileRouteTypes {
     | '/email/preferences'
     | '/legal/$doc'
     | '/messages/$conversationId'
-    | '/owner/$section'
     | '/owner/analytics'
     | '/owner/announcements'
     | '/owner/audit'
@@ -445,9 +462,12 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/messaging'
     | '/owner/payments'
+    | '/owner/promotions'
     | '/owner/reports'
     | '/owner/revenue'
+    | '/owner/settings'
     | '/owner/users'
+    | '/owner/wishlists'
     | '/admin/'
     | '/legal/'
     | '/owner/'
@@ -477,7 +497,6 @@ export interface FileRouteTypes {
     | '/email/preferences'
     | '/legal/$doc'
     | '/messages/$conversationId'
-    | '/owner/$section'
     | '/owner/analytics'
     | '/owner/announcements'
     | '/owner/audit'
@@ -490,9 +509,12 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/messaging'
     | '/owner/payments'
+    | '/owner/promotions'
     | '/owner/reports'
     | '/owner/revenue'
+    | '/owner/settings'
     | '/owner/users'
+    | '/owner/wishlists'
     | '/admin'
     | '/legal'
     | '/owner'
@@ -523,7 +545,6 @@ export interface FileRouteTypes {
     | '/email/preferences'
     | '/legal/$doc'
     | '/messages_/$conversationId'
-    | '/owner/$section'
     | '/owner/analytics'
     | '/owner/announcements'
     | '/owner/audit'
@@ -536,9 +557,12 @@ export interface FileRouteTypes {
     | '/owner/marketing'
     | '/owner/messaging'
     | '/owner/payments'
+    | '/owner/promotions'
     | '/owner/reports'
     | '/owner/revenue'
+    | '/owner/settings'
     | '/owner/users'
+    | '/owner/wishlists'
     | '/admin/'
     | '/legal/'
     | '/owner/'
@@ -717,13 +741,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerIndexRouteImport
       parentRoute: typeof OwnerRoute
     }
-    '/owner/$section': {
-      id: '/owner/$section'
-      path: '/$section'
-      fullPath: '/owner/$section'
-      preLoaderRoute: typeof OwnerSectionRouteImport
-      parentRoute: typeof OwnerRoute
-    }
     '/owner/analytics': {
       id: '/owner/analytics'
       path: '/analytics'
@@ -808,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerPaymentsRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/promotions': {
+      id: '/owner/promotions'
+      path: '/promotions'
+      fullPath: '/owner/promotions'
+      preLoaderRoute: typeof OwnerPromotionsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/reports': {
       id: '/owner/reports'
       path: '/reports'
@@ -822,11 +846,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OwnerRevenueRouteImport
       parentRoute: typeof OwnerRoute
     }
+    '/owner/settings': {
+      id: '/owner/settings'
+      path: '/settings'
+      fullPath: '/owner/settings'
+      preLoaderRoute: typeof OwnerSettingsRouteImport
+      parentRoute: typeof OwnerRoute
+    }
     '/owner/users': {
       id: '/owner/users'
       path: '/users'
       fullPath: '/owner/users'
       preLoaderRoute: typeof OwnerUsersRouteImport
+      parentRoute: typeof OwnerRoute
+    }
+    '/owner/wishlists': {
+      id: '/owner/wishlists'
+      path: '/wishlists'
+      fullPath: '/owner/wishlists'
+      preLoaderRoute: typeof OwnerWishlistsRouteImport
       parentRoute: typeof OwnerRoute
     }
     '/$username_/wishlist/$slug': {
@@ -896,7 +934,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface OwnerRouteChildren {
-  OwnerSectionRoute: typeof OwnerSectionRoute
   OwnerAnalyticsRoute: typeof OwnerAnalyticsRoute
   OwnerAnnouncementsRoute: typeof OwnerAnnouncementsRoute
   OwnerAuditRoute: typeof OwnerAuditRoute
@@ -909,15 +946,17 @@ interface OwnerRouteChildren {
   OwnerMarketingRoute: typeof OwnerMarketingRoute
   OwnerMessagingRoute: typeof OwnerMessagingRoute
   OwnerPaymentsRoute: typeof OwnerPaymentsRoute
+  OwnerPromotionsRoute: typeof OwnerPromotionsRoute
   OwnerReportsRoute: typeof OwnerReportsRoute
   OwnerRevenueRoute: typeof OwnerRevenueRoute
+  OwnerSettingsRoute: typeof OwnerSettingsRoute
   OwnerUsersRoute: typeof OwnerUsersRoute
+  OwnerWishlistsRoute: typeof OwnerWishlistsRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
   OwnerUsersUserIdRoute: typeof OwnerUsersUserIdRoute
 }
 
 const OwnerRouteChildren: OwnerRouteChildren = {
-  OwnerSectionRoute: OwnerSectionRoute,
   OwnerAnalyticsRoute: OwnerAnalyticsRoute,
   OwnerAnnouncementsRoute: OwnerAnnouncementsRoute,
   OwnerAuditRoute: OwnerAuditRoute,
@@ -930,9 +969,12 @@ const OwnerRouteChildren: OwnerRouteChildren = {
   OwnerMarketingRoute: OwnerMarketingRoute,
   OwnerMessagingRoute: OwnerMessagingRoute,
   OwnerPaymentsRoute: OwnerPaymentsRoute,
+  OwnerPromotionsRoute: OwnerPromotionsRoute,
   OwnerReportsRoute: OwnerReportsRoute,
   OwnerRevenueRoute: OwnerRevenueRoute,
+  OwnerSettingsRoute: OwnerSettingsRoute,
   OwnerUsersRoute: OwnerUsersRoute,
+  OwnerWishlistsRoute: OwnerWishlistsRoute,
   OwnerIndexRoute: OwnerIndexRoute,
   OwnerUsersUserIdRoute: OwnerUsersUserIdRoute,
 }

@@ -51,10 +51,7 @@ function OverviewPage() {
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {OWNER_SECTIONS.filter((s) => s.id !== "overview").map((s) => (
           <Link key={s.id} to={s.to} className="rounded-2xl border border-border p-4 hover:bg-muted">
-            <div className="flex items-center justify-between font-medium">
-              {s.label}
-              {s.status === "planned" && <span className="text-xs text-muted-foreground">Not built yet</span>}
-            </div>
+            <div className="font-medium">{s.label}</div>
             <div className="mt-1 text-sm text-muted-foreground">{s.summary}</div>
           </Link>
         ))}

@@ -1,154 +1,156 @@
 /**
- * Owner console sections. The console is laid out for everything Yooits will
- * eventually run from here (users, money, wishlists, promotions, settings,
- * analytics); sections marked "planned" show a placeholder until built.
+ * Owner console sections, in the order the menu shows them, grouped. Every
+ * section here is a working page; there are no placeholders.
  */
+export const OWNER_GROUPS = ["Home", "People", "Money", "Safety", "Outreach", "Console"] as const;
+export type OwnerGroup = (typeof OWNER_GROUPS)[number];
+
 export type OwnerSection = {
   id: string;
   label: string;
   to: string;
-  status: "live" | "planned";
-  /** One line for the placeholder page and the overview. */
+  group: OwnerGroup;
+  /** One line for the overview page. */
   summary: string;
 };
 
 export const OWNER_SECTIONS: OwnerSection[] = [
-  { id: "overview", label: "Overview", to: "/owner", status: "live", summary: "Headline numbers." },
+  {
+    id: "overview",
+    label: "Overview",
+    to: "/owner",
+    group: "Home",
+    summary: "Headline numbers.",
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    to: "/owner/analytics",
+    group: "Home",
+    summary: "Users, traffic, destinations, platforms, conversions and growth.",
+  },
   {
     id: "users",
     label: "Users",
     to: "/owner/users",
-    status: "live",
+    group: "People",
     summary: "Find people and see their account.",
+  },
+  {
+    id: "invites",
+    label: "Invites",
+    to: "/owner/invites",
+    group: "People",
+    summary: "Invite codes: single use or shared, with expiry, revoking and who used them.",
+  },
+  {
+    id: "founding",
+    label: "Founding Members",
+    to: "/owner/founding",
+    group: "People",
+    summary: "Founding Member invites, members and feedback.",
+  },
+  {
+    id: "promotions",
+    label: "Promotions",
+    to: "/owner/promotions",
+    group: "People",
+    summary: "Campaign codes with free Plus, eligibility, limits and a report.",
   },
   {
     id: "money",
     label: "Money",
     to: "/owner/revenue",
-    status: "live",
+    group: "Money",
     summary: "Tip revenue and stopping tips for a creator.",
   },
   {
     id: "payments",
     label: "Payments",
     to: "/owner/payments",
-    status: "live",
-    summary:
-      "The Stripe account, setting it up, and which payment features are ready to switch on.",
+    group: "Money",
+    summary: "The Stripe account, setting it up, and which payment features are ready to switch on.",
   },
   {
-    id: "invites",
-    label: "Invites",
-    to: "/owner/invites",
-    status: "live",
-    summary: "Invite codes.",
-  },
-  {
-    id: "founding",
-    label: "Founding Members",
-    to: "/owner/founding",
-    status: "live",
-    summary: "Founding Member invites, members and feedback.",
+    id: "creators",
+    label: "Creators",
+    to: "/owner/creators",
+    group: "Money",
+    summary: "Qualifying visitors, milestones, creator applications, prices, fees, posts and Support Offerings.",
   },
   {
     id: "reports",
     label: "Reports",
     to: "/owner/reports",
-    status: "live",
+    group: "Safety",
     summary: "Pages, wishlists and messages people have reported.",
   },
   {
-    id: "mail",
-    label: "Mail",
-    to: "/owner/mail",
-    status: "live",
-    summary: "Your Gmail inbox: read, search, reply and send, plus system email delivery.",
-  },
-  {
-    id: "email",
-    label: "Email",
-    to: "/owner/email",
-    status: "live",
-    summary: "Email templates, test sends, announcements and delivery.",
+    id: "wishlists",
+    label: "Wishlists",
+    to: "/owner/wishlists",
+    group: "Safety",
+    summary: "Every wishlist, claiming, gift money and affiliate status, and hiding a list.",
   },
   {
     id: "messaging",
     label: "Messages",
     to: "/owner/messaging",
-    status: "live",
+    group: "Safety",
     summary: "Turn direct messages on or off and see how they're used.",
   },
   {
     id: "blocked-sites",
     label: "Blocked sites",
     to: "/owner/blocked-sites",
-    status: "live",
+    group: "Safety",
     summary: "Sites links may not point to, and exceptions for mistakes.",
-  },
-  {
-    id: "announcements",
-    label: "Announcements",
-    to: "/owner/announcements",
-    status: "live",
-    summary: "Dashboard announcements and the notifications switch.",
   },
   {
     id: "marketing",
     label: "Marketing",
     to: "/owner/marketing",
-    status: "live",
-    summary:
-      "Campaigns, post drafts and approval, the publishing calendar, social accounts and what campaigns bring in.",
+    group: "Outreach",
+    summary: "Campaigns, post drafts and approval, the publishing calendar, social accounts and what campaigns bring in.",
   },
   {
-    id: "creators",
-    label: "Creators",
-    to: "/owner/creators",
-    status: "live",
-    summary:
-      "Qualifying visitors, milestones, creator applications, prices, fees, posts and Support Offerings.",
+    id: "announcements",
+    label: "Announcements",
+    to: "/owner/announcements",
+    group: "Outreach",
+    summary: "Dashboard announcements and the notifications switch.",
   },
   {
-    id: "audit",
-    label: "Audit log",
-    to: "/owner/audit",
-    status: "live",
-    summary: "Every owner action, newest first.",
+    id: "email",
+    label: "Email",
+    to: "/owner/email",
+    group: "Outreach",
+    summary: "Email templates, test sends, announcements and delivery.",
   },
   {
-    id: "wishlists",
-    label: "Wishlists",
-    to: "/owner/wishlists",
-    status: "planned",
-    summary: "Retailers, affiliate tags and wishlist moderation.",
-  },
-  {
-    id: "promotions",
-    label: "Promotions",
-    to: "/owner/promotions",
-    status: "planned",
-    summary: "House promotions shown across Yooits.",
+    id: "mail",
+    label: "Mail",
+    to: "/owner/mail",
+    group: "Outreach",
+    summary: "Your Gmail inbox: read, search, reply and send, plus system email delivery.",
   },
   {
     id: "settings",
     label: "Settings",
     to: "/owner/settings",
-    status: "planned",
-    summary: "Feature switches and limits, changed without code.",
+    group: "Console",
+    summary: "Site name, tagline, contact email, Yooits social links, email defaults and feature switches.",
   },
   {
-    id: "analytics",
-    label: "Analytics",
-    to: "/owner/analytics",
-    status: "live",
-    summary: "Users, traffic, destinations, platforms, conversions and growth.",
+    id: "audit",
+    label: "Audit log",
+    to: "/owner/audit",
+    group: "Console",
+    summary: "Every owner action, newest first.",
   },
 ];
 
-export const PLANNED_SECTION_IDS = OWNER_SECTIONS.filter((s) => s.status === "planned").map(
-  (s) => s.id,
-);
-
-export function plannedSection(id: string): OwnerSection | undefined {
-  return OWNER_SECTIONS.find((s) => s.status === "planned" && s.id === id);
+/** The sections of one group, in menu order. */
+export function sectionsIn(group: OwnerGroup): OwnerSection[] {
+  return OWNER_SECTIONS.filter((s) => s.group === group);
 }

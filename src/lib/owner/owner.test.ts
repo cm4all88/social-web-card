@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { legacyAdminTarget } from "./legacy-admin";
-import { OWNER_SECTIONS, plannedSection } from "./nav";
+import { OWNER_GROUPS, OWNER_SECTIONS, sectionsIn } from "./nav";
 import { auditLabel } from "./api";
 
 describe("old /admin links", () => {
@@ -23,10 +23,10 @@ describe("owner console sections", () => {
     expect(new Set(OWNER_SECTIONS.map((s) => s.to)).size).toBe(OWNER_SECTIONS.length);
   });
 
-  it("show placeholders only for planned sections", () => {
-    expect(plannedSection("promotions")?.label).toBe("Promotions");
-    expect(plannedSection("users")).toBeUndefined();
-    expect(plannedSection("nope")).toBeUndefined();
+  it("put every section in exactly one menu group", () => {
+    const grouped = OWNER_GROUPS.flatMap((g) => sectionsIn(g).map((s) => s.id));
+    expect(grouped.sort()).toEqual(OWNER_SECTIONS.map((s) => s.id).sort());
+    expect(OWNER_GROUPS.every((g) => sectionsIn(g).length > 0)).toBe(true);
   });
 
   it("label audit actions in plain words", () => {

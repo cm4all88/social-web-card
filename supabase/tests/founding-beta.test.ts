@@ -258,7 +258,10 @@ describe("signing up with a code", () => {
         .used_by,
     ).toBe(FRANK);
     expect(await grant(FRANK)).toHaveLength(0);
-    await as(OWNER, `DELETE FROM invites WHERE code = 'plaincode1'`);
+    // A used code keeps its redemption record, so it can be revoked but not deleted.
+    expect(await fails(as(OWNER, `DELETE FROM invites WHERE code = 'plaincode1'`))).toMatch(
+      /invite_redemptions/,
+    );
   });
 });
 

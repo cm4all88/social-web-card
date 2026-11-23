@@ -1053,7 +1053,7 @@ function Analytics() {
       if (error)
         setNote(
           isMissingFunction(error)
-            ? "Campaign analytics switch on with the last database step, which is waiting for your approval."
+            ? "Campaign analytics couldn't load because a database function is missing. Reload the page to try again."
             : error.message,
         );
       else {
@@ -1223,7 +1223,7 @@ function WeeklySummary() {
       if (a.error)
         setNote(
           isMissingFunction(a.error)
-            ? "The weekly summary switches on with the last database step, which is waiting for your approval."
+            ? "The weekly summary couldn't load because a database function is missing. Reload the page to try again."
             : a.error.message,
         );
       else setW(a.data);
