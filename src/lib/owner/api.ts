@@ -416,6 +416,17 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   "support.offering_suspended": "Support offering paused",
   "support.offering_restored": "Support offering restored",
   "background.removed": "Custom background removed",
+  "marketing.campaign_saved": "Marketing campaign created",
+  "marketing.campaign_updated": "Marketing campaign changed",
+  "marketing.posts_added": "Marketing posts added",
+  "marketing.posts_approved": "Marketing posts approved",
+  "marketing.posts_scheduled": "Marketing posts scheduled",
+  "marketing.posts_draft": "Marketing posts moved back to draft",
+  "marketing.posts_archived": "Marketing posts archived",
+  "marketing.posts_publishing": "Marketing posts due to post",
+  "marketing.posts_failed": "Marketing posts marked failed",
+  "marketing.post_published": "Marketing post marked live",
+  "marketing.account_saved": "Social account details saved",
 };
 
 export function auditLabel(action: string): string {

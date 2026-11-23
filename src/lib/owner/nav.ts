@@ -93,6 +93,14 @@ export const OWNER_SECTIONS: OwnerSection[] = [
     summary: "Dashboard announcements and the notifications switch.",
   },
   {
+    id: "marketing",
+    label: "Marketing",
+    to: "/owner/marketing",
+    status: "live",
+    summary:
+      "Campaigns, post drafts and approval, the publishing calendar, social accounts and what campaigns bring in.",
+  },
+  {
     id: "creators",
     label: "Creators",
     to: "/owner/creators",

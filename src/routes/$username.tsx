@@ -1,4 +1,5 @@
 import { MessageButton } from "@/components/messages/MessageButton";
+import { captureReferrer } from "@/lib/marketing/attribution";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -394,7 +395,10 @@ function ProfilePage() {
         {showBranding && (
           <Link
             to="/"
-            onClick={() => trackVisit("signup_cta", profile?.user_id, { username: profile?.username })}
+            onClick={() => {
+              trackVisit("signup_cta", profile?.user_id, { username: profile?.username });
+              if (profile?.username) captureReferrer(profile.username);
+            }}
             className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100"
             style={{ color: theme.foreground }}
           >

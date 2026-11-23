@@ -13,6 +13,7 @@ import { normalizeUsername, usernameError, USERNAME_HELP } from "@/lib/username"
 import { z } from "zod";
 import { betaRpc } from "@/lib/beta/api";
 import { SAFE_NEXT_PATH } from "@/lib/safe-path";
+import { signupAttribution } from "@/lib/marketing/attribution";
 import {
   BETA_NAME,
   betaStateMessage,
@@ -145,6 +146,8 @@ function AuthPage() {
               // Send any well-formed beta code, even if the precheck failed or is still
               // loading: the database checks and redeems it, and a bad code just means the free plan.
               ...(inviteCode ? { invite_code: inviteCode } : {}),
+              // Which campaign link or Yooits page brought them (mkt_*), if any.
+              ...signupAttribution(),
             },
           },
         });

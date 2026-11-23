@@ -1,5 +1,7 @@
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 
+import { useEffect } from "react";
+import { captureTouch } from "@/lib/marketing/attribution";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -67,5 +69,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function RootComponent() {
+  // Remember the first campaign link someone arrived from, for sign-up attribution.
+  useEffect(() => captureTouch(), []);
   return <Outlet />;
 }
