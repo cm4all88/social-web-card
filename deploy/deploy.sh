@@ -30,6 +30,13 @@ set -a
 [ -f "deploy/environments/$ENV_NAME.secrets.local" ] && . "deploy/environments/$ENV_NAME.secrets.local"
 set +a
 export YOOITS_ENV=$ENV_NAME
+# yooits.me is the Vercel production deployment of main. Chris approved live
+# Stripe for Yooits on Nov 22, so its build may hold the live key. The key alone
+# sells nothing: PLUS_LIVE_MODE_APPROVED and STRIPE_LIVE_MODE_APPROVED decide at
+# runtime, and this script never sets either.
+if [ "${VERCEL:-}" = 1 ] && [ "${VERCEL_ENV:-}" = production ] && [ "${VERCEL_GIT_COMMIT_REF:-}" = main ]; then
+  ALLOW_STRIPE_LIVE=yes
+fi
 if [ "${SEED_TEST_ACCOUNTS:-}" = true ]; then SEED_TEST_DATA=yes; fi
 GATE=no
 case "${PASSWORD_PROTECT:-no}" in
