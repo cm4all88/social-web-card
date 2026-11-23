@@ -91,6 +91,9 @@ function DashboardPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [restriction, setRestriction] = useState<"suspended" | "unpublished" | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  // The username as saved, so an unchanged name isn't re-checked: the official
+  // account keeps a protected name the owner assigned.
+  const [savedUsername, setSavedUsername] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [links, setLinks] = useState<ManagedLink[]>([]);
@@ -194,6 +197,7 @@ function DashboardPage() {
       ]);
 
       setProfile(prof as Profile | null);
+      setSavedUsername((prof as Profile | null)?.username ?? null);
       const admin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
       setIsAdmin(admin);
       setLinks(
@@ -233,7 +237,8 @@ function DashboardPage() {
   const saveProfile = async () => {
     if (!profile) return;
     const username = normalizeUsername(profile.username ?? "");
-    const problem = usernameError(username);
+    const changed = username !== savedUsername;
+    const problem = changed ? usernameError(username) : null;
     if (problem) {
       toast.error(problem);
       return;
@@ -242,7 +247,7 @@ function DashboardPage() {
     const { error } = await supabase
       .from("profiles")
       .update({
-        username,
+        ...(changed ? { username } : {}),
         display_name: profile.display_name,
         bio: profile.bio,
         theme: profile.theme ?? "midnight",
@@ -261,6 +266,7 @@ function DashboardPage() {
       return;
     }
     setProfile({ ...profile, username });
+    setSavedUsername(username);
     toast.success("Profile saved");
     rewards.refresh();
   };
