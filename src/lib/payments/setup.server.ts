@@ -417,7 +417,9 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
   }
 
   // 2. The billing portal: the one Set up recorded, else the account's own, else a new one.
-  const stored = await rows(livemode);
+  // Only what Set up recorded for this Stripe account: after the key moves to
+  // another account, its saved portal and webhook rows are made again here.
+  const stored = (await rows(livemode)).filter((r) => r.stripe_account_id === account.id);
   const portalRow = stored.find((r) => r.item === "portal_configuration");
   const portalParams = portalConfigurationParams(
     base,
