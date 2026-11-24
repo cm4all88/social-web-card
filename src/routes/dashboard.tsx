@@ -1,3 +1,5 @@
+import { PageSections } from "@/components/dashboard/PageSections";
+import { profileBlocks, type ProfileBlock } from "@/lib/profile-blocks";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { ProfileQrStudio } from "@/components/profile/ProfileQrStudio";
 import { ProfileQrCode } from "@/components/profile/ProfileQrCode";
@@ -86,6 +88,7 @@ type Profile = {
   bio: string | null;
   avatar_url: string | null;
   avatar_gallery?: string[] | null;
+  profile_blocks?: string[] | null;
   avatar_size?: number;
   skin_intensity?: string;
   bio_alignment?: string;
@@ -110,6 +113,7 @@ function DashboardPage() {
   // The username as saved, so an unchanged name isn't re-checked: the official
   // account keeps a protected name the owner assigned.
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
+  const [savingBlocks, setSavingBlocks] = useState(false);
   const [savingPresentation, setSavingPresentation] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -425,6 +429,50 @@ function DashboardPage() {
     ? `${typeof window === "undefined" ? "https://yooits.me" : window.location.origin}/${profile.username}`
     : "";
 
+  const blocks = profileBlocks(profile?.profile_blocks);
+  const postsAvailable =
+    creatorSubs.visible &&
+    creatorSubs.enabled &&
+    !!creatorSubs.monetization &&
+    !creatorSubs.monetization.suspended;
+  const editBlock = (block: ProfileBlock) => {
+    if (block === "wishlists") {
+      void navigate({ to: "/dashboard/wishlists" });
+      return;
+    }
+    setTab(block === "posts" ? "creator" : block);
+  };
+  const saveBlocks = async (next: ProfileBlock[], added?: ProfileBlock) => {
+    if (!profile || profile.profile_blocks === undefined || savingBlocks) return;
+    setSavingBlocks(true);
+    try {
+      const previous = profile.profile_blocks;
+      const write = supabase
+        .from("profiles")
+        .update({ profile_blocks: next })
+        .eq("user_id", profile.user_id);
+      const guarded =
+        previous === null
+          ? write.is("profile_blocks", null)
+          : write.filter("profile_blocks", "eq", `{${previous.join(",")}}`);
+      const { data, error } = await guarded.select("profile_blocks").maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data)
+        throw new Error("Your layout changed in another tab. Refresh the dashboard and try again.");
+      setProfile((current) =>
+        current?.user_id === profile.user_id
+          ? { ...current, profile_blocks: data.profile_blocks }
+          : current,
+      );
+      toast.success("Page layout saved");
+      if (added) editBlock(added);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the layout.");
+    } finally {
+      setSavingBlocks(false);
+    }
+  };
+
   const copyShareLink = async () => {
     if (!profile) return;
     try {
@@ -439,7 +487,10 @@ function DashboardPage() {
 
   // A published page (has at least one link) that hasn't been shared yet gets the prompt.
   const livePage =
-    !!profile && !restriction && links.some((l) => l.enabled && l.url.trim().length > 0);
+    !!profile &&
+    !restriction &&
+    blocks.includes("links") &&
+    links.some((l) => l.enabled && l.url.trim().length > 0);
   useEffect(() => {
     if (!livePage || !shareKey) return;
     try {
@@ -619,6 +670,16 @@ function DashboardPage() {
               ? "Your account is suspended by Yooits.me. Your page is hidden and changes are turned off. Your information hasn't been deleted."
               : "Your page is unpublished by Yooits.me, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
+        )}
+
+        {profile?.profile_blocks !== undefined && restriction !== "suspended" && (
+          <PageSections
+            blocks={blocks}
+            busy={savingBlocks}
+            postsAvailable={postsAvailable}
+            onChange={(next, added) => void saveBlocks(next, added)}
+            onEdit={editBlock}
+          />
         )}
 
         {/* Sections: scrolls sideways on small screens, sticks while you scroll */}

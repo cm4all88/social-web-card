@@ -1,3 +1,8 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { profileBlocks } from "@/lib/profile-blocks";
+import { ProfileWishlists, type WishlistSummary } from "@/components/profile/ProfileWishlists";
+import { CreatorPosts } from "@/components/creator/CreatorPosts";
 import {
   ProfileBody,
   ProfileCards,
@@ -5,7 +10,7 @@ import {
   ProfileSurface,
   type ProfileLink,
 } from "@/components/profile/ProfilePresentation";
-import { getTheme, type ThemeTokens } from "@/lib/themes";
+import { buttonRadiusFor, getTheme, type ThemeTokens } from "@/lib/themes";
 import { safeBackgroundUrl } from "@/lib/backgrounds";
 import { useSkinState } from "@/components/skins/SkinPicker";
 import { resolveSkin } from "@/lib/skins";
@@ -27,6 +32,7 @@ export function PagePreview({
     display_name: string | null;
     avatar_url: string | null;
     avatar_gallery?: string[] | null;
+    profile_blocks?: string[] | null;
     avatar_size?: number | null;
     skin_intensity?: string;
     bio_alignment?: string | null;
@@ -42,6 +48,26 @@ export function PagePreview({
   rewards: RewardKey[];
 }) {
   const state = useSkinState(profile.user_id);
+  const [wishlists, setWishlists] = useState<WishlistSummary[]>([]);
+  const blocks = profileBlocks(profile.profile_blocks);
+  const showWishlists = blocks.includes("wishlists");
+  useEffect(() => {
+    if (!showWishlists) return;
+    let current = true;
+    void supabase
+      .from("wishlists")
+      .select("id,slug,title,occasion")
+      .eq("user_id", profile.user_id)
+      .eq("visibility", "public")
+      .eq("show_on_profile", true)
+      .order("display_order", { ascending: true })
+      .then(({ data }) => {
+        if (current) setWishlists(data ?? []);
+      });
+    return () => {
+      current = false;
+    };
+  }, [profile.user_id, showWishlists]);
   const unlocked = rewards.some((key) => themeForReward(key).key === profile.theme);
   const theme = getTheme(profile.theme, profile.custom_theme, { plus: isPlus, unlocked });
   const skin = resolveSkin({
@@ -78,7 +104,37 @@ export function PagePreview({
                 bioAlignment={profile.bio_alignment}
                 theme={theme}
               />
-              <ProfileCards links={links} sections={sections} theme={theme} skin={skin} preview />
+              {blocks.map((block) => {
+                if (block === "links")
+                  return (
+                    <ProfileCards
+                      key={block}
+                      links={links}
+                      sections={sections}
+                      theme={theme}
+                      skin={skin}
+                      preview
+                    />
+                  );
+                if (block === "wishlists")
+                  return (
+                    <ProfileWishlists
+                      key={block}
+                      lists={wishlists}
+                      username={profile.username}
+                      theme={theme}
+                    />
+                  );
+                return (
+                  <CreatorPosts
+                    key={block}
+                    username={profile.username}
+                    theme={theme}
+                    radius={buttonRadiusFor(theme.buttonStyle)}
+                    outline={theme.buttonStyle === "outline"}
+                  />
+                );
+              })}
             </ProfileBody>
           </ProfileSurface>
         </div>

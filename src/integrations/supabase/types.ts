@@ -127,6 +127,7 @@ export type Database = {
           avatar_url: string | null
           avatar_size: number
           avatar_gallery: string[]
+          profile_blocks: string[] | null
           bio_alignment: string
           skin_intensity: string
           bio: string | null
@@ -143,6 +144,7 @@ export type Database = {
           avatar_url?: string | null
           avatar_size?: number
           avatar_gallery?: string[]
+          profile_blocks?: string[] | null
           bio_alignment?: string
           skin_intensity?: string
           bio?: string | null
@@ -159,6 +161,7 @@ export type Database = {
           avatar_url?: string | null
           avatar_size?: number
           avatar_gallery?: string[]
+          profile_blocks?: string[] | null
           bio_alignment?: string
           skin_intensity?: string
           bio?: string | null

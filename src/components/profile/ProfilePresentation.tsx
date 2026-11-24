@@ -174,7 +174,7 @@ export function ProfileCards({
   const radius = buttonRadiusFor(theme.buttonStyle);
   const frame = skin?.frame;
   return (
-    <section className="mt-10 w-full space-y-3">
+    <section aria-label="Links" className="mt-10 w-full space-y-3">
       {loading ? (
         <div className="space-y-3">
           {[0, 1, 2].map((i) => (

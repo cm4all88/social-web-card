@@ -1,7 +1,9 @@
+import { profileBlocks } from "@/lib/profile-blocks";
+import { ProfileWishlists, type WishlistSummary } from "@/components/profile/ProfileWishlists";
 import { MessageButton } from "@/components/messages/MessageButton";
 import { captureReferrer } from "@/lib/marketing/attribution";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { Fragment, lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ProfileBody,
@@ -12,7 +14,7 @@ import {
 } from "@/components/profile/ProfilePresentation";
 import { type LinkSection } from "@/lib/links/groups";
 import { getTheme, isRewardTheme, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
-import { Gift, Heart, Share2, UserPlus } from "lucide-react";
+import { Heart, Share2, UserPlus } from "lucide-react";
 import { trackedProfileUrl } from "@/lib/share/links";
 import { recordShare } from "@/lib/share/track";
 import { TipPanel, type PublicTipConfig } from "@/components/tipping/TipPanel";
@@ -111,6 +113,7 @@ type Profile = {
   bio: string | null;
   avatar_url: string | null;
   avatar_gallery?: string[] | null;
+  profile_blocks?: string[] | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
@@ -120,7 +123,6 @@ type Profile = {
   skin_intensity?: string;
   bio_alignment?: string | null;
 };
-type WishlistSummary = { id: string; slug: string; title: string; occasion: string | null };
 
 function ProfilePage() {
   const { username } = Route.useParams();
@@ -250,6 +252,46 @@ function ProfilePage() {
     setShareOpen(true);
   };
 
+  const blocks = profileBlocks(profile?.profile_blocks);
+  const supportActions = (
+    <>
+      {tipConfig && (
+        <section className="mt-6 w-full">
+          {tipOpen ? (
+            <TipPanel config={tipConfig} theme={theme} source="profile" />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setTipOpen(true)}
+              className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
+              style={{
+                background: theme.accent,
+                color: readableTextOn(theme.accent),
+                borderColor: theme.accent,
+                borderRadius: radius,
+              }}
+            >
+              <Heart className="h-5 w-5" /> {tipConfig.buttonText}
+            </button>
+          )}
+        </section>
+      )}
+
+      {subTotal !== null && (
+        <section className="mt-6 w-full">
+          <Link
+            to="/$username/subscribe"
+            params={{ username: profile?.username ?? username }}
+            className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
+            style={{ borderColor: theme.accent, color: theme.accent, borderRadius: radius }}
+          >
+            <UserPlus className="h-5 w-5" /> Subscribe · {formatUsd(subTotal)}/month
+          </Link>
+        </section>
+      )}
+    </>
+  );
+
   return (
     <ProfileSurface theme={theme} skin={skin} background={bg} motion={profile?.skin_intensity}>
       {preview && (
@@ -310,86 +352,42 @@ function ProfilePage() {
           />
         )}
 
-        <ProfileCards
-          links={links}
-          sections={sections}
-          loading={loading}
-          theme={theme}
-          skin={skin}
-          onLinkClick={(linkId) =>
-            trackVisit("link_click", profile?.user_id, { username: profile?.username, linkId })
-          }
-        />
-
-        {tipConfig && (
-          <section className="mt-6 w-full">
-            {tipOpen ? (
-              <TipPanel config={tipConfig} theme={theme} source="profile" />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setTipOpen(true)}
-                className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
-                style={{
-                  background: theme.accent,
-                  color: readableTextOn(theme.accent),
-                  borderColor: theme.accent,
-                  borderRadius: radius,
-                }}
-              >
-                <Heart className="h-5 w-5" /> {tipConfig.buttonText}
-              </button>
+        {blocks.length === 0 && supportActions}
+        {blocks.map((block, index) => (
+          <Fragment key={block}>
+            {block === "links" && (
+              <ProfileCards
+                links={links}
+                sections={sections}
+                loading={loading}
+                theme={theme}
+                skin={skin}
+                onLinkClick={(linkId) =>
+                  trackVisit("link_click", profile?.user_id, {
+                    username: profile?.username,
+                    linkId,
+                  })
+                }
+              />
             )}
-          </section>
-        )}
-
-        {subTotal !== null && (
-          <section className="mt-6 w-full">
-            <Link
-              to="/$username/subscribe"
-              params={{ username: profile?.username ?? username }}
-              className="flex w-full items-center justify-center gap-2 border p-4 font-semibold transition-all hover:-translate-y-0.5"
-              style={{ borderColor: theme.accent, color: theme.accent, borderRadius: radius }}
-            >
-              <UserPlus className="h-5 w-5" /> Subscribe · {formatUsd(subTotal)}/month
-            </Link>
-          </section>
-        )}
-
-        {wishlists.length > 0 && (
-          <section className="mt-6 w-full space-y-3">
-            {wishlists.map((w) => (
-              <Link
-                key={w.id}
-                to="/$username/wishlist/$slug"
-                params={{ username: profile?.username ?? username, slug: w.slug }}
-                className="flex items-center gap-4 border p-4 transition-all hover:-translate-y-0.5"
-                style={{
-                  background: theme.buttonStyle === "outline" ? "transparent" : theme.card,
-                  color: theme.cardForeground,
-                  borderColor: theme.border,
-                  borderRadius: radius,
-                }}
-              >
-                <Gift className="h-6 w-6 shrink-0" style={{ color: theme.accent }} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate font-semibold">{w.title}</div>
-                  {w.occasion && <div className="text-xs opacity-70">{w.occasion}</div>}
-                </div>
-                <span className="text-xs opacity-70">View list →</span>
-              </Link>
-            ))}
-          </section>
-        )}
-
-        {profile && (
-          <CreatorPosts
-            username={profile.username}
-            theme={theme}
-            radius={radius}
-            outline={theme.buttonStyle === "outline"}
-          />
-        )}
+            {block === "wishlists" && (
+              <ProfileWishlists
+                lists={wishlists}
+                username={profile?.username ?? username}
+                theme={theme}
+              />
+            )}
+            {block === "posts" && profile && (
+              <CreatorPosts
+                username={profile.username}
+                theme={theme}
+                radius={radius}
+                outline={theme.buttonStyle === "outline"}
+              />
+            )}
+            {index === 0 && supportActions}
+          </Fragment>
+        ))}
 
         {showBranding && (
           <Link
