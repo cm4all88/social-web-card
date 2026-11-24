@@ -1,4 +1,4 @@
-import { QRCodeSVG } from "qrcode.react";
+import { ProfileQrCode } from "@/components/profile/ProfileQrCode";
 import { MessagesNavButton } from "@/components/messages/MessagesNavButton";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -536,25 +536,13 @@ function DashboardPage() {
                 </Button>
               </div>
               <div className="mt-4 flex flex-1 items-center justify-center">
-                <QRCodeSVG
-                  value={profileUrl}
-                  title={`Scan to open @${profile.username}'s profile`}
-                  size={176}
-                  level="H"
-                  marginSize={4}
-                  className="h-auto max-w-full rounded-lg"
-                  imageSettings={{
-                    src: "/email/yooits-logo.png",
-                    width: 34,
-                    height: 29,
-                    excavate: true,
-                  }}
-                />
+                <ProfileQrCode url={profileUrl} />
               </div>
             </div>
             <div className={showPreview ? "mx-auto w-44" : "hidden sm:block"}>
               <PagePreview
                 profile={profile}
+                qrUrl={profileUrl}
                 links={links}
                 sections={sections}
                 isPlus={isPlus}

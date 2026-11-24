@@ -89,6 +89,7 @@ export function ProfileIdentity({
   username,
   avatar,
   avatarGallery,
+  qrUrl,
   bio,
   avatarSize,
   bioAlignment,
@@ -99,6 +100,7 @@ export function ProfileIdentity({
   username: string;
   avatar?: string | null;
   avatarGallery?: string[] | null;
+  qrUrl?: string;
   bio?: string | null;
   avatarSize?: number | null;
   bioAlignment?: string | null;
@@ -114,6 +116,7 @@ export function ProfileIdentity({
       <ProfileAvatars
         avatar={avatar}
         gallery={avatarGallery}
+        qrUrl={qrUrl}
         name={name}
         size={size}
         theme={theme}

@@ -14,11 +14,13 @@ import type { LinkSection } from "@/lib/links/groups";
 
 export function PagePreview({
   profile,
+  qrUrl,
   links,
   sections,
   isPlus,
   rewards,
 }: {
+  qrUrl?: string;
   profile: {
     user_id: string;
     username: string;
@@ -70,6 +72,7 @@ export function PagePreview({
                 username={profile.username}
                 avatar={profile.avatar_url}
                 avatarGallery={profile.avatar_gallery}
+                qrUrl={qrUrl}
                 avatarSize={profile.avatar_size}
                 bio={profile.bio}
                 bioAlignment={profile.bio_alignment}

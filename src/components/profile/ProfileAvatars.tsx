@@ -1,6 +1,7 @@
+import { ProfileQrCode } from "./ProfileQrCode";
 import { useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
-import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play, QrCode } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { usePrefersReducedMotion } from "@/components/skins/SkinLayer";
 import type { ThemeTokens } from "@/lib/themes";
@@ -8,6 +9,7 @@ import type { ThemeTokens } from "@/lib/themes";
 export function ProfileAvatars({
   avatar,
   gallery,
+  qrUrl,
   name,
   size,
   theme,
@@ -15,13 +17,16 @@ export function ProfileAvatars({
 }: {
   avatar?: string | null;
   gallery?: string[] | null;
+  qrUrl?: string;
   name: string;
   size: number;
   theme: ThemeTokens;
   interactive?: boolean;
 }) {
   const photos = [...new Set([avatar, ...(gallery ?? [])].filter((url): url is string => !!url))];
-  const multiple = photos.length > 1;
+  const portraits = photos.length ? photos : [null];
+  const slideCount = portraits.length + (qrUrl ? 1 : 0);
+  const multiple = slideCount > 1;
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(true);
   const [hovered, setHovered] = useState(false);
@@ -31,7 +36,14 @@ export function ProfileAvatars({
   const reduced = usePrefersReducedMotion();
   const [viewport, api] = useEmblaCarousel({ loop: true, active: multiple, watchDrag: multiple });
   const rotating =
-    !!interactive && multiple && playing && !reduced && !hovered && !focused && !openPhoto;
+    !!interactive &&
+    photos.length > 1 &&
+    current < portraits.length &&
+    playing &&
+    !reduced &&
+    !hovered &&
+    !focused &&
+    !openPhoto;
 
   useEffect(() => {
     if (!api) return;
@@ -53,7 +65,7 @@ export function ProfileAvatars({
 
   const navigate = (offset: number) => {
     if (!api) return;
-    const next = (api.selectedScrollSnap() + offset + photos.length) % photos.length;
+    const next = (api.selectedScrollSnap() + offset + slideCount) % slideCount;
     api.scrollTo(next, reduced);
   };
   const frame = {
@@ -64,7 +76,7 @@ export function ProfileAvatars({
   const portraitClass =
     "flex h-full w-full items-center justify-center overflow-hidden rounded-full text-3xl font-bold";
   const portraitStyle = { background: theme.card, color: theme.cardForeground };
-  if (!photos.length) {
+  if (!photos.length && !qrUrl) {
     return (
       <div className="mb-5 aspect-square rounded-full p-1" style={frame}>
         <div className={portraitClass} style={portraitStyle}>
@@ -75,13 +87,15 @@ export function ProfileAvatars({
   }
   const arrow =
     "grid size-8 shrink-0 place-items-center rounded-full border hover:opacity-100 opacity-70";
-  const active = Math.min(current, photos.length - 1);
+  const active = Math.min(current, slideCount - 1);
+  const qrActive = active === portraits.length;
+  const rounding = qrActive ? "rounded-xl" : "rounded-full";
   const content = (
     <div
       className="mb-5 flex w-full flex-col items-center gap-2"
       role={multiple ? "region" : undefined}
       aria-roledescription={multiple ? "carousel" : undefined}
-      aria-label={multiple ? `${name}'s profile photos` : undefined}
+      aria-label={multiple ? `${name}'s profile photos and QR code` : undefined}
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocusCapture={() => setFocused(true)}
@@ -99,20 +113,31 @@ export function ProfileAvatars({
           <button
             type="button"
             className={arrow}
-            aria-label="Previous profile photo"
+            aria-label="Previous profile slide"
             onClick={() => navigate(-1)}
           >
             <ChevronLeft aria-hidden="true" className="size-4" />
           </button>
         )}
-        <div data-avatar-frame className="min-w-0 rounded-full p-1" style={frame}>
+        <div data-avatar-frame className={`min-w-0 p-1 ${rounding}`} style={frame}>
           <div
             ref={viewport}
-            className="aspect-square overflow-hidden rounded-full"
+            className={`aspect-square overflow-hidden ${rounding}`}
             style={portraitStyle}
           >
             <div className="flex h-full touch-pan-y">
-              {photos.map((photo, index) => {
+              {portraits.map((photo, index) => {
+                if (!photo) {
+                  return (
+                    <div
+                      key="initial"
+                      className={`min-w-0 flex-[0_0_100%] ${portraitClass}`}
+                      aria-hidden={index !== active}
+                    >
+                      {name.slice(0, 1).toUpperCase()}
+                    </div>
+                  );
+                }
                 const picture = (
                   <img
                     src={photo}
@@ -131,7 +156,9 @@ export function ProfileAvatars({
                     }}
                     key={photo}
                     aria-label={
-                      multiple ? `Enlarge photo ${index + 1} of ${name}` : `Enlarge ${name}'s photo`
+                      photos.length > 1
+                        ? `Enlarge photo ${index + 1} of ${name}`
+                        : `Enlarge ${name}'s photo`
                     }
                     aria-hidden={index !== active}
                     tabIndex={index === active ? 0 : -1}
@@ -149,6 +176,30 @@ export function ProfileAvatars({
                   </div>
                 );
               })}
+              {qrUrl &&
+                (interactive ? (
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-label="Enlarge profile QR code"
+                    aria-hidden={!qrActive}
+                    tabIndex={qrActive ? 0 : -1}
+                    className="grid h-full min-w-0 flex-[0_0_100%] cursor-zoom-in place-items-center bg-white"
+                    onClick={(event) => {
+                      clicked.current = event.currentTarget;
+                      setOpenPhoto("qr");
+                    }}
+                  >
+                    <ProfileQrCode url={qrUrl} size={size - 8} />
+                  </button>
+                ) : (
+                  <div
+                    className="grid h-full min-w-0 flex-[0_0_100%] place-items-center bg-white"
+                    aria-hidden={!qrActive}
+                  >
+                    <ProfileQrCode url={qrUrl} size={size - 8} />
+                  </div>
+                ))}
             </div>
           </div>
         </div>
@@ -156,7 +207,7 @@ export function ProfileAvatars({
           <button
             type="button"
             className={arrow}
-            aria-label="Next profile photo"
+            aria-label="Next profile slide"
             onClick={() => navigate(1)}
           >
             <ChevronRight aria-hidden="true" className="size-4" />
@@ -166,17 +217,29 @@ export function ProfileAvatars({
       {multiple && (
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5" aria-hidden="true">
-            {photos.map((photo, index) => (
+            {Array.from({ length: slideCount }, (_, index) => (
               <span
-                key={photo}
+                key={index}
                 className={`size-1.5 rounded-full bg-current ${index === active ? "opacity-100" : "opacity-30"}`}
               />
             ))}
           </div>
           <span className="sr-only" aria-live={rotating ? "off" : "polite"}>
-            Photo {active + 1} of {photos.length}
+            {qrActive ? "Profile QR code" : `Photo ${active + 1} of ${portraits.length}`}
           </span>
-          {interactive && !reduced && (
+          {qrActive && interactive && <span className="text-xs">Scan or tap to enlarge</span>}
+          {qrUrl && (
+            <button
+              type="button"
+              aria-label="Show profile QR code"
+              aria-pressed={qrActive}
+              className="grid size-7 place-items-center rounded-full border opacity-70 hover:opacity-100"
+              onClick={() => api?.scrollTo(portraits.length, reduced)}
+            >
+              <QrCode aria-hidden="true" className="size-3.5" />
+            </button>
+          )}
+          {interactive && photos.length > 1 && !reduced && !qrActive && (
             <button
               type="button"
               aria-label={playing ? "Pause profile photos" : "Play profile photos"}
@@ -209,12 +272,25 @@ export function ProfileAvatars({
           clicked.current?.focus();
         }}
       >
-        <DialogTitle className="sr-only">{name}'s profile photo</DialogTitle>
-        <img
-          src={openPhoto ?? photos[active]}
-          alt={name}
-          className="max-h-[75vh] w-full rounded-lg object-contain"
-        />
+        {openPhoto === "qr" && qrUrl ? (
+          <>
+            <DialogTitle className="text-center">Profile QR code</DialogTitle>
+            <div className="mx-auto mt-2 w-fit">
+              <ProfileQrCode url={qrUrl} size={300} />
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogTitle className="sr-only">{name}'s profile photo</DialogTitle>
+            {openPhoto && (
+              <img
+                src={openPhoto}
+                alt={name}
+                className="max-h-[75vh] w-full rounded-lg object-contain"
+              />
+            )}
+          </>
+        )}
       </DialogContent>
     </Dialog>
   ) : (

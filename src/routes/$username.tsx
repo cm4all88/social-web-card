@@ -291,6 +291,11 @@ function ProfilePage() {
           username={profile?.username ?? username}
           avatar={profile?.avatar_url}
           avatarGallery={profile?.avatar_gallery}
+          qrUrl={
+            profile
+              ? `${typeof window === "undefined" ? "https://yooits.me" : window.location.origin}/${profile.username}`
+              : undefined
+          }
           bio={profile?.bio}
           avatarSize={profile?.avatar_size}
           bioAlignment={profile?.bio_alignment}
