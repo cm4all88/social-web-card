@@ -1,3 +1,5 @@
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { ProfileQrStudio } from "@/components/profile/ProfileQrStudio";
 import { ProfileQrCode } from "@/components/profile/ProfileQrCode";
 import { MessagesNavButton } from "@/components/messages/MessagesNavButton";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
@@ -536,7 +538,24 @@ function DashboardPage() {
                 </Button>
               </div>
               <div className="mt-4 flex flex-1 items-center justify-center">
-                <ProfileQrCode url={profileUrl} />
+                <Dialog>
+                  <DialogTrigger
+                    className="cursor-zoom-in rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4"
+                    aria-label="Customize your profile QR code"
+                  >
+                    <ProfileQrCode url={profileUrl} />
+                  </DialogTrigger>
+                  <DialogContent className="max-h-[90dvh] w-[min(95vw,48rem)] max-w-none overflow-y-auto">
+                    <ProfileQrStudio
+                      url={profileUrl}
+                      username={profile.username}
+                      theme={getTheme(profile.theme, profile.custom_theme, {
+                        plus: isPlus,
+                        unlocked: true,
+                      })}
+                    />
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             <div className={showPreview ? "mx-auto w-44" : "hidden sm:block"}>

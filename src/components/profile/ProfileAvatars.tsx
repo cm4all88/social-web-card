@@ -1,3 +1,4 @@
+import { ProfileQrStudio } from "./ProfileQrStudio";
 import { ProfileQrCode } from "./ProfileQrCode";
 import { useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
@@ -266,19 +267,22 @@ export function ProfileAvatars({
     >
       {content}
       <DialogContent
-        className="max-w-[min(90vw,36rem)] p-4"
+        className={
+          openPhoto === "qr"
+            ? "max-h-[90dvh] w-[min(95vw,48rem)] max-w-none overflow-y-auto"
+            : "max-w-[min(90vw,36rem)] p-4"
+        }
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           clicked.current?.focus();
         }}
       >
         {openPhoto === "qr" && qrUrl ? (
-          <>
-            <DialogTitle className="text-center">Profile QR code</DialogTitle>
-            <div className="mx-auto mt-2 w-fit">
-              <ProfileQrCode url={qrUrl} size={300} />
-            </div>
-          </>
+          <ProfileQrStudio
+            url={qrUrl}
+            username={decodeURIComponent(new URL(qrUrl).pathname.slice(1))}
+            theme={theme}
+          />
         ) : (
           <>
             <DialogTitle className="sr-only">{name}'s profile photo</DialogTitle>
