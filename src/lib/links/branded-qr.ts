@@ -1,10 +1,7 @@
 import { create, type QRCodeOptions } from "qrcode";
 
 export const QR_DESIGNS = {
-  outline: "A. Outlined Yo",
-  gradient: "B. Integrated Gradient Yo",
-  negative: "C. Negative Space Yo",
-  signature: "D. Signature Yo",
+  signature: "Yo silhouette",
   standard: "Standard QR",
 } as const;
 

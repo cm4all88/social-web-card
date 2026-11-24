@@ -16,9 +16,18 @@ type Props = {
   design?: QrDesign;
   palette?: QrPalette;
   shape?: QrShape;
-  maskPattern?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  version?: number;
 };
+
+const square = (x: number, y: number) => `M${x} ${y}h1v1h-1z`;
+const circle = (x: number, y: number, r: number) =>
+  `M${x + 0.5 - r} ${y + 0.5}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 -${2 * r} 0z`;
+
+function styleModule(x: number, y: number, shape: QrShape) {
+  if (shape === "dot") return circle(x, y, 0.42);
+  if (shape === "rounded")
+    return `M${x + 0.22} ${y + 0.06}h.56q.16 0 .16 .16v.56q0 .16 -.16 .16h-.56q-.16 0 -.16 -.16v-.56q0 -.16 .16 -.16z`;
+  return square(x, y);
+}
 
 export function ProfileQrCode({
   url,
@@ -26,19 +35,17 @@ export function ProfileQrCode({
   design = "signature",
   palette = SIGNATURE_PALETTE,
   shape = "square",
-  maskPattern = 0,
-  version,
 }: Props) {
   const id = useId();
   const code = useMemo(() => {
     try {
-      return createProfileMatrix(url, { version, maskPattern });
+      return createProfileMatrix(url, { maskPattern: 0 });
     } catch {
       return null;
     }
-  }, [url, version, maskPattern]);
+  }, [url]);
   const css = "block h-auto max-w-full";
-  const dense = !!code && size / (code.modules.size + 8) < 2.25;
+  const dense = !!code && size / (code.modules.size + 8) < 3;
   if (design === "standard" || !code || dense || !Object.values(palette).every(validQrInk)) {
     return (
       <QRCodeSVG
@@ -54,41 +61,31 @@ export function ProfileQrCode({
       />
     );
   }
+
   const modules = code.modules;
   const n = modules.size;
   const extent = n + 8;
-  const width = n * (design === "signature" ? 0.91 : 0.83);
-  const scale = width / 96;
-  const mark = {
-    d: YO_MARK,
-    transform: `translate(${(n - width) / 2} ${(n - 66 * scale) / 2}) scale(${scale})`,
-  };
-  const square = (x: number, y: number) => `M${x} ${y}h1v1h-1z`;
-  let dataArea = "";
-  let structure = "";
-  let squares = "";
-  let shaped = "";
+  const scale = (n * 0.98) / 96;
+  const finderArea = `M0 0h8v8h-8zM${n - 8} 0h8v8h-8zM0 ${n - 8}h8v8h-8z`;
+  let finderInk = "";
+  let mutedStructure = "";
+  let mutedDots = "";
+  let yoInk = "";
   for (let y = 0; y < n; y++) {
     for (let x = 0; x < n; x++) {
-      const cell = square(x, y);
-      if (modules.isReserved(y, x)) {
-        if (modules.get(y, x)) structure += cell;
-        continue;
-      }
-      dataArea += cell;
       if (!modules.get(y, x)) continue;
-      squares += cell;
-      if (shape !== "square") {
-        shaped +=
-          shape === "dot"
-            ? `M${x + 0.08} ${y + 0.5}a.42 .42 0 1 0 .84 0a.42 .42 0 1 0 -.84 0z`
-            : `M${x + 0.22} ${y + 0.06}h.56q.16 0 .16 .16v.56q0 .16 -.16 .16h-.56q-.16 0 -.16 -.16v-.56q0 -.16 .16 -.16z`;
+      const finder = (x < 8 && y < 8) || (x >= n - 8 && y < 8) || (x < 8 && y >= n - 8);
+      if (finder) {
+        finderInk += square(x, y);
+      } else if (modules.isReserved(y, x)) {
+        mutedStructure += square(x, y);
+        yoInk += square(x, y);
+      } else {
+        mutedDots += circle(x, y, 0.37);
+        yoInk += styleModule(x, y, shape);
       }
     }
   }
-  const gradient = `url(#${id}-ink)`;
-  const dotPath = shape === "square" ? squares : shaped;
-  const edges = shape === "square" ? "crispEdges" : undefined;
 
   return (
     <svg
@@ -99,19 +96,12 @@ export function ProfileQrCode({
       width={size}
       height={size}
       viewBox={`-4 -4 ${extent} ${extent}`}
-      data-qr-design={design}
+      data-qr-design="signature"
       data-qr-version={code.version}
       data-qr-mask={code.maskPattern}
     >
       <defs>
-        <linearGradient
-          id={`${id}-ink`}
-          gradientUnits="userSpaceOnUse"
-          x1="0"
-          y1="0"
-          x2={n}
-          y2={n * 0.4}
-        >
+        <linearGradient id={`${id}-ink`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={n} y2="0">
           <stop stopColor={palette.start} />
           <stop offset="1" stopColor={palette.end} />
         </linearGradient>
@@ -121,53 +111,27 @@ export function ProfileQrCode({
           x1="0"
           y1="0"
           x2={n}
-          y2={n * 0.4}
+          y2="0"
         >
-          <stop stopColor={palette.start} stopOpacity=".20" />
-          <stop offset="1" stopColor={palette.end} stopOpacity=".20" />
+          <stop stopColor="#e9cafb" />
+          <stop offset="1" stopColor="#c1e2ff" />
         </linearGradient>
         <clipPath id={`${id}-mark`}>
-          <path {...mark} />
-        </clipPath>
-        <clipPath id={`${id}-data`}>
-          <path d={dataArea} />
-        </clipPath>
-        <mask id={`${id}-outline`} maskUnits="userSpaceOnUse" x="0" y="0" width={n} height={n}>
           <path
-            {...mark}
-            fill="none"
-            stroke="white"
-            strokeWidth={design === "negative" ? 5 : 7}
-            strokeLinejoin="round"
+            d={YO_MARK}
+            transform={`translate(${n * 0.01} ${(n - 66 * scale) / 2 + 1}) scale(${scale})`}
           />
-        </mask>
+        </clipPath>
       </defs>
       <rect x="-4" y="-4" width={extent} height={extent} fill="#fff" />
-      <g clipPath={`url(#${id}-data)`}>
-        {design === "outline" && (
-          <rect width={n} height={n} fill={`url(#${id}-wash)`} mask={`url(#${id}-outline)`} />
-        )}
-        {design === "negative" && (
-          <>
-            <rect width={n} height={n} fill="#e4d9f2" />
-            <rect width={n} height={n} fill="white" mask={`url(#${id}-outline)`} />
-          </>
-        )}
-        {design === "signature" && (
-          <rect width={n} height={n} fill={`url(#${id}-wash)`} clipPath={`url(#${id}-mark)`} />
-        )}
+      <path d={mutedStructure} fill="#8c819f" />
+      <path d={mutedDots} fill="#8c819f" />
+      <g clipPath={`url(#${id}-mark)`}>
+        <rect width={n} height={n} fill={`url(#${id}-wash)`} />
+        <path d={yoInk} fill={`url(#${id}-ink)`} />
       </g>
-      <path d={structure} fill={palette.ink} shapeRendering="crispEdges" />
-      <path shapeRendering={edges} d={dotPath} fill={palette.ink} />
-      {design === "outline" && (
-        <path shapeRendering={edges} d={dotPath} fill={gradient} mask={`url(#${id}-outline)`} />
-      )}
-      {design === "gradient" && (
-        <path shapeRendering={edges} d={dotPath} fill={gradient} clipPath={`url(#${id}-mark)`} />
-      )}
-      {design === "signature" && (
-        <path shapeRendering={edges} d={dotPath} fill={gradient} clipPath={`url(#${id}-mark)`} />
-      )}
+      <path d={finderArea} fill="#fff" />
+      <path d={finderInk} fill={palette.ink} />
     </svg>
   );
 }
