@@ -1,3 +1,4 @@
+import { QRCodeSVG } from "qrcode.react";
 import { MessagesNavButton } from "@/components/messages/MessagesNavButton";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -418,11 +419,14 @@ function DashboardPage() {
     markShared();
   };
 
+  const profileUrl = profile
+    ? `${typeof window === "undefined" ? "https://yooits.me" : window.location.origin}/${profile.username}`
+    : "";
+
   const copyShareLink = async () => {
     if (!profile) return;
-    const url = `${window.location.origin}/${profile.username}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await navigator.clipboard.writeText(profileUrl);
       toast.success("Link copied!");
       recordShare(profile.username, "copy");
       onShared();
@@ -496,14 +500,14 @@ function DashboardPage() {
         {profile && (
           <div className="grid gap-4 sm:grid-cols-[1fr_11rem]">
             <div
-              className="rounded-2xl border border-primary/30 p-5"
+              className="flex min-w-0 flex-col rounded-2xl border border-primary/30 p-5"
               style={{ background: "var(--gradient-hero)", boxShadow: "var(--shadow-glow)" }}
             >
               <div className="text-xs font-semibold uppercase tracking-wider text-primary-foreground/80">
                 Your shareable link
               </div>
               <div className="mt-1 break-all text-xl font-bold text-primary-foreground sm:text-2xl">
-                {`${typeof window !== "undefined" ? window.location.host : "yooits.me"}/${profile.username}`}
+                {profileUrl.replace(/^https?:\/\//, "")}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
@@ -530,6 +534,22 @@ function DashboardPage() {
                 >
                   <Eye className="mr-2 h-4 w-4" /> {showPreview ? "Hide preview" : "Preview"}
                 </Button>
+              </div>
+              <div className="mt-4 flex flex-1 items-center justify-center">
+                <QRCodeSVG
+                  value={profileUrl}
+                  title={`Scan to open @${profile.username}'s profile`}
+                  size={176}
+                  level="H"
+                  marginSize={4}
+                  className="h-auto max-w-full rounded-lg"
+                  imageSettings={{
+                    src: "/email/yooits-logo.png",
+                    width: 34,
+                    height: 29,
+                    excavate: true,
+                  }}
+                />
               </div>
             </div>
             <div className={showPreview ? "mx-auto w-44" : "hidden sm:block"}>

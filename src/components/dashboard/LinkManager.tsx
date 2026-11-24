@@ -35,7 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { normalizeLinkValue, linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
+import {
+  acceptsProfileUsername,
+  expandProfileUsername,
+  normalizeProfileAddress,
+} from "@/lib/links/profile-address";
+import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
 import {
   cleanLinkTitle,
   getPlatform,
@@ -161,15 +166,17 @@ export function LinkManager({
     onChanged();
   };
 
+  const acceptsUsername = acceptsProfileUsername(newPlatform);
+  const expandedAddress = expandProfileUsername(newPlatform, newUrl);
   const add = async () => {
     if (adding) return;
     if (!newUrl.trim()) {
       toast.error(`Enter your ${getPlatform(newPlatform).label} link first.`);
       return;
     }
-    const url = normalizeLinkValue(newUrl);
+    const url = normalizeProfileAddress(newPlatform, newUrl);
     if (!url) {
-      toast.error(BAD_URL);
+      toast.error(acceptsUsername ? "Enter a valid username or full link." : BAD_URL);
       return;
     }
     setAdding(true);
@@ -317,9 +324,9 @@ export function LinkManager({
                 void add();
               }
             }}
-            placeholder={getPlatform(newPlatform).hint}
+            placeholder={acceptsUsername ? "@username or full URL" : getPlatform(newPlatform).hint}
             aria-label={`New ${getPlatform(newPlatform).label} link`}
-            inputMode="url"
+            inputMode={acceptsUsername ? "text" : "url"}
             autoCapitalize="off"
             autoCorrect="off"
           />
@@ -327,6 +334,7 @@ export function LinkManager({
             <Plus className="mr-2 h-4 w-4" /> {adding ? "Adding" : "Add"}
           </Button>
         </div>
+        {expandedAddress && <p className="mt-2 break-all text-xs text-muted-foreground">{expandedAddress}</p>}
       </div>
 
       {links.length === 0 && (
@@ -799,10 +807,12 @@ function LinkEditor({
 
   useEffect(() => titleRef.current?.focus(), []);
 
+  const acceptsUsername = acceptsProfileUsername(link.platform);
+  const expandedAddress = expandProfileUsername(link.platform, url);
   const save = async () => {
-    const clean = normalizeLinkValue(url);
+    const clean = url === link.url ? url : normalizeProfileAddress(link.platform, url);
     if (clean === null) {
-      toast.error(BAD_URL);
+      toast.error(acceptsUsername ? "Enter a valid username or full link." : BAD_URL);
       return;
     }
     const patch: Partial<ManagedLink> = {};
@@ -846,17 +856,18 @@ function LinkEditor({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor={`url-${link.id}`}>Address</Label>
+        <Label htmlFor={`url-${link.id}`}>{acceptsUsername ? "Username or address" : "Address"}</Label>
         <Input
           id={`url-${link.id}`}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={onEnter}
-          placeholder={platform.hint}
-          inputMode="url"
+          placeholder={acceptsUsername ? "@username or full URL" : platform.hint}
+          inputMode={acceptsUsername ? "text" : "url"}
           autoCapitalize="off"
           autoCorrect="off"
         />
+        {expandedAddress && <p className="break-all text-xs text-muted-foreground">{expandedAddress}</p>}
       </div>
       <div className="space-y-1.5">
         <Label>Icon</Label>
