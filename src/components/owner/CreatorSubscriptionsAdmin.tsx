@@ -3,7 +3,7 @@
  * price limits and fee rates, review applications and prices, pause a
  * creator, and remove posts. Every change is written to the audit log.
  * Nothing here sells or charges anything: there is no checkout yet, and live
- * creator payments stay off until Stripe approves Yooits' model.
+ * creator payments stay off until Stripe approves Yooits.me's model.
  */
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -348,8 +348,8 @@ function Settings({ s, onSaved }: { s: OwnerCreatorSubscriptionSettings; onSaved
           <Field label="Highest price ($)" value={max} onChange={setMax} />
         </div>
         <div className="mt-3 flex flex-wrap gap-3">
-          <Field label="Yooits fee (%)" value={yPct} onChange={setYPct} placeholder="Not set" />
-          <Field label="Yooits fee ($)" value={yFixed} onChange={setYFixed} placeholder="Not set" />
+          <Field label="Yooits.me fee (%)" value={yPct} onChange={setYPct} placeholder="Not set" />
+          <Field label="Yooits.me fee ($)" value={yFixed} onChange={setYFixed} placeholder="Not set" />
           <Field label="Processing (%)" value={sPct} onChange={setSPct} placeholder="Not set" />
           <Field label="Processing ($)" value={sFixed} onChange={setSFixed} placeholder="Not set" />
         </div>
@@ -361,7 +361,7 @@ function Settings({ s, onSaved }: { s: OwnerCreatorSubscriptionSettings; onSaved
           <p className="mt-2 text-sm">
             For a {formatCents(500)} price: the creator keeps {formatCents(500)}, the subscriber
             pays {formatCents(example.total)} before tax (fee {formatCents(example.serviceFee)}),
-            and Yooits keeps about {formatCents(example.yooitsNet)} after processing.
+            and Yooits.me keeps about {formatCents(example.yooitsNet)} after processing.
           </p>
         ) : (
           someRates && (

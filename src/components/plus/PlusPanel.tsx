@@ -123,9 +123,9 @@ export function PlusPanel({
     const { error } = await supabase.from("profiles").update({ hide_branding: v } as never).eq("user_id", userId);
     if (error) {
       onHideBrandingChange(!v);
-      toast.error(/part of Plus/i.test(error.message) ? "Hiding the Yooits line is part of Plus." : error.message);
+      toast.error(/part of Plus/i.test(error.message) ? "Hiding the Yooits.me line is part of Plus." : error.message);
     } else {
-      toast.success(v ? "The Yooits line is hidden on your page" : "The Yooits line is back on your page");
+      toast.success(v ? "The Yooits.me line is hidden on your page" : "The Yooits.me line is back on your page");
     }
   };
 
@@ -136,7 +136,7 @@ export function PlusPanel({
       className="mt-8 scroll-mt-20 rounded-2xl border border-primary/40 bg-primary/5 p-5"
     >
       <h2 id="plus-heading" className="flex items-center gap-2 text-lg font-bold">
-        <Crown className="h-5 w-5 text-primary" /> Yooits Plus
+        <Crown className="h-5 w-5 text-primary" /> Yooits.me Plus
         {sub?.testMode && <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-normal">Test mode</span>}
       </h2>
 
@@ -144,7 +144,7 @@ export function PlusPanel({
         <p className="mt-1 text-sm">{statusLine(plus)}</p>
       ) : (
         <p className="mt-1 text-sm">
-          Premium themes and the option to hide the Yooits line on your page, for {PLUS_PRICE_LABEL}. Your links stay
+          Premium themes and the option to hide the Yooits.me line on your page, for {PLUS_PRICE_LABEL}. Your links stay
           free and unlimited either way.
         </p>
       )}
@@ -152,8 +152,8 @@ export function PlusPanel({
       {isPlus && (
         <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
           <div>
-            <Label htmlFor="hide-branding" className="font-medium">Hide "Create your free Yooits."</Label>
-            <p className="text-xs text-muted-foreground">Removes the Yooits line at the bottom of your page while you're on Plus.</p>
+            <Label htmlFor="hide-branding" className="font-medium">Hide "Create your free profile on Yooits.me"</Label>
+            <p className="text-xs text-muted-foreground">Removes the Yooits.me line at the bottom of your page while you're on Plus.</p>
           </div>
           <Switch id="hide-branding" checked={hideBranding} onCheckedChange={toggleBranding} />
         </div>

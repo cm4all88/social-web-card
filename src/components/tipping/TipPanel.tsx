@@ -160,7 +160,7 @@ export function TipPanel({ config, theme, source }: Props) {
           <dd>{quote?.ok ? formatUsd(quote.quote.tipCents) : "—"}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="opacity-80">Yooits service fee</dt>
+          <dt className="opacity-80">Yooits.me service fee</dt>
           <dd>{formatUsd(PLATFORM_FEE_CENTS)}</dd>
         </div>
         <div
@@ -172,7 +172,7 @@ export function TipPanel({ config, theme, source }: Props) {
         </div>
       </dl>
       <p className="mt-2 text-xs opacity-60">
-        The service fee goes to Yooits and doesn't come out of your tip. Card processing costs are
+        The service fee goes to Yooits.me and doesn't come out of your tip. Card processing costs are
         taken from the tip by Stripe.
       </p>
 

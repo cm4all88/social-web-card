@@ -1,5 +1,5 @@
 /**
- * One responsive HTML layout for every Yooits email, plus its plain-text
+ * One responsive HTML layout for every Yooits.me email, plus its plain-text
  * twin. Table-based with inline styles so it holds up in Gmail, Outlook
  * (desktop and web), Apple Mail/iCloud and phone apps.
  */
@@ -25,7 +25,7 @@ export type EmailContent = {
 };
 
 export type FooterContext = {
-  /** Why they got it, e.g. "You're getting this because you have a Yooits account." */
+  /** Why they got it, e.g. "You're getting this because you have a Yooits.me account." */
   reason: string;
   /** Present for optional email: one-click unsubscribe from this kind. */
   unsubscribeUrl?: string;
@@ -156,7 +156,7 @@ export function renderHtml(content: EmailContent, footer: FooterContext): string
 <!--[if mso]><table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
 <table role="presentation" class="yo-shell" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;">
 <tr><td align="center" class="yo-pad" style="padding:8px 24px 20px;">
-  <a href="${SITE_URL}" target="_blank" style="text-decoration:none;"><img src="${BRAND.logoUrl}" width="${BRAND.logoWidth}" height="${BRAND.logoHeight}" alt="Yooits" style="display:block;width:${BRAND.logoWidth}px;height:auto;border:0;"></a>
+  <a href="${SITE_URL}" target="_blank" style="text-decoration:none;"><img src="${BRAND.logoUrl}" width="${BRAND.logoWidth}" height="${BRAND.logoHeight}" alt="Yooits.me" style="display:block;width:${BRAND.logoWidth}px;height:auto;border:0;"></a>
 </td></tr>
 <tr><td style="padding:0;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.paper}" style="background:${C.paper};border-radius:16px;border-collapse:separate;overflow:hidden;">

@@ -3,7 +3,7 @@
  * 20261122210000_support_offerings.sql): creators list a real digital
  * offering, the owner approves each version, and only paid buyers receive it.
  * There is no checkout yet, so nothing here sells anything. The creator keeps
- * the whole price; buyers pay the existing Yooits service fee on top.
+ * the whole price; buyers pay the existing Yooits.me service fee on top.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { PLATFORM_FEE_CENTS } from "@/lib/tipping/money";
@@ -83,7 +83,7 @@ export async function loadMySupportOfferings(): Promise<MySupportOfferings> {
   }
 }
 
-/** What a buyer pays for a price: the price, plus the Yooits service fee. */
+/** What a buyer pays for a price: the price, plus the Yooits.me service fee. */
 export function supportTotal(priceCents: number) {
   return { price: priceCents, fee: PLATFORM_FEE_CENTS, total: priceCents + PLATFORM_FEE_CENTS };
 }

@@ -40,7 +40,7 @@ const rpc = (fn: string, args?: Record<string, unknown>) =>
 
 export const Route = createFileRoute("/dashboard_/wishlists")({
   component: WishlistsAdmin,
-  head: () => ({ meta: [{ title: "Your wishlists — Yooits" }] }),
+  head: () => ({ meta: [{ title: "Your wishlists — Yooits.me" }] }),
 });
 
 const blankItem = { name: "", url: "", image_url: "", price_text: "", description: "" };

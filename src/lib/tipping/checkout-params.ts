@@ -4,7 +4,7 @@ import { TIP_CURRENCY, type TipQuote } from "./money";
 /**
  * Stripe Checkout parameters for one tip, created as a DIRECT charge on the
  * creator's connected account (the request is sent with the Stripe-Account
- * header). Visitor pays tip + fee; the fee is taken as Yooits' application
+ * header). Visitor pays tip + fee; the fee is taken as Yooits.me's application
  * fee, so the creator's balance receives the tip minus Stripe's processing fee.
  */
 export function buildTipCheckoutParams(opts: {
@@ -38,15 +38,15 @@ export function buildTipCheckoutParams(opts: {
           currency: TIP_CURRENCY,
           unit_amount: quote.feeCents,
           product_data: {
-            name: "Yooits service fee",
-            description: "A flat fee for Yooits. It doesn't come out of the tip.",
+            name: "Yooits.me service fee",
+            description: "A flat fee for Yooits.me. It doesn't come out of the tip.",
           },
         },
       },
     ],
     payment_intent_data: {
       application_fee_amount: quote.feeCents,
-      description: `Tip for @${handle} via Yooits`,
+      description: `Tip for @${handle} via Yooits.me`,
       metadata: { yooits_tip_id: tipId },
     },
     metadata: { yooits_tip_id: tipId, yooits_creator_user_id: creatorUserId },

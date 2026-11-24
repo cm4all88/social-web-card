@@ -15,7 +15,7 @@ export const MIN_TIP_CENTS = 500;
  */
 export const MAX_TIP_CENTS = 50_000;
 
-/** Flat Yooits service fee added on top of the tip: $0.50. */
+/** Flat Yooits.me service fee added on top of the tip: $0.50. */
 export const PLATFORM_FEE_CENTS = 50;
 
 export const SUGGESTED_TIP_CENTS = [500, 1000, 2000, 5000] as const;

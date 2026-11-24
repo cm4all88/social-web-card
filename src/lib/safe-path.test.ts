@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isSafeNextPath } from "./safe-path";
 
 describe("isSafeNextPath", () => {
-  it("accepts Yooits page paths", () => {
+  it("accepts Yooits.me page paths", () => {
     expect(isSafeNextPath("/mom/wishlist/mias-christmas")).toBe(true);
     expect(isSafeNextPath("/dashboard")).toBe(true);
   });

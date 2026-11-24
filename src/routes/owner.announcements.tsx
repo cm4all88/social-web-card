@@ -119,7 +119,7 @@ function AnnouncementsPage() {
 
   const linkProblem =
     draft.link_url.trim() && !announcementHref(draft.link_url.trim())
-      ? "Use a Yooits path like /dashboard or a full https:// address."
+      ? "Use a Yooits.me path like /dashboard or a full https:// address."
       : null;
 
   const save = async () => {

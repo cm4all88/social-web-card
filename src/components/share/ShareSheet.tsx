@@ -1,5 +1,5 @@
 /**
- * The share sheet for a Yooits page. For the page's owner: copy link, the
+ * The share sheet for a Yooits.me page. For the page's owner: copy link, the
  * phone's own share sheet, each app's real web share screen, honest steps
  * for Instagram, TikTok and Snapchat (which have no web share), downloadable
  * story and post graphics of their real page, and suggested captions. For a
@@ -119,7 +119,7 @@ export function ShareSheet(props: ShareSheetProps) {
   const nativeShare = async () => {
     try {
       await navigator.share({
-        title: `${name} on Yooits`,
+        title: `${name} on Yooits.me`,
         text,
         url: trackedProfileUrl(origin, username, "native"),
       });
@@ -139,7 +139,7 @@ export function ShareSheet(props: ShareSheetProps) {
           <DialogDescription>
             {own
               ? "Put your link where people already find you. Nothing is posted until you post it."
-              : "Send this Yooits page to someone."}
+              : "Send this Yooits.me page to someone."}
           </DialogDescription>
         </DialogHeader>
 

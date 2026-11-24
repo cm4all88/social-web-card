@@ -6,7 +6,7 @@ import { MailNotConnectedError, MailReconnectError } from "@/lib/mail/google.ser
 
 /**
  * Downloads one file from a message in the owner's Gmail. The browser calls
- * this with the owner's Yooits sign-in token; files are always sent as a
+ * this with the owner's Yooits.me sign-in token; files are always sent as a
  * download, never shown as a page.
  */
 export const Route = createFileRoute("/api/owner/mail/attachment")({

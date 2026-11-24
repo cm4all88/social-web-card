@@ -85,7 +85,7 @@ export function codeStateMessage(info: CodeInfo): string {
   switch (info.state) {
     case "ok":
       return plus > 0
-        ? `This code gives you ${months(plus)} of Yooits Plus, free. No card needed, and nothing renews or charges when it ends.`
+        ? `This code gives you ${months(plus)} of Yooits.me Plus, free. No card needed, and nothing renews or charges when it ends.`
         : "Your invite code is ready. It's applied when you create your account.";
     case "already":
       return "Your account has already used this code.";
@@ -102,9 +102,9 @@ export function codeStateMessage(info: CodeInfo): string {
     case "new_only":
       return "This code is for new accounts only.";
     case "existing_only":
-      return "This code is for people who already have a Yooits account. Sign in to use it.";
+      return "This code is for people who already have a Yooits.me account. Sign in to use it.";
     case "paid_plus":
-      return "You already have Yooits Plus, so this code isn't needed.";
+      return "You already have Yooits.me Plus, so this code isn't needed.";
     case "closed":
     case "revoked":
     case "invalid":

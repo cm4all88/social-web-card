@@ -1,5 +1,5 @@
 /**
- * Yooits Plus: what it costs and what a Stripe subscription means for a
+ * Yooits.me Plus: what it costs and what a Stripe subscription means for a
  * creator's plan. No network here, so it can be tested on its own.
  */
 

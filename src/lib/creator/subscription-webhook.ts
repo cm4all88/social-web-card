@@ -5,7 +5,7 @@
  *
  * Creator subscriptions are direct charges on creators' connected accounts,
  * so every event that belongs here carries `account`. Platform events are
- * never claimed here: Yooits Plus uses the same event-claim table.
+ * never claimed here: Yooits.me Plus uses the same event-claim table.
  *
  * Idempotency, as for tips:
  *  1. Every event is claimed atomically before it is handled (claim_stripe_event).
@@ -291,7 +291,7 @@ async function onSubscription(
   const id = metaId(sub);
   let row = id ? await deps.store.getById(id) : null;
   if (!row && subscriptionId) row = await deps.store.getByStripeSubscriptionId(subscriptionId);
-  if (!row) return "not a Yooits creator subscription";
+  if (!row) return "not a Yooits.me creator subscription";
 
   // A late delivery of an older event must not undo a newer state.
   const at = num(event.created);

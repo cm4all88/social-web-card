@@ -196,7 +196,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
   const eligible = eligibility.ok;
   const suspended = !!account?.tipping_suspended_at;
   const tipUrl = `${window.location.origin}/${username}/tip`;
-  const shareText = `Send me a tip on Yooits: ${tipUrl}`;
+  const shareText = `Send me a tip on Yooits.me: ${tipUrl}`;
 
   const run = async (key: string, fn: () => Promise<unknown>) => {
     setBusy(key);
@@ -267,7 +267,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         </span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {copy.help} Visitors pay your tip plus a $0.50 Yooits service fee. Stripe&apos;s card
+        {copy.help} Visitors pay your tip plus a $0.50 Yooits.me service fee. Stripe&apos;s card
         processing fee comes out of the tip, and payouts go to your bank through Stripe.
       </p>
       {status === "restricted" && account?.disabled_reason && (
@@ -278,7 +278,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
 
       {!suspended && !approved && (
         <p className="mt-3 rounded-lg bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
-          Tips go live once Yooits approves your page. You can describe your work and connect Stripe
+          Tips go live once Yooits.me approves your page. You can describe your work and connect Stripe
           now; your tip button appears after approval.
         </p>
       )}
@@ -291,7 +291,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
         <div className="mt-4 grid gap-3 rounded-xl border border-border p-4">
           <div className="text-sm font-medium">What supporters tip you for</div>
           <p className="text-xs text-muted-foreground">
-            Tips on Yooits are for creators and service providers, not personal money transfers.
+            Tips on Yooits.me are for creators and service providers, not personal money transfers.
             Your profile and wishlists work either way.
           </p>
           <div className="space-y-1">
@@ -387,7 +387,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
               onClick={() => {
                 if (
                   !window.confirm(
-                    "Turn off tips and disconnect Stripe from Yooits? Your Stripe account stays open.",
+                    "Turn off tips and disconnect Stripe from Yooits.me? Your Stripe account stays open.",
                   )
                 )
                   return;
@@ -470,7 +470,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
             </Button>
             <Button size="sm" variant="secondary" asChild>
               <a
-                href={`mailto:?subject=${encodeURIComponent("Tip me on Yooits")}&body=${encodeURIComponent(shareText)}`}
+                href={`mailto:?subject=${encodeURIComponent("Tip me on Yooits.me")}&body=${encodeURIComponent(shareText)}`}
               >
                 <Mail className="mr-2 h-4 w-4" /> Email
               </a>
@@ -498,7 +498,7 @@ export function TipsManager({ userId, username }: { userId: string; username: st
                 size="sm"
                 variant="secondary"
                 onClick={() =>
-                  navigator.share({ title: "Tip me on Yooits", url: tipUrl }).catch(() => {})
+                  navigator.share({ title: "Tip me on Yooits.me", url: tipUrl }).catch(() => {})
                 }
               >
                 <Share2 className="mr-2 h-4 w-4" /> More

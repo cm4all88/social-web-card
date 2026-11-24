@@ -1,12 +1,12 @@
 /**
  * Who may receive tips. Stripe supports tips for content or a service that was
- * provided, not personal or peer-to-peer money transfers, so a Yooits user can
+ * provided, not personal or peer-to-peer money transfers, so a Yooits.me user can
  * receive tips only when they:
  *   - say what kind of creator or service provider they are,
  *   - say what supporters are tipping them for,
  *   - confirm tips are for that content or service (not personal gifts),
  *   - have at least one public link on their profile (where their work is), and
- *   - haven't been suspended by a Yooits admin.
+ *   - haven't been suspended by a Yooits.me admin.
  * Everyone keeps normal profiles and wishlists regardless.
  *
  * The values here must match the CHECK constraint on tip_settings.creator_type.
@@ -47,7 +47,7 @@ export const PROBLEM_COPY: Record<EligibilityProblem, string> = {
   offering: `Describe what supporters are tipping you for (${OFFERING_MIN}–${OFFERING_MAX} characters).`,
   attestation: "Confirm that tips are for your content or services.",
   public_link: "Add at least one link to your work on your profile.",
-  suspended: "Tipping has been turned off for this account. Contact Yooits support.",
+  suspended: "Tipping has been turned off for this account. Contact Yooits.me support.",
 };
 
 export function isCreatorType(v: unknown): v is CreatorType {
@@ -70,5 +70,5 @@ export function tipEligibility(
 /** Text Stripe sees on the connected account, to describe the business. */
 export function stripeProductDescription(creatorType: CreatorType, offering: string): string {
   const label = CREATOR_TYPES.find((t) => t.value === creatorType)?.label ?? "Creator";
-  return `Tips from supporters via Yooits. ${label}: ${offering.trim()}`.slice(0, 250);
+  return `Tips from supporters via Yooits.me. ${label}: ${offering.trim()}`.slice(0, 250);
 }

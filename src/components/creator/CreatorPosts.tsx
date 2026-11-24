@@ -3,7 +3,7 @@
  * switched on. Subscriber-only posts arrive from the database as a title and
  * preview alone, and their photos get no link from storage, so nothing paid
  * reaches a visitor's browser. There is no subscribe button: subscriptions
- * can't be bought on Yooits yet.
+ * can't be bought on Yooits.me yet.
  */
 import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";

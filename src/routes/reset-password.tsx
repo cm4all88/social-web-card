@@ -10,7 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
-    meta: [{ title: "Set a new password — Yooits" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Set a new password — Yooits.me" }, { name: "robots", content: "noindex" }],
   }),
 });
 

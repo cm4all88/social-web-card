@@ -42,7 +42,7 @@ function MessagingPage() {
     <div className="max-w-3xl">
       <h1 className="text-3xl font-bold">Messages</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Direct messages between people on Yooits. Each person chooses whether to accept messages,
+        Direct messages between people on Yooits.me. Each person chooses whether to accept messages,
         and only adults who confirm they're 18 or older can turn them on. Admins can use messages
         while they're off for everyone.
       </p>

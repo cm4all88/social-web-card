@@ -1,6 +1,6 @@
 /**
  * First-touch campaign attribution. When someone lands on yooits.me from a
- * campaign link (utm_*), or from someone's Yooits page, that's remembered in
+ * campaign link (utm_*), or from someone's Yooits.me page, that's remembered in
  * this browser for 30 days and sent with their sign-up, so the Marketing
  * Center can count sign-ups, profile completions and paid upgrades per
  * campaign, platform and post. Nothing personal is stored: only the campaign
@@ -70,7 +70,7 @@ export function captureTouch() {
   if (t && !read()) write(t);
 }
 
-/** Call when someone taps "made with Yooits" on a user's page, so the sign-up credits that page. */
+/** Call when someone taps "made with Yooits.me" on a user's page, so the sign-up credits that page. */
 export function captureReferrer(username: string) {
   if (typeof window === "undefined") return;
   const ref = clean(username, 30);

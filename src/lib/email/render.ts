@@ -29,14 +29,14 @@ export class UnknownTemplateError extends Error {}
 export class MarketingNotReadyError extends Error {}
 
 const REASONS: Record<EmailCategory, string> = {
-  account: "You're getting this because you have a Yooits account.",
+  account: "You're getting this because you have a Yooits.me account.",
   security:
-    "This is a security notice about your Yooits account. We send these to keep your account safe.",
-  billing: "You're getting this because of a payment or plan change on your Yooits account.",
-  messages: "You're getting this because someone messaged you on Yooits.",
-  activity: "You're getting this because of activity on your Yooits page.",
-  marketing: "You're getting this because you asked for news from Yooits.",
-  admin: "Owner alert for Yooits. Sent to the admin address set in the Owner Console.",
+    "This is a security notice about your Yooits.me account. We send these to keep your account safe.",
+  billing: "You're getting this because of a payment or plan change on your Yooits.me account.",
+  messages: "You're getting this because someone messaged you on Yooits.me.",
+  activity: "You're getting this because of activity on your Yooits.me page.",
+  marketing: "You're getting this because you asked for news from Yooits.me.",
+  admin: "Owner alert for Yooits.me. Sent to the admin address set in the Owner Console.",
 };
 
 function senderFor(c: EmailCategory): string {

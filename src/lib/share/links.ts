@@ -1,5 +1,5 @@
 /**
- * Sharing a Yooits page: the address to share, the share buttons each app
+ * Sharing a Yooits.me page: the address to share, the share buttons each app
  * really supports on the web, and suggested captions. Pure, so it's tested
  * directly.
  *
@@ -186,5 +186,5 @@ export function suggestedCaptions(opts: {
 
 /** Short text that goes with a share button that takes text. */
 export function shareText(name: string, own: boolean): string {
-  return own ? "Find all my links in one place" : `Check out ${name} on Yooits`;
+  return own ? "Find all my links in one place" : `Check out ${name} on Yooits.me`;
 }

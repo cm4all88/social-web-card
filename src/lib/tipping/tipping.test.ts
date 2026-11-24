@@ -33,7 +33,7 @@ describe("tip amounts", () => {
     expect(PLATFORM_FEE_CENTS).toBe(50);
   });
 
-  it("matches Chris's worked example: $10 tip -> $10.50 charged, $0.50 to Yooits", () => {
+  it("matches Chris's worked example: $10 tip -> $10.50 charged, $0.50 to Yooits.me", () => {
     const q = quoteTip(1000);
     expect(q).toEqual({ ok: true, quote: { tipCents: 1000, feeCents: 50, totalCents: 1050 } });
   });
@@ -84,7 +84,7 @@ describe("Stripe checkout parameters", () => {
     expect(items).toHaveLength(2);
     expect(items[0].price_data?.unit_amount).toBe(1000);
     expect(items[1].price_data?.unit_amount).toBe(50);
-    expect(items[1].price_data?.product_data?.name).toBe("Yooits service fee");
+    expect(items[1].price_data?.product_data?.name).toBe("Yooits.me service fee");
     const total = items.reduce(
       (s, i) => s + (i.price_data?.unit_amount ?? 0) * (i.quantity ?? 0),
       0,
@@ -241,7 +241,7 @@ describe("who can receive tips", () => {
 
   it("describes the business to Stripe from what the creator said", () => {
     expect(stripeProductDescription("artist", " Original songs ")).toBe(
-      "Tips from supporters via Yooits. Artist or musician: Original songs",
+      "Tips from supporters via Yooits.me. Artist or musician: Original songs",
     );
     expect(CREATOR_TYPES.map((t) => t.value)).toEqual([
       "content_creator",

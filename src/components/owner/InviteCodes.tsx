@@ -40,7 +40,7 @@ export function copyText(text: string, what: string) {
 
 async function call<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await rpc<T>(fn, args);
-  if (error) throw new Error(/^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message);
+  if (error) throw new Error(/^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message);
   return data;
 }
 

@@ -12,7 +12,7 @@ import { TipApprovals } from "@/components/owner/TipApprovals";
 export const Route = createFileRoute("/owner/revenue")({
   component: RevenuePage,
   head: () => ({
-    meta: [{ title: "Tip revenue — Yooits" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Tip revenue — Yooits.me" }, { name: "robots", content: "noindex" }],
   }),
 });
 
@@ -78,7 +78,7 @@ function RevenuePage() {
   const tiles: { label: string; value: string; note?: string }[] = report
     ? [
         {
-          label: "Net Yooits revenue",
+          label: "Net Yooits.me revenue",
           value: formatUsd(report.net_platform_fee_cents),
           note: "Service fees kept, after fee refunds",
         },
@@ -131,7 +131,7 @@ function RevenuePage() {
       <div className="max-w-4xl">
         <h1 className="text-3xl font-bold">Money</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Totals only. Stripe charges its processing fees to creators, so these are Yooits&apos;
+          Totals only. Stripe charges its processing fees to creators, so these are Yooits.me&apos;
           gross margin before hosting and other running costs.
         </p>
 
@@ -151,7 +151,7 @@ function RevenuePage() {
           <Loader2 className="mt-10 h-6 w-6 animate-spin text-muted-foreground" />
         )}
         {state === "denied" && (
-          <p className="mt-10 text-muted-foreground">Only Yooits admins can see this report.</p>
+          <p className="mt-10 text-muted-foreground">Only Yooits.me admins can see this report.</p>
         )}
         {state === "error" && (
           <p className="mt-10 text-muted-foreground">

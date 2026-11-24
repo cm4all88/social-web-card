@@ -1,5 +1,5 @@
 /**
- * Stripe Billing webhook handling for Yooits Plus, independent of HTTP and
+ * Stripe Billing webhook handling for Yooits.me Plus, independent of HTTP and
  * storage so it can be unit-tested. Signature verification happens first
  * (src/routes/api/stripe/billing-webhook.ts).
  *
@@ -68,7 +68,7 @@ export interface BillingStore {
   claimEvent(e: { id: string; type: string; livemode: boolean }): Promise<"claimed" | "duplicate" | "in_progress">;
   markEventProcessed(id: string): Promise<void>;
   releaseEvent(id: string): Promise<void>;
-  /** The Yooits account a Stripe customer belongs to, if we created it. */
+  /** The Yooits.me account a Stripe customer belongs to, if we created it. */
   userForCustomer(customerId: string): Promise<string | null>;
   userExists(userId: string): Promise<boolean>;
   linkCustomer(customerId: string, userId: string, livemode: boolean): Promise<void>;
@@ -129,7 +129,7 @@ export function subscriptionIdFromEvent(e: BillingEventLike): string | null {
   return null;
 }
 
-/** True when the subscription is Yooits Plus (our metadata, lookup key or configured price). */
+/** True when the subscription is Yooits.me Plus (our metadata, lookup key or configured price). */
 export function isPlusSubscription(sub: StripeSubscriptionLike, plusPriceId: string | null): boolean {
   if (sub.metadata?.[PLUS_METADATA_KEY] === PLUS_METADATA_VALUE) return true;
   return (sub.items?.data ?? []).some(
@@ -199,7 +199,7 @@ async function sync(subId: string, deps: BillingDeps, log: NonNullable<BillingDe
   }
   let userId = fromCustomer ?? fromMeta;
   if (!userId) {
-    log("subscription for a customer Yooits didn't create; not stored", { subscription: sub.id });
+    log("subscription for a customer Yooits.me didn't create; not stored", { subscription: sub.id });
     return "unknown_customer";
   }
   if (!(await deps.store.userExists(userId))) {

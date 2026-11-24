@@ -279,7 +279,7 @@ describe("reading mail", () => {
 describe("sending", () => {
   const aliases = [
     { email: "admin@tahomaindustries.com", name: "Chris", isDefault: true, isPrimary: true },
-    { email: "admin@yooits.me", name: "Yooits", isDefault: false, isPrimary: false },
+    { email: "admin@yooits.me", name: "Yooits.me", isDefault: false, isPrimary: false },
   ];
 
   it("replies in the same Gmail conversation from admin@yooits.me", async () => {
@@ -324,7 +324,7 @@ describe("sending", () => {
     );
     expect(r).toEqual({ id: "sent1", threadId: "t1" });
     expect(JSON.parse(meta)).toEqual({ threadId: "t1" });
-    expect(raw).toContain('From: "Yooits" <admin@yooits.me>');
+    expect(raw).toContain('From: "Yooits.me" <admin@yooits.me>');
     expect(raw).toContain("In-Reply-To: <orig@mail>");
     expect(raw).toContain("References: <root@mail> <orig@mail>");
     expect(rpcCalls.find((c) => c.fn === "owner_mail_audit")?.args).toMatchObject({

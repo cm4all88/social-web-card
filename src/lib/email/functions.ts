@@ -1,7 +1,7 @@
 /**
  * Owner Console email actions that need the server: whether the sender is
  * set up, test sends, running the queue now, and announcements. Each handler
- * checks that the caller is a Yooits admin first.
+ * checks that the caller is a Yooits.me admin first.
  *
  * Test sends only ever go to the admin's own sign-in address or the admin
  * address in the email settings, never to anyone else.
@@ -22,7 +22,7 @@ const db = () => supabaseAdmin as unknown as SupabaseClient;
 
 async function requireAdmin(userId: string): Promise<void> {
   const { data, error } = await db().rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (error || data !== true) throw new Error("Only Yooits admins can do this.");
+  if (error || data !== true) throw new Error("Only Yooits.me admins can do this.");
 }
 
 async function adminAddress(): Promise<string> {
@@ -138,7 +138,7 @@ const announcementInput = z.object({
 });
 
 /**
- * Announcements go only to people who switched on "News from Yooits".
+ * Announcements go only to people who switched on "News from Yooits.me".
  * A real send needs the marketing switch on, the postal address in the
  * footer, and the word SEND typed in the Owner Console.
  */
@@ -183,7 +183,7 @@ export const sendAnnouncement = createServerFn({ method: "POST" })
       .maybeSingle();
     const settings = s as { marketing_enabled: boolean; sending_enabled: boolean } | null;
     if (!settings?.sending_enabled || !settings.marketing_enabled) {
-      throw new Error("Turn on email sending and News from Yooits in the settings first.");
+      throw new Error("Turn on email sending and News from Yooits.me in the settings first.");
     }
 
     const batch = crypto.randomUUID();

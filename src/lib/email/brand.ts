@@ -1,5 +1,5 @@
 /**
- * The Yooits look for email, taken from the site itself: the colours are
+ * The Yooits.me look for email, taken from the site itself: the colours are
  * src/styles.css's :root tokens (oklch converted to hex, since email clients
  * don't read oklch), the logo is public/yooits-logo.png resized, and the type
  * is the same system font stack the site uses.

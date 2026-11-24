@@ -65,7 +65,7 @@ it("formats cents as dollars", () => {
   expect(formatCents(50)).toBe("$0.50");
 });
 
-// The owner's schedule (Nov 22): $0.50 for Yooits plus Stripe's card fee, both
+// The owner's schedule (Nov 22): $0.50 for Yooits.me plus Stripe's card fee, both
 // paid by the subscriber. Creators' connected accounts pay Stripe's fee, so the
 // application fee must be yooitsNet for the creator to receive the full price.
 it("gives the creator their whole price under the owner's schedule", () => {

@@ -30,6 +30,12 @@ describe("email templates", () => {
       expect(m[1]).toMatch(/^(https:\/\/yooits\.me|mailto:|https:\/\/[a-z0-9.-]+\.yooits\.me)/);
   });
 
+  it("uses the full brand in the welcome email", () => {
+    const welcome = renderEmail("welcome", { username: "maya", display_name: "Maya" });
+    expect(welcome.subject).toBe("Welcome to Yooits.me");
+    expect(welcome.text).toContain("Welcome to Yooits.me, Maya");
+  });
+
   it("no payment receipts: Stripe sends those", () => {
     for (const t of TEMPLATES) expect(t.id).not.toMatch(/receipt|invoice/);
   });

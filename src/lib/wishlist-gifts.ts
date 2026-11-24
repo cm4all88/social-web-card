@@ -7,7 +7,7 @@
  * an amount into a plan with server-side fee math, and builds the Stripe
  * Checkout parameters. The same direct-charge path as tips: the charge is
  * created on the list owner's connected account, which pays Stripe's fee, so
- * Yooits' application fee is what's left of the service fee after that.
+ * Yooits.me's application fee is what's left of the service fee after that.
  */
 import type Stripe from "stripe";
 import { creatorFeeBreakdown, parseFeeRates, type FeeBreakdown } from "@/lib/creator/fees";
@@ -39,7 +39,7 @@ export type GiftCheckoutPlan = {
   itemName: string;
   stripeAccountId: string;
   breakdown: FeeBreakdown;
-  /** Yooits' application fee: the service fee less Stripe's estimated cut. */
+  /** Yooits.me's application fee: the service fee less Stripe's estimated cut. */
   applicationFeeCents: number;
 };
 
@@ -116,14 +116,14 @@ export function buildGiftCheckoutParams(opts: {
           unit_amount: plan.breakdown.serviceFee,
           product_data: {
             name: "Service and processing fee",
-            description: "Covers Yooits and card processing.",
+            description: "Covers Yooits.me and card processing.",
           },
         },
       },
     ],
     payment_intent_data: {
       application_fee_amount: plan.applicationFeeCents,
-      description: `Wishlist gift via Yooits`,
+      description: `Wishlist gift via Yooits.me`,
       metadata: { yooits_wishlist_gift_id: giftId },
     },
     metadata: { yooits_wishlist_gift_id: giftId, yooits_recipient_user_id: plan.recipientUserId },

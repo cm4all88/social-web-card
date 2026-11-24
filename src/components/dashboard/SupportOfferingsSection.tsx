@@ -56,7 +56,7 @@ export function SupportOfferingsSection({
       )}
       <p className="text-sm text-muted-foreground">
         Offer something real that supporters receive. You keep the whole price; supporters pay a{" "}
-        {formatCents(supportTotal(0).fee)} Yooits service fee on top. Each offering is reviewed
+        {formatCents(supportTotal(0).fee)} Yooits.me service fee on top. Each offering is reviewed
         before it's shown, and supporters can't buy yet.
       </p>
 
@@ -129,7 +129,7 @@ function OfferingCard({
       </div>
       {o.suspended && (
         <p className="mt-2 text-sm text-destructive">
-          Paused by Yooits{o.suspended_reason ? `: ${o.suspended_reason}` : "."}
+          Paused by Yooits.me{o.suspended_reason ? `: ${o.suspended_reason}` : "."}
         </p>
       )}
       {latest.status === "rejected" && latest.decision_note && (

@@ -2,7 +2,7 @@
  * Owner Mail server functions for the Owner Console (/owner/mail).
  *
  * Every call checks, on the server, that the caller is signed in and is a
- * Yooits admin, and only ever reads that admin's own connected mailbox.
+ * Yooits.me admin, and only ever reads that admin's own connected mailbox.
  * Google tokens never leave the server.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -37,7 +37,7 @@ const db = () => supabaseAdmin as unknown as SupabaseClient;
 
 async function requireAdmin(userId: string): Promise<void> {
   const { data, error } = await db().rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (error || data !== true) throw new Error("Only the Yooits owner can use Mail.");
+  if (error || data !== true) throw new Error("Only the Yooits.me owner can use Mail.");
 }
 
 function origin(): string {

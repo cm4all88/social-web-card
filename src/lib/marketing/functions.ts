@@ -45,7 +45,7 @@ export const marketingAiRewrite = createServerFn({ method: "POST" })
       return {
         ok: false as const,
         reason: "refused" as const,
-        message: "Only Yooits admins can do this.",
+        message: "Only Yooits.me admins can do this.",
       };
     const header = getRequest()?.headers.get("x-vercel-oidc-token");
     const token = aiAuthToken(process.env, header);

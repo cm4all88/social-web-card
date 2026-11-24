@@ -95,10 +95,10 @@ export function MessagingSettings({
         </div>
       )}
       {settings.suspended && (
-        <p className="text-destructive">Messaging is turned off for your account by Yooits.</p>
+        <p className="text-destructive">Messaging is turned off for your account by Yooits.me.</p>
       )}
       <p className="text-xs text-muted-foreground">
-        Messages are text only. Yooits can read a message if someone reports it, and removes
+        Messages are text only. Yooits.me can read a message if someone reports it, and removes
         messages that break the Terms.
       </p>
       <div>

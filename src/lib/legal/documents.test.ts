@@ -30,7 +30,7 @@ describe("legal drafts", () => {
     expect(t).toMatch(/owner's approval/i);
   });
 
-  it("says Yooits is not a money-transfer service", () => {
+  it("says Yooits.me is not a money-transfer service", () => {
     expect(text("terms")).toContain("not a bank, a money transmitter or a peer-to-peer payment service");
   });
 
@@ -44,7 +44,7 @@ describe("legal drafts", () => {
 
   it("has no placeholders left and names the operator, contact and state", () => {
     for (const d of LEGAL_DOCUMENTS) expect(text(d.slug)).not.toMatch(/\[[a-z][a-z ]*\]/);
-    expect(text("terms")).toContain("Yooits (yooits.me) is owned and operated by Tahoma Industries LLC");
+    expect(text("terms")).toContain("Yooits.me is owned and operated by Tahoma Industries LLC");
     expect(text("privacy")).toContain("owned and operated by Tahoma Industries LLC");
     for (const d of LEGAL_DOCUMENTS) expect(text(d.slug)).not.toMatch(/Tahoma Systems/);
     expect(text("terms")).toContain("laws of the State of Washington, United States");

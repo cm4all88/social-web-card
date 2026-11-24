@@ -83,7 +83,7 @@ export async function loadCreatorByUsername(username: string) {
     countPublicLinks(profile.user_id),
     // Owner switches: page unpublished, account suspended or tips turned off.
     tipsAllowed(profile.user_id),
-    // Owner approval: no tips until a Yooits admin approves the creator.
+    // Owner approval: no tips until a Yooits.me admin approves the creator.
     tipsApproved(profile.user_id),
   ]);
   const eligible =
@@ -420,7 +420,7 @@ export const disconnectStripeAccount = createServerFn({ method: "POST" })
     }
   });
 
-/** Full refund of one tip, including the Yooits service fee. */
+/** Full refund of one tip, including the Yooits.me service fee. */
 export const refundTip = createServerFn({ method: "POST" })
   .middleware([...authed])
   .inputValidator(z.object({ tipId: z.string().uuid() }))

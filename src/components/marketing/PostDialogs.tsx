@@ -291,7 +291,7 @@ export function PostEditor({
                   onChange={(e) => setG({ headline: e.target.value })}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Put *stars* around words to color them with the Yooits gradient.
+                  Put *stars* around words to color them with the Yooits.me gradient.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">

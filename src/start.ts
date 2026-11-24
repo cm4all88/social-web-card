@@ -11,7 +11,7 @@ const previewPassword = createMiddleware({ type: "request" }).server(async ({ re
   if (refused) return refused;
   const result = await next();
   try {
-    // Stop other sites framing Yooits pages (clickjacking) or the browser
+    // Stop other sites framing Yooits.me pages (clickjacking) or the browser
     // guessing content types; keep the full URL out of outbound referrers.
     result.response.headers.set("X-Frame-Options", "SAMEORIGIN");
     result.response.headers.set("X-Content-Type-Options", "nosniff");

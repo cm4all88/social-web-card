@@ -13,7 +13,7 @@ export function getStripe(): Stripe {
   const client = new Stripe(secretKey, {
     httpClient: Stripe.createFetchHttpClient(),
     maxNetworkRetries: 2,
-    appInfo: { name: "Yooits" },
+    appInfo: { name: "Yooits.me" },
   });
   cached = { key: secretKey, client };
   return client;

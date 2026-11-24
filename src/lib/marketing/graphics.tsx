@@ -874,7 +874,7 @@ function ProfileScreen({ spec, look, uid }: { spec: GraphicSpec; look?: string; 
         opacity={0.6}
         fontSize={12}
       >
-        Get your own Yooits
+        Create your free profile on Yooits.me
       </text>
     </g>
   );
@@ -1189,7 +1189,7 @@ export const LAYOUT_LABELS: Record<GraphicLayout, string> = {
 };
 
 export const BACKDROP_LABELS: Record<GraphicTheme, string> = {
-  brand: "Yooits dark",
+  brand: "Yooits.me dark",
   night: "Night purple",
   snow: "Winter blue",
   warm: "Warm",
@@ -1651,7 +1651,7 @@ function Visual({
             fontSize={size * 0.8}
             letterSpacing={size * 0.1}
           >
-            WITH YOOITS
+            WITH YOOITS.ME
           </text>
           <Phone x={box.x + box.w - pw} y={y0 + size * 0.9} w={pw} uid={`${uid}-cp`}>
             <ProfileScreen spec={spec} uid={`${uid}-cps`} />

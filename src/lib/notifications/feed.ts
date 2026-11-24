@@ -115,7 +115,7 @@ export function useDashboardFeed(): DashboardFeed {
   );
 }
 
-/** A safe href for an announcement link: a Yooits path or an https address. */
+/** A safe href for an announcement link: a Yooits.me path or an https address. */
 export function announcementHref(url: string | null): string | undefined {
   if (!url) return undefined;
   // eslint-disable-next-line no-control-regex

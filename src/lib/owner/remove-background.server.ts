@@ -46,7 +46,7 @@ export async function removeBackground(
   if (error) {
     throw new Error(
       error.code === "42501" && /^Not authorized/.test(error.message)
-        ? "Only Yooits admins can do this."
+        ? "Only Yooits.me admins can do this."
         : error.message,
     );
   }

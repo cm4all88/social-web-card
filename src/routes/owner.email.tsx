@@ -121,7 +121,7 @@ function EmailPage() {
       <div>
         <h1 className="text-3xl font-bold">Email</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Every email Yooits sends: what turns it on, what it looks like, test sends to you,
+          Every email Yooits.me sends: what turns it on, what it looks like, test sends to you,
           announcements and whether each one arrived. Stripe sends payment receipts itself, so none
           are repeated here.
         </p>
@@ -260,7 +260,7 @@ function SettingsCard({
 
   return (
     <section className="rounded-2xl border border-border p-5">
-      <h2 className="text-lg font-semibold">What Yooits sends</h2>
+      <h2 className="text-lg font-semibold">What Yooits.me sends</h2>
       <div className="mt-3 divide-y divide-border">
         {SWITCHES.map((s) => (
           <div key={s.key} className="flex items-center justify-between gap-4 py-3">
@@ -573,7 +573,7 @@ function AnnouncementCard({
     <section className="rounded-2xl border border-border p-5">
       <h2 className="text-lg font-semibold">Announcement</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Goes only to people who switched on News from Yooits ({status?.marketing_opted_in ?? 0}{" "}
+        Goes only to people who switched on News from Yooits.me ({status?.marketing_opted_in ?? 0}{" "}
         now), with an unsubscribe link. For in-app announcements, use the dashboard announcement
         banner.
       </p>
@@ -753,7 +753,7 @@ function LogCard() {
       )}
       {supp.length > 0 && (
         <div className="mt-6">
-          <h3 className="font-semibold">Addresses Yooits won't email</h3>
+          <h3 className="font-semibold">Addresses Yooits.me won't email</h3>
           <p className="text-xs text-muted-foreground">
             Added when an email bounces or is marked as spam.
           </p>

@@ -17,7 +17,7 @@ import {
 import { submitReport } from "@/lib/reports/functions";
 import { REPORT_DETAILS_MAX, REPORT_REASONS, type ReportReason } from "@/lib/reports/reasons";
 
-/** A small "Report" link that opens a form. Reports go to the Yooits owner. */
+/** A small "Report" link that opens a form. Reports go to the Yooits.me owner. */
 export function ReportLink({
   username,
   wishlistSlug = null,
@@ -75,7 +75,7 @@ export function ReportLink({
           <>
             <DialogHeader>
               <DialogTitle>Thanks, we've got your report</DialogTitle>
-              <DialogDescription>Yooits will look at this {what}.</DialogDescription>
+              <DialogDescription>Yooits.me will look at this {what}.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button onClick={() => setOpen(false)}>Close</Button>

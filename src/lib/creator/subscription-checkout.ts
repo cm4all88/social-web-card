@@ -5,13 +5,13 @@
  * The subscription is created as a DIRECT charge on the creator's connected
  * account (the request carries the Stripe-Account header). That account pays
  * Stripe's processing fee, so the subscriber's total is grossed up to cover
- * it (creatorFeeBreakdown) and Yooits takes only its own share as the
+ * it (creatorFeeBreakdown) and Yooits.me takes only its own share as the
  * application fee. The creator is left with the whole price they set.
  *
  * Checkout only takes a percentage application fee for subscriptions, with at
  * most two decimal places. The percentage is rounded down, so the fee Stripe
- * takes is never more than Yooits' share and the creator never gets less than
- * their price (Yooits may get up to a few cents less on large prices).
+ * takes is never more than Yooits.me's share and the creator never gets less than
+ * their price (Yooits.me may get up to a few cents less on large prices).
  */
 import type Stripe from "stripe";
 import type { FeeBreakdown } from "./fees";
@@ -81,16 +81,16 @@ export function buildCreatorSubscriptionCheckoutParams(opts: {
           unit_amount: breakdown.serviceFee,
           recurring: monthly,
           product_data: {
-            name: "Yooits service and processing fee",
+            name: "Yooits.me service and processing fee",
             description:
-              "Covers Yooits' fee and the card processing fee, so the creator gets their full price.",
+              "Covers Yooits.me's fee and the card processing fee, so the creator gets their full price.",
           },
         },
       },
     ],
     subscription_data: {
       application_fee_percent: fee.percent,
-      description: `Subscription to @${handle} via Yooits`,
+      description: `Subscription to @${handle} via Yooits.me`,
       metadata,
     },
     metadata,

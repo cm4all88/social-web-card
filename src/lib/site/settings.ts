@@ -46,8 +46,11 @@ export function socialLinks(s: Pick<SiteSettings, "socials">): { id: SocialPlatf
 export function asSiteSettings(v: unknown): SiteSettings {
   const o = (v ?? {}) as Partial<SiteSettings>;
   const str = (x: unknown, d: string) => (typeof x === "string" && x.trim() ? x : d);
+  const siteName = str(o.site_name, DEFAULT_SITE_SETTINGS.site_name);
   return {
-    site_name: str(o.site_name, DEFAULT_SITE_SETTINGS.site_name),
+    site_name: /^yooits$/i.test(siteName.trim())
+      ? DEFAULT_SITE_SETTINGS.site_name
+      : siteName,
     tagline: str(o.tagline, DEFAULT_SITE_SETTINGS.tagline),
     support_email: str(o.support_email, DEFAULT_SITE_SETTINGS.support_email),
     theme_color: typeof o.theme_color === "string" && /^#[0-9a-f]{6}$/i.test(o.theme_color) ? o.theme_color : null,

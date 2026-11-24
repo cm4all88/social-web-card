@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { announcementHref } from "./feed";
 
 describe("announcement links", () => {
-  it("allow Yooits paths and https addresses only", () => {
+  it("allow Yooits.me paths and https addresses only", () => {
     expect(announcementHref("/dashboard/wishlists")).toBe("/dashboard/wishlists");
     expect(announcementHref("/")).toBe("/");
     expect(announcementHref("https://yooits.me/help")).toBe("https://yooits.me/help");

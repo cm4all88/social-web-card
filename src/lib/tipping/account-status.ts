@@ -33,7 +33,7 @@ export type AccountSnapshot = {
 };
 
 /**
- * Map a Stripe account to a Yooits status.
+ * Map a Stripe account to a Yooits.me status.
  *  - connected:  Stripe says it can accept charges and nothing disables it.
  *  - restricted: onboarding was submitted but Stripe has disabled charges or
  *                needs more information.

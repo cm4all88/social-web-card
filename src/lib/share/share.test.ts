@@ -102,7 +102,7 @@ describe("share graphic", () => {
     }
   });
 
-  it("leaves the Yooits footer off when branding is hidden", () => {
+  it("leaves the Yooits.me footer off when branding is hidden", () => {
     const svg = renderToStaticMarkup(
       createElement(ProfileShareGraphic, {
         format: "story",
@@ -112,6 +112,6 @@ describe("share graphic", () => {
         profile: { username: "maya", name: "Maya", bio: null, avatar: null, showBranding: false },
       }),
     );
-    expect(svg).not.toContain("Get your own Yooits");
+    expect(svg).not.toContain("Create your free profile on Yooits.me");
   });
 });

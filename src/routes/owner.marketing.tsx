@@ -1025,7 +1025,7 @@ function Accounts({ accounts, onSaved }: { accounts: Account[]; onSaved: () => v
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
         No social account is connected by API yet, so every post goes out by hand from the Queue.
-        Save each handle here so Yooits can check a live post was made by your account.
+        Save each handle here so Yooits.me can check a live post was made by your account.
       </p>
       {PLATFORM_IDS.map((id) => (
         <AccountCard

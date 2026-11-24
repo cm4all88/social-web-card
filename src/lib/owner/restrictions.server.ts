@@ -20,7 +20,7 @@ export async function tipsAllowed(userId: string): Promise<boolean> {
 }
 
 /**
- * Has a Yooits admin approved this creator for tips? (Chris, 21 Nov: owner
+ * Has a Yooits.me admin approved this creator for tips? (Chris, 21 Nov: owner
  * approval first.) Fails closed like tipsAllowed.
  */
 export async function tipsApproved(userId: string): Promise<boolean> {

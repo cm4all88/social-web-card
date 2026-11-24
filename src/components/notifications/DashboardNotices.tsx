@@ -11,7 +11,7 @@ import {
   type Notification,
 } from "@/lib/notifications/feed";
 
-/** Announcements from Yooits, shown at the top of the dashboard until dismissed. */
+/** Announcements from Yooits.me, shown at the top of the dashboard until dismissed. */
 export function DashboardAnnouncements() {
   const feed = useDashboardFeed();
   if (!feed.enabled || feed.announcements.length === 0) return null;
@@ -79,14 +79,14 @@ function NotificationRow({ n }: { n: Notification }) {
         aria-label={n.read_at ? undefined : "Unread"}
       />
       <div className="min-w-0 flex-1">
-        <div className={`text-sm ${n.read_at ? "" : "font-semibold"}`}>{n.title}</div>
+        <div className={`text-sm ${n.read_at ? "" : "font-semibold"}`}>{n.title === "Welcome to Yooits" ? "Welcome to Yooits.me" : n.title}</div>
         {n.body && <p className="mt-0.5 text-xs text-muted-foreground">{n.body}</p>}
         <div className="mt-1 text-[11px] text-muted-foreground">{timeAgo(n.created_at)}</div>
       </div>
     </div>
   );
   const onClick = () => markRead([n.id]);
-  // link_path is always a Yooits path (the database refuses anything else).
+  // link_path is always a Yooits.me path (the database refuses anything else).
   return (
     <li>
       {n.link_path ? (

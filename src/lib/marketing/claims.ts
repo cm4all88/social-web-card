@@ -1,6 +1,6 @@
 /**
  * Checks a post's words before it can be approved. "Blocked" phrases talk
- * about something that isn't live or public on Yooits (or is a claim Chris
+ * about something that isn't live or public on Yooits.me (or is a claim Chris
  * ruled out, like "no fees"), so a post that has one can't be approved until
  * it's reworded. "Check" phrases aren't wrong in themselves but need a look.
  */
@@ -27,11 +27,11 @@ const RULES: Rule[] = [
   {
     level: "blocked",
     re: /\bgift (money|cash|funds?)\b|\bcash gifts?\b|\bsend (money|cash)\b|\bget paid\b|\bpayouts?\b|\bearn(ings)? money\b|\bmake money\b|\bmonetiz/i,
-    why: "No money moves through Yooits yet.",
+    why: "No money moves through Yooits.me yet.",
   },
   {
     level: "blocked",
-    re: /\byooits pro\b|\bpro plan\b|\bpro tier\b/i,
+    re: /\byooits(?:\.me)? pro\b|\bpro plan\b|\bpro tier\b/i,
     why: "Pro doesn't exist yet.",
   },
   { level: "blocked", re: /\bsupport offerings?\b/i, why: "Support Offerings are off." },
@@ -42,7 +42,7 @@ const RULES: Rule[] = [
   },
   {
     level: "blocked",
-    re: /\b(yooits )?plus\b.*\b(\$|price|buy|upgrade|sign up|subscribe|month)\b|\$\s?4\.99|\bupgrade to plus\b/i,
+    re: /\b(yooits(?:\.me)? )?plus\b.*\b(\$|price|buy|upgrade|sign up|subscribe|month)\b|\$\s?4\.99|\bupgrade to plus\b/i,
     why: "Plus checkout isn't open to the public.",
   },
   { level: "blocked", re: /\bholiday lights\b/i, why: "Holiday Lights is a Plus theme." },
@@ -52,7 +52,7 @@ const RULES: Rule[] = [
   {
     level: "blocked",
     re: /\b(ai[-\s]?(powered|generated)|artificial intelligence)\b/i,
-    why: "Yooits doesn't have AI features to advertise.",
+    why: "Yooits.me doesn't have AI features to advertise.",
   },
   {
     level: "check",

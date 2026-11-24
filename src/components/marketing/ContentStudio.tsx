@@ -203,19 +203,19 @@ export function ContentStudio({
     const skin = findSkin(profile.skin || THEME_DEFAULT_SKIN[profile.theme])?.label;
     const headlines: Record<string, string> = {
       "Theme of the day": `Try the ${theme} theme`,
-      "Seasonal skin showcase": skin ? `${skin} on Yooits` : "Give your profile a seasonal look",
+      "Seasonal skin showcase": skin ? `${skin} on Yooits.me` : "Give your profile a seasonal look",
       "Creator spotlight": `Meet ${profile.name}`,
       "Profile inspiration": "Make your link page feel like you",
       "Theme transformation": "Same profile, a different look",
       "Before and after": "Before and after",
-      "Feature demonstration": "See it on a Yooits profile",
+      "Feature demonstration": "See it on a Yooits.me profile",
       "Free account promotion": "One profile for all your links",
       "Creator lifestyle": `A look at ${profile.name}’s profile`,
       "New theme announcement": `Meet ${theme}`,
     };
     setTemplate(value);
     setHeadline((headlines[value] ?? "").slice(0, 80));
-    if (value === "Free account promotion") setCta("Create your free Yooits.");
+    if (value === "Free account promotion") setCta("Create your free profile on Yooits.me");
     if (value === "Before and after" || value === "Theme transformation") {
       setFormats(["carousel"]);
       setSlides([{ ...profile, theme: "midnight", skin: "none" }]);
@@ -248,8 +248,8 @@ export function ContentStudio({
             target.platform === "tiktok"
               ? "See more at yooits.me."
               : target.format === "carousel"
-                ? "Swipe through the looks. Explore Yooits at yooits.me."
-                : "Explore Yooits at yooits.me.";
+                ? "Swipe through the looks. Explore Yooits.me at yooits.me."
+                : "Explore Yooits.me at yooits.me.";
           const about = headline ? `${headline}\n\n` : "";
           return {
             platform: target.platform,

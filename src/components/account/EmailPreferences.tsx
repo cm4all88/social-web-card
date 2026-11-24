@@ -18,7 +18,7 @@ const ROWS: { key: keyof Prefs; title: string; body: string }[] = [
   },
   {
     key: "marketing",
-    title: "News from Yooits",
+    title: "News from Yooits.me",
     body: "New features and occasional announcements.",
   },
 ];

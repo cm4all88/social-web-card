@@ -32,7 +32,7 @@ export function CreatorEarningsSection({ data }: { data: CreatorEarnings }) {
         </p>
         {!data.analytics_enabled && (
           <p className="mt-2 text-sm text-muted-foreground">
-            Visitors are counted once analytics is switched on for Yooits.
+            Visitors are counted once analytics is switched on for Yooits.me.
           </p>
         )}
         {next && (
@@ -76,7 +76,7 @@ export function CreatorEarningsSection({ data }: { data: CreatorEarnings }) {
       </ol>
 
       <p className="text-sm text-muted-foreground">
-        Paid creator subscriptions aren't available on Yooits yet.
+        Paid creator subscriptions aren't available on Yooits.me yet.
       </p>
     </div>
   );

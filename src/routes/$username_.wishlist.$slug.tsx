@@ -34,7 +34,7 @@ export const Route = createFileRoute("/$username_/wishlist/$slug")({
   component: WishlistPage,
   head: ({ params }) => ({
     meta: [
-      { title: `Wishlist by @${params.username} — Yooits` },
+      { title: `Wishlist by @${params.username} — Yooits.me` },
       { property: "og:title", content: `@${params.username}'s wishlist` },
       { property: "og:description", content: `See what @${params.username} is wishing for.` },
     ],
@@ -269,7 +269,7 @@ function WishlistPage() {
               </ul>
             )}
             <p className="mt-10 text-center text-xs opacity-60">
-              Links go to other stores. Yooits doesn&apos;t sell these items or handle these
+              Links go to other stores. Yooits.me doesn&apos;t sell these items or handle these
               purchases.
               {claims.enabled &&
                 " Tap “I'll buy it” so others know it's covered. The list owner isn't told who."}

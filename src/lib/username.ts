@@ -65,7 +65,7 @@ export function usernameSkeleton(value: string): string {
     .replaceAll("rn", "m");
 }
 
-/** True when a name copies a major brand, Yooits or its staff. */
+/** True when a name copies a major brand, Yooits.me or its staff. */
 export function usernameIsImpersonation(value: string): boolean {
   const k = usernameSkeleton(value);
   if (!k) return false;

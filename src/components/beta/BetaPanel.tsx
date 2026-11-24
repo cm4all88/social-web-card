@@ -55,7 +55,7 @@ export function BetaPanel({ userId }: { userId: string }) {
 
       <form onSubmit={submit} className="mt-4 space-y-3">
         <div>
-          <Label>How is Yooits working for you?</Label>
+          <Label>How is Yooits.me working for you?</Label>
           <div className="mt-1 flex gap-1" role="radiogroup" aria-label="Rating from 1 to 5">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -90,7 +90,7 @@ export function BetaPanel({ userId }: { userId: string }) {
           </Button>
           {sent && (
             <span className="text-sm text-muted-foreground" role="status">
-              Thanks, it's on its way to the Yooits team.
+              Thanks, it's on its way to the Yooits.me team.
             </span>
           )}
         </div>

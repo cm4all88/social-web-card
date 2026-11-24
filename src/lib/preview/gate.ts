@@ -44,10 +44,10 @@ export function previewGate(request: Request, password: string | undefined): Res
   if (request.method === "POST" && OPEN_PATHS.has(new URL(request.url).pathname)) return null;
   const given = suppliedPassword(request.headers.get("authorization"));
   if (given !== null && safeEqual(bare(given), password)) return null;
-  return new Response("This Yooits preview is private.", {
+  return new Response("This Yooits.me preview is private.", {
     status: 401,
     headers: {
-      "WWW-Authenticate": 'Basic realm="Yooits preview", charset="UTF-8"',
+      "WWW-Authenticate": 'Basic realm="Yooits.me preview", charset="UTF-8"',
       "X-Robots-Tag": "noindex, nofollow",
       "Cache-Control": "no-store",
     },

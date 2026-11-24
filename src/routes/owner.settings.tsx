@@ -10,13 +10,13 @@ import { Switch } from "@/components/ui/switch";
 import { loadSiteSettings, SOCIAL_PLATFORMS, type SocialPlatform } from "@/lib/site/settings";
 
 /**
- * Owner > Settings: what the site says about itself, Yooits' own social
+ * Owner > Settings: what the site says about itself, Yooits.me's own social
  * accounts, email defaults and the feature switches that live in the database.
  * Payment switches and secrets live in Vercel and are only described here.
  */
 export const Route = createFileRoute("/owner/settings")({
   component: SettingsPage,
-  head: () => ({ meta: [{ title: "Settings — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Settings — Yooits.me" }, { name: "robots", content: "noindex" }] }),
 });
 
 type Site = {
@@ -69,7 +69,7 @@ const EMAIL_CATEGORIES: { key: keyof Email; label: string; note: string }[] = [
 
 async function call<T>(fn: string, args?: Record<string, unknown>): Promise<T> {
   const { data, error } = await rpc<T>(fn, args);
-  if (error) throw new Error(/^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message);
+  if (error) throw new Error(/^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message);
   return data;
 }
 
@@ -257,7 +257,7 @@ function SettingsPage() {
         </p>
       </Section>
 
-      <Section title="Yooits social accounts" note="Links to Yooits' own accounts, shown in the site footer. Leave one blank to hide it.">
+      <Section title="Yooits.me social accounts" note="Links to Yooits.me's own accounts, shown in the site footer. Leave one blank to hide it.">
         <div className="grid gap-3 sm:grid-cols-2">
           {SOCIAL_PLATFORMS.map((p) => (
             <div key={p.id}>

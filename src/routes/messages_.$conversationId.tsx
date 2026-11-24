@@ -27,7 +27,7 @@ import { REPORT_DETAILS_MAX, REPORT_REASONS, type ReportReason } from "@/lib/rep
 
 export const Route = createFileRoute("/messages_/$conversationId")({
   component: ConversationPage,
-  head: () => ({ meta: [{ title: "Messages — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Messages — Yooits.me" }, { name: "robots", content: "noindex" }] }),
 });
 
 const POLL_MS = 5_000;
@@ -218,7 +218,7 @@ function ConversationPage() {
                         : "bg-muted"
                   }`}
                 >
-                  {m.removed ? "This message was removed by Yooits." : m.body}
+                  {m.removed ? "This message was removed by Yooits.me." : m.body}
                 </div>
                 <div
                   className={`mt-0.5 flex gap-2 text-[11px] text-muted-foreground ${m.mine ? "justify-end" : ""}`}
@@ -317,7 +317,7 @@ function ReportMessageDialog({
       if (r === "rate_limited")
         toast.error("You've sent several reports recently. Please try again later.");
       else {
-        toast.success("Thanks. Yooits will review this message.");
+        toast.success("Thanks. Yooits.me will review this message.");
         onClose();
       }
     } catch (e) {
@@ -333,7 +333,7 @@ function ReportMessageDialog({
         <DialogHeader>
           <DialogTitle>Report this message</DialogTitle>
           <DialogDescription>
-            Yooits will see this message and your note. The sender isn't told who reported it. To
+            Yooits.me will see this message and your note. The sender isn't told who reported it. To
             stop hearing from them, block them too.
           </DialogDescription>
         </DialogHeader>

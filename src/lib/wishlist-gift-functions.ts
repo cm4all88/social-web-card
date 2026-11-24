@@ -1,7 +1,7 @@
 /**
  * Server function for wishlist gift money checkout. SWITCHED OFF and
  * unusable until Stripe agrees in writing: the database gate
- * (wishlist_gift_checkout_gate) refuses until a Yooits admin records Stripe's
+ * (wishlist_gift_checkout_gate) refuses until a Yooits.me admin records Stripe's
  * written approval, switches gift money and its checkout on and sets the fee;
  * the server's Stripe Connect settings (TIPPING_ENABLED and a key) must be on
  * too. No page calls this yet. Amounts, fees and accounts are worked out here

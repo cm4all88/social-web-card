@@ -42,7 +42,7 @@ export function rewritePrompt(input: RewriteInput): string {
     .map((f) => `- ${FEATURES[f].name}: ${FEATURES[f].claim} (${FEATURES[f].facts.join("; ")})`)
     .join("\n");
   return [
-    `Rewrite this ${spec.label} post for Yooits (yooits.me), a free link-in-bio page.`,
+    `Rewrite this ${spec.label} post for Yooits.me (yooits.me), a free link-in-bio page.`,
     `Audience: ${input.audience}. Post type: ${input.kind}.`,
     `Only mention these features, exactly as described:\n${facts}`,
     "Never mention tips, tipping, subscriptions, payments, money, fees, Plus, Pro, Founding Members, AI, or user numbers.",

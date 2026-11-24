@@ -6,7 +6,7 @@ import {
 } from "./subscription-checkout";
 import { planCreatorSubscriptionCheckout, SubscriptionCheckoutError } from "./subscription-plan";
 
-// The owner's schedule (Nov 22): $0.50 for Yooits, Stripe's card fee on top,
+// The owner's schedule (Nov 22): $0.50 for Yooits.me, Stripe's card fee on top,
 // both paid by the subscriber.
 const RATES: FeeRates = {
   yooits_percent_bps: 0,
@@ -35,7 +35,7 @@ const gate = (over: Record<string, unknown> = {}) => ({
 });
 
 describe("application fee", () => {
-  it("takes Yooits' $0.50 on a $5 subscription and leaves the creator $5", () => {
+  it("takes Yooits.me' $0.50 on a $5 subscription and leaves the creator $5", () => {
     const b = creatorFeeBreakdown(500, RATES)!;
     expect(b.total).toBe(597);
     const fee = subscriptionApplicationFee(b)!;
@@ -44,7 +44,7 @@ describe("application fee", () => {
     expect(b.total - b.estimatedProcessingFee - fee.cents).toBe(500);
   });
 
-  it("never takes more than Yooits' share, at any price the owner allows", () => {
+  it("never takes more than Yooits.me's share, at any price the owner allows", () => {
     for (let price = 100; price <= 50_000; price += 37) {
       const b = creatorFeeBreakdown(price, RATES)!;
       const fee = subscriptionApplicationFee(b)!;
@@ -53,7 +53,7 @@ describe("application fee", () => {
       expect(fee.cents).toBeLessThanOrEqual(b.yooitsNet);
       // So the creator's share is never below their price.
       expect(b.total - b.estimatedProcessingFee - fee.cents).toBeGreaterThanOrEqual(price);
-      // And Yooits loses at most a few cents to the rounding.
+      // And Yooits.me loses at most a few cents to the rounding.
       expect(b.yooitsNet - fee.cents).toBeLessThanOrEqual(b.total / 10_000 + 0.5);
     }
   });
@@ -155,12 +155,12 @@ describe("checkout session parameters", () => {
     }));
     expect(lines).toEqual([
       { amount: 500, name: "Subscription to Alice (@alice)", interval: "month" },
-      { amount: 97, name: "Yooits service and processing fee", interval: "month" },
+      { amount: 97, name: "Yooits.me service and processing fee", interval: "month" },
     ]);
     expect(lines.reduce((t, l) => t + l.amount!, 0)).toBe(597);
   });
 
-  it("takes Yooits' share as the application fee and tags everything with the row", () => {
+  it("takes Yooits.me's share as the application fee and tags everything with the row", () => {
     expect(params.subscription_data!.application_fee_percent).toBe(8.37);
     expect(params.metadata!.yooits_creator_subscription_id).toBe("row-1");
     expect(params.subscription_data!.metadata!.yooits_creator_subscription_id).toBe("row-1");

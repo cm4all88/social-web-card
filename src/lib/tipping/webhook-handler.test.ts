@@ -194,12 +194,12 @@ describe("checkout completion", () => {
     expect(tip().status).toBe("succeeded");
   });
 
-  it("ignores sessions that aren't Yooits tips", async () => {
+  it("ignores sessions that aren't Yooits.me tips", async () => {
     const r = await handleStripeEvent(
       ev("checkout.session.completed", session({ metadata: {} })),
       deps,
     );
-    expect(r.detail).toBe("not a Yooits tip session");
+    expect(r.detail).toBe("not a Yooits.me tip session");
     expect(tip().status).toBe("pending");
   });
 
@@ -230,7 +230,7 @@ describe("refunds and disputes", () => {
     expect(tip().amount_refunded_cents).toBe(1050);
   });
 
-  it("records the Yooits fee being refunded, capped at the fee", async () => {
+  it("records the Yooits.me fee being refunded, capped at the fee", async () => {
     await handleStripeEvent(
       ev(
         "application_fee.refunded",
@@ -306,7 +306,7 @@ describe("out-of-order delivery", () => {
     expect(tip().amount_refunded_cents).toBe(1050);
   });
 
-  it("does not retry forever for charges that were never Yooits tips", async () => {
+  it("does not retry forever for charges that were never Yooits.me tips", async () => {
     const r = await handleStripeEvent(
       ev("charge.refunded", {
         id: "ch_other",
@@ -426,7 +426,7 @@ describe("concurrent deliveries of the same event", () => {
   });
 });
 
-describe("Yooits fee accounting", () => {
+describe("Yooits.me fee accounting", () => {
   beforeEach(async () => {
     deps.fetchLatestCharge = async () => ({
       chargeId: "ch_1",
@@ -458,7 +458,7 @@ describe("Yooits fee accounting", () => {
     expect(tip().application_fee_id).toBe("fee_1");
   });
 
-  it("full refund through Yooits: the whole tip and the whole fee are refunded", async () => {
+  it("full refund through Yooits.me: the whole tip and the whole fee are refunded", async () => {
     await handleStripeEvent(
       ev("charge.refunded", {
         id: "ch_1",
@@ -559,11 +559,11 @@ describe("fee events that arrive before the payment is linked", () => {
     expect(tip().platform_fee_refunded_cents).toBe(50);
   });
 
-  it("does not retry fees from accounts that aren't Yooits creators", async () => {
+  it("does not retry fees from accounts that aren't Yooits.me creators", async () => {
     const r = await handleStripeEvent(
       feeEvent("application_fee.refunded", { account: "acct_unknown", charge: "ch_x" }),
       deps,
     );
-    expect(r.detail).toBe("not a Yooits tip");
+    expect(r.detail).toBe("not a Yooits.me tip");
   });
 });

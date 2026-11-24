@@ -172,7 +172,7 @@ export function ThemeRewardsPicker({
         <p className="mb-3 text-xs text-muted-foreground">
           {isPlus
             ? "All earned themes are included with Plus."
-            : "Do these on Yooits to unlock a theme for each."}
+            : "Do these on Yooits.me to unlock a theme for each."}
         </p>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
           {REWARDS.map((r) => {

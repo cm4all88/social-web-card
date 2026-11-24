@@ -84,7 +84,7 @@ export async function verifyAndRecord(
     return {
       ok: false,
       reason: "refused",
-      message: own.error.code === "42501" ? "Only Yooits admins can do this." : own.error.message,
+      message: own.error.code === "42501" ? "Only Yooits.me admins can do this." : own.error.message,
     };
 
   const { data: post, error } = await service

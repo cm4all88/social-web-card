@@ -20,7 +20,7 @@ import {
 /** Owner > Wishlists: every list, its activity, and hiding one that breaks the rules. */
 export const Route = createFileRoute("/owner/wishlists")({
   component: WishlistsPage,
-  head: () => ({ meta: [{ title: "Wishlists — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Wishlists — Yooits.me" }, { name: "robots", content: "noindex" }] }),
 });
 
 type ListRow = {
@@ -82,7 +82,7 @@ function WishlistsPage() {
     <div className="max-w-5xl">
       <h1 className="text-3xl font-bold">Wishlists</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Every wishlist on Yooits. Reported lists are handled on{" "}
+        Every wishlist on Yooits.me. Reported lists are handled on{" "}
         <Link to="/owner/reports" className="text-primary hover:underline">
           Reports
         </Link>
@@ -130,7 +130,7 @@ function WishlistsPage() {
             <div className="rounded-2xl border border-border bg-card p-4 text-sm">
               <div className="font-medium">Retailer affiliate tags</div>
               <div className="text-muted-foreground">
-                Off. Item links go to the shop exactly as people pasted them, with no Yooits tag added.
+                Off. Item links go to the shop exactly as people pasted them, with no Yooits.me tag added.
               </div>
             </div>
           </div>

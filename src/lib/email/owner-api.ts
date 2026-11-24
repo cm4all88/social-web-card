@@ -101,7 +101,7 @@ export async function emailRpc<K extends keyof Fns>(
     }
     if (error.code === "42501")
       throw new Error(
-        /^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message,
+        /^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message,
       );
     throw new Error(error.message);
   }

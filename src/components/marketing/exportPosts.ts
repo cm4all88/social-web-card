@@ -82,7 +82,7 @@ export async function exportForReview(
     onProgress?.(i + 1, sorted.length);
   }
   const enc = new TextEncoder();
-  const title = "Yooits posts for review";
+  const title = "Yooits.me posts for review";
   files.unshift(
     { name: "review.html", data: enc.encode(reviewHtml(rows, { title })) },
     { name: "posts.csv", data: enc.encode(postsCsv(rows)) },

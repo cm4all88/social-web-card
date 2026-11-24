@@ -1,5 +1,5 @@
 /**
- * Owner > Payments: see the Stripe account Yooits is connected to, set it up,
+ * Owner > Payments: see the Stripe account Yooits.me is connected to, set it up,
  * and see which payment features are ready. Owner only (checked on the
  * server). Nothing here sells anything or flips a feature switch.
  */
@@ -21,7 +21,7 @@ const env = (name: string) => {
 
 async function requireAdmin(userId: string): Promise<void> {
   const { data, error } = await db().rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (error || data !== true) throw new Error("Only the Yooits owner can see payments setup.");
+  if (error || data !== true) throw new Error("Only the Yooits.me owner can see payments setup.");
 }
 
 function base(): string | null {

@@ -13,7 +13,7 @@ import { HANDLED_EVENT_TYPES } from "@/lib/tipping/webhook-handler";
 import { SUBSCRIPTION_EVENTS } from "@/lib/billing/sync";
 
 describe("stripe setup plan", () => {
-  it("points webhooks only at Yooits' own https sites", () => {
+  it("points webhooks only at Yooits.me's own https sites", () => {
     expect(webhookBase("https://yooits.me")).toBe("https://yooits.me");
     expect(webhookBase("https://test.yooits.me/dashboard")).toBe("https://test.yooits.me");
     expect(webhookBase("http://yooits.me")).toBeNull();
@@ -145,20 +145,20 @@ describe("reusing what Stripe already has", () => {
     expect(choosePlusPrice([p("a", 1, { id: "x", name: "Coffee" })])).toBeNull();
     expect(
       choosePlusPrice([
-        p("new", 9, { id: "x", name: "Yooits Plus", active: true }),
+        p("new", 9, { id: "x", name: "Yooits.me Plus", active: true }),
         p("old", 2, { id: "y", name: "Plus monthly", active: true }),
       ])?.id,
     ).toBe("old");
     expect(
       choosePlusPrice([
-        p("named", 1, { id: "x", name: "Yooits Plus" }),
+        p("named", 1, { id: "x", name: "Yooits.me Plus" }),
         p("ours", 5, { id: "y", name: "Something", metadata: { yooits_product: "plus" } }),
       ])?.id,
     ).toBe("ours");
     expect(choosePlusPrice([p("gone", 1, { id: "x", name: "Plus", active: false })])).toBeNull();
   });
 
-  it("finds an existing webhook at the Plus address on a Yooits host only", async () => {
+  it("finds an existing webhook at the Plus address on a Yooits.me host only", async () => {
     const { endpointsForPlan, WEBHOOK_PLANS } = await import("./stripe-setup");
     const plan = WEBHOOK_PLANS.find((x) => x.item === "billing_webhook")!;
     const e = (url: string) => ({ id: url, url, status: "enabled" });

@@ -29,14 +29,14 @@ import {
 const searchSchema = z.object({
   invite: z.string().max(200).optional().catch(undefined),
   mode: z.enum(["signin", "signup", "forgot"]).optional().catch(undefined),
-  // Where to go after signing in: a Yooits page path only (e.g. a wishlist).
+  // Where to go after signing in: a Yooits.me page path only (e.g. a wishlist).
   next: z.string().max(200).regex(SAFE_NEXT_PATH).optional().catch(undefined),
 });
 
 export const Route = createFileRoute("/auth")({
   validateSearch: searchSchema,
   component: AuthPage,
-  head: () => ({ meta: [{ title: "Sign in — Yooits" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Yooits.me" }] }),
 });
 
 type Mode = "signin" | "signup" | "forgot";
@@ -136,7 +136,7 @@ function AuthPage() {
         }
         if (!ageConfirmed) {
           throw new Error(
-            `You need to be ${LEGAL_DETAILS.minimumAge} or older to create a Yooits page.`,
+            `You need to be ${LEGAL_DETAILS.minimumAge} or older to create a Yooits.me page.`,
           );
         }
         const { data, error } = await supabase.auth.signUp({
@@ -152,7 +152,7 @@ function AuthPage() {
               // Send any well-formed code, even if the precheck failed or is still
               // loading: the database checks and redeems it, and a bad code just means the free plan.
               ...(inviteCode ? { invite_code: inviteCode } : {}),
-              // Which campaign link or Yooits page brought them (mkt_*), if any.
+              // Which campaign link or Yooits.me page brought them (mkt_*), if any.
               ...signupAttribution(),
             },
           },
@@ -193,7 +193,7 @@ function AuthPage() {
         } else if (error) {
           throw error;
         }
-        setNotice(`If ${email} has a Yooits account, a link to reset the password is on its way.`);
+        setNotice(`If ${email} has a Yooits.me account, a link to reset the password is on its way.`);
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Something went wrong");
@@ -253,7 +253,7 @@ function AuthPage() {
                 {codeInfo.kind === "founding"
                   ? BETA_NAME
                   : (codeInfo.plus_months ?? 0) > 0
-                    ? "Yooits Plus"
+                    ? "Yooits.me Plus"
                     : "Invite code"}
               </div>
             )}

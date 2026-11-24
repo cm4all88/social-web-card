@@ -49,9 +49,9 @@ export const Route = createFileRoute("/$username")({
     const image = og?.avatar_url && /^https:\/\//i.test(og.avatar_url) ? og.avatar_url : null;
     return {
       meta: [
-        { title: `${title} — Yooits` },
+        { title: `${title} — Yooits.me` },
         { name: "description", content: description },
-        { property: "og:title", content: `${title} on Yooits` },
+        { property: "og:title", content: `${title} on Yooits.me` },
         { property: "og:description", content: description },
         { property: "og:type", content: "profile" },
         ...(og ? [{ property: "og:url", content: `https://yooits.me/${og.username}` }] : []),
@@ -61,7 +61,7 @@ export const Route = createFileRoute("/$username")({
               { name: "twitter:image", content: image },
             ]
           : []),
-        { name: "twitter:title", content: `${title} on Yooits` },
+        { name: "twitter:title", content: `${title} on Yooits.me` },
         { name: "twitter:description", content: description },
       ],
     };
@@ -238,7 +238,7 @@ function ProfilePage() {
     ) {
       try {
         await navigator.share({
-          title: `${name} on Yooits`,
+          title: `${name} on Yooits.me`,
           url: trackedProfileUrl(window.location.origin, profile.username, "native"),
         });
         recordShare(profile.username, "native");
@@ -396,7 +396,7 @@ function ProfilePage() {
             className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100"
             style={{ color: theme.foreground }}
           >
-            <UserPlus className="h-3 w-3" /> Create your free Yooits.
+            <UserPlus className="h-3 w-3" /> Create your free profile on Yooits.me
           </Link>
         )}
         {profile && (

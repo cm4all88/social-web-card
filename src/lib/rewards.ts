@@ -1,5 +1,5 @@
 /**
- * Rewards: small things creators do on Yooits that unlock an earned theme.
+ * Rewards: small things creators do on Yooits.me that unlock an earned theme.
  * The database decides what is earned (public.claim_theme_rewards()); this
  * file only describes each reward and shows progress in the dashboard.
  * Keys mirror public.user_rewards and public.theme_reward_key().
@@ -20,7 +20,7 @@ export const REWARDS: readonly Reward[] = [
   { key: "five_links", label: "5 links on your page" },
   { key: "first_share", label: "Shared your page" },
   { key: "first_wishlist", label: "Made a wishlist" },
-  { key: "one_week", label: "A week on Yooits" },
+  { key: "one_week", label: "A week on Yooits.me" },
 ];
 
 export const REWARD_KEYS: readonly RewardKey[] = REWARDS.map((r) => r.key);

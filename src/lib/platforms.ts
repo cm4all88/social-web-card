@@ -90,7 +90,7 @@ export const PLATFORM_KEYS = Object.keys(PLATFORMS);
 /**
  * The presets offered when someone adds a link.
  *
- * Product decision, 21 Nov 2026: Yooits never presents itself as a way to
+ * Product decision, 21 Nov 2026: Yooits.me never presents itself as a way to
  * send money, so there is no "Payments" category, and there is no OnlyFans
  * preset while Stripe reviews the tipping model. A payment or creator
  * platform's address can still be added as an ordinary Website link.

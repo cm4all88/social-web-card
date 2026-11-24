@@ -221,7 +221,7 @@ async function onSessionPaidOrCompleted(
   deps: HandlerDeps,
 ): Promise<string> {
   const tip = await findTipForSession(session, deps);
-  if (!tip) return "not a Yooits tip session";
+  if (!tip) return "not a Yooits.me tip session";
 
   const sessionId = str(session.id);
   const paymentIntentId = idOf(session.payment_intent);
@@ -290,7 +290,7 @@ async function onSessionClosed(
   deps: HandlerDeps,
 ): Promise<string> {
   const tip = await findTipForSession(session, deps);
-  if (!tip) return "not a Yooits tip session";
+  if (!tip) return "not a Yooits.me tip session";
   if (tip.status !== "pending") return `left as ${tip.status}`;
   await deps.store.updateTip(tip.id, { status });
   return status;
@@ -376,7 +376,7 @@ async function onChargeRefunded(
   if (!tip) {
     if (await isPossiblyOurs(event, charge, deps))
       throw new RetryLaterError("refund before tip was linked");
-    return "not a Yooits tip";
+    return "not a Yooits.me tip";
   }
   // amount_refunded is cumulative, so taking the larger value is safe when
   // partial-refund events arrive out of order.
@@ -398,7 +398,7 @@ async function onDispute(
   if (!tip) {
     const known = event.account ? await deps.store.getAccountStatus(event.account) : null;
     if (known) throw new RetryLaterError("dispute before tip was linked");
-    return "not a Yooits tip";
+    return "not a Yooits.me tip";
   }
   await deps.store.updateTip(tip.id, {
     dispute_status: str(dispute.status) ?? "unknown",
@@ -426,7 +426,7 @@ async function onApplicationFee(fee: Record<string, unknown>, deps: HandlerDeps)
     // (checkout.session.completed not processed): ask Stripe to retry.
     if (acct && (await deps.store.getAccountStatus(acct)))
       throw new RetryLaterError("application fee before its charge was linked");
-    return "not a Yooits tip";
+    return "not a Yooits.me tip";
   }
 
   const amount = num(fee.amount);
@@ -454,7 +454,7 @@ async function onAccountUpdated(account: StripeAccountLike, deps: HandlerDeps) {
   const current = await deps.store.getAccountStatus(account.id);
   if (!current) return "unknown account";
   const snap = snapshotAccount(account);
-  // A creator who disconnected in Yooits stays disconnected until they reconnect.
+  // A creator who disconnected in Yooits.me stays disconnected until they reconnect.
   const patch = current === "disconnected" ? { ...snap, status: undefined } : snap;
   if (patch.status === undefined) delete (patch as Partial<AccountSnapshot>).status;
   await deps.store.updateAccount(account.id, patch);

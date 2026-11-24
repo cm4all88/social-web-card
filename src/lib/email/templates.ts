@@ -1,11 +1,11 @@
 /**
- * Every email Yooits sends, in one place. Each template turns the payload
+ * Every email Yooits.me sends, in one place. Each template turns the payload
  * its database trigger (or server call) stores into the wording of the
  * email; layout.ts gives them all the same look.
  *
  * Stripe sends payment receipts, refund receipts and failed-payment notices
  * for Plus and tips, so no template here repeats them: these emails are about
- * what changed on Yooits (Plus on or off, a tip arriving), never a receipt.
+ * what changed on Yooits.me (Plus on or off, a tip arriving), never a receipt.
  */
 import { BRAND, SITE_URL } from "./brand";
 import type { Block, EmailContent } from "./layout";
@@ -90,9 +90,9 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Welcome to Yooits",
+      subject: "Welcome to Yooits.me",
       preheader: `Your page is ready at ${BRAND.site}/${s(d.username)}.`,
-      heading: `Welcome to Yooits, ${name(d)}`,
+      heading: `Welcome to Yooits.me, ${name(d)}`,
       blocks: [
         p(
           `Your page is live at **${BRAND.site}/${s(d.username)}**. Add your links, pick a theme and share it anywhere you have a bio.`,
@@ -117,13 +117,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits account has been suspended",
+      subject: "Your Yooits.me account has been suspended",
       preheader: "Your page is hidden while we review your account.",
       heading: "Your account is suspended",
       blocks: [
         p(hi(d)),
         p(
-          "We've suspended your Yooits account after a review against our Terms and Acceptable Use Policy. While it's suspended your page is hidden and you can't make changes.",
+          "We've suspended your Yooits.me account after a review against our Terms and Acceptable Use Policy. While it's suspended your page is hidden and you can't make changes.",
         ),
         p(
           "If you think this is a mistake, reply to this email and tell us what happened. We'll take another look.",
@@ -140,7 +140,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits account is back",
+      subject: "Your Yooits.me account is back",
       preheader: "Your suspension has been lifted.",
       heading: "Welcome back",
       blocks: [
@@ -158,7 +158,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits page has been hidden",
+      subject: "Your Yooits.me page has been hidden",
       preheader: "Your account still works, but your page isn't public right now.",
       heading: "Your page is hidden",
       blocks: [
@@ -179,7 +179,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits page is public again",
+      subject: "Your Yooits.me page is public again",
       preheader: `${BRAND.site}/${s(d.username)} is back.`,
       heading: "Your page is back",
       blocks: [p(hi(d)), p(`**${BRAND.site}/${s(d.username)}** is public again.`)],
@@ -194,13 +194,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits account has been deleted",
+      subject: "Your Yooits.me account has been deleted",
       preheader: "Your page and links are gone. This is your confirmation.",
       heading: "Your account is deleted",
       blocks: [
         p(hi(d)),
         p(
-          `We've deleted your Yooits account and your page at ${BRAND.site}/${s(d.username)}. Your links, wishlists and settings are gone.`,
+          `We've deleted your Yooits.me account and your page at ${BRAND.site}/${s(d.username)}. Your links, wishlists and settings are gone.`,
         ),
         small(
           "We keep payment records (tips and Plus) that tax and payment rules require, as the Privacy Policy explains. If you didn't ask for this, reply straight away.",
@@ -223,7 +223,7 @@ export const TEMPLATES: TemplateDef[] = [
     },
     build: (d) => ({
       subject: "We got your report",
-      preheader: "Thanks for helping keep Yooits safe.",
+      preheader: "Thanks for helping keep Yooits.me safe.",
       heading: "Thanks for your report",
       blocks: [
         p(hi(d)),
@@ -277,12 +277,12 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya", changed_at: "2026-11-22T18:30:00Z" },
     build: (d) => ({
-      subject: "Your Yooits password was changed",
+      subject: "Your Yooits.me password was changed",
       preheader: "If this was you, there's nothing to do.",
       heading: "Your password was changed",
       blocks: [
         p(hi(d)),
-        p(`The password for your Yooits account was changed on ${day(d.changed_at)} (UTC).`),
+        p(`The password for your Yooits.me account was changed on ${day(d.changed_at)} (UTC).`),
         callout(notYou),
       ],
       button: { label: "Reset my password", url: `${SITE_URL}/auth?mode=forgot` },
@@ -301,13 +301,13 @@ export const TEMPLATES: TemplateDef[] = [
       changed_at: "2026-11-22T18:30:00Z",
     },
     build: (d) => ({
-      subject: "Your Yooits sign-in email was changed",
+      subject: "Your Yooits.me sign-in email was changed",
       preheader: `Your account now signs in with ${s(d.new_email_masked)}.`,
       heading: "Your sign-in email changed",
       blocks: [
         p(hi(d)),
         p(
-          `Your Yooits account now signs in with **${s(d.new_email_masked)}**. We're letting you know at your old address in case this wasn't you.`,
+          `Your Yooits.me account now signs in with **${s(d.new_email_masked)}**. We're letting you know at your old address in case this wasn't you.`,
         ),
         callout(
           "If you didn't make this change, reply to this email right away so we can lock the account and help you get it back.",
@@ -332,20 +332,20 @@ export const TEMPLATES: TemplateDef[] = [
       livemode: true,
     },
     build: (d) => ({
-      subject: "You're on Yooits Plus",
-      preheader: "Premium themes and no Yooits branding are on.",
-      heading: "Welcome to Yooits Plus",
+      subject: "You're on Yooits.me Plus",
+      preheader: "Premium themes and no Yooits.me branding are on.",
+      heading: "Welcome to Yooits.me Plus",
       blocks: [
         p(hi(d)),
         p(
-          "Plus is on. Premium themes and custom styling are unlocked, and you can hide the Yooits branding on your page.",
+          "Plus is on. Premium themes and custom styling are unlocked, and you can hide the Yooits.me branding on your page.",
         ),
         {
           kind: "details",
           rows: [
             [
               "Plan",
-              `Yooits Plus${s(String(d.amount_cents ?? "")) ? `, ${money(d.amount_cents, d.currency)}/month` : ""}`,
+              `Yooits.me Plus${s(String(d.amount_cents ?? "")) ? `, ${money(d.amount_cents, d.currency)}/month` : ""}`,
             ],
             ["Renews", day(d.period_end) || "Monthly"],
           ],
@@ -366,13 +366,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya", cancel_at: "2026-12-22T00:00:00Z" },
     build: (d) => ({
-      subject: "Your Yooits Plus will end soon",
+      subject: "Your Yooits.me Plus will end soon",
       preheader: `Plus stays on until ${day(d.cancel_at)}.`,
       heading: "Plus is set to end",
       blocks: [
         p(hi(d)),
         p(
-          `You've cancelled Yooits Plus. It stays on until **${day(d.cancel_at)}**, and you won't be charged again.`,
+          `You've cancelled Yooits.me Plus. It stays on until **${day(d.cancel_at)}**, and you won't be charged again.`,
         ),
         p("Changed your mind? You can keep Plus from your dashboard before then."),
         ...testNote(d),
@@ -388,7 +388,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya", period_end: "2026-12-22T00:00:00Z" },
     build: (d) => ({
-      subject: "You're keeping Yooits Plus",
+      subject: "You're keeping Yooits.me Plus",
       preheader: "Your cancellation has been undone.",
       heading: "Plus will keep going",
       blocks: [
@@ -409,13 +409,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Your Yooits Plus has ended",
+      subject: "Your Yooits.me Plus has ended",
       preheader: "Your page is still live with the free features.",
       heading: "Plus has ended",
       blocks: [
         p(hi(d)),
         p(
-          "Your Yooits Plus subscription has ended. Your page and all your links stay live; premium themes switch back to a free theme and Yooits branding shows again.",
+          "Your Yooits.me Plus subscription has ended. Your page and all your links stay live; premium themes switch back to a free theme and Yooits.me branding shows again.",
         ),
         small("If a payment didn't go through, Stripe will have emailed you about it."),
         ...testNote(d),
@@ -431,13 +431,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya", ends_at: "2027-02-22T00:00:00Z" },
     build: (d) => ({
-      subject: "You're a Yooits Founding Member",
+      subject: "You're a Yooits.me Founding Member",
       preheader: `Plus is free until ${day(d.ends_at)}. No card needed.`,
       heading: "You're a Founding Member",
       blocks: [
         p(hi(d)),
         p(
-          "Thank you for being one of the first creators on Yooits. Your Founding Member code gives you Yooits Plus free.",
+          "Thank you for being one of the first creators on Yooits.me. Your Founding Member code gives you Yooits.me Plus free.",
         ),
         {
           kind: "details",
@@ -470,7 +470,7 @@ export const TEMPLATES: TemplateDef[] = [
       livemode: true,
     },
     build: (d) => ({
-      subject: `You got a ${money(d.amount_cents, d.currency)} tip on Yooits`,
+      subject: `You got a ${money(d.amount_cents, d.currency)} tip on Yooits.me`,
       preheader: `${s(d.supporter_name, "Someone")} sent you a tip.`,
       heading: `${s(d.supporter_name, "Someone")} sent you a tip`,
       blocks: [
@@ -514,7 +514,7 @@ export const TEMPLATES: TemplateDef[] = [
       supporter_name: "Sam",
     },
     build: (d) => ({
-      subject: "A tip on Yooits was refunded",
+      subject: "A tip on Yooits.me was refunded",
       preheader: `${money(d.refunded_cents, d.currency)} went back to the supporter.`,
       heading: "A tip was refunded",
       blocks: [
@@ -547,7 +547,7 @@ export const TEMPLATES: TemplateDef[] = [
       dispute_amount_cents: 1050,
     },
     build: (d) => ({
-      subject: "A tip on Yooits is being disputed",
+      subject: "A tip on Yooits.me is being disputed",
       preheader: "The supporter's bank has questioned a payment.",
       heading: "A tip is being disputed",
       blocks: [
@@ -570,7 +570,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "You're approved for tips on Yooits",
+      subject: "You're approved for tips on Yooits.me",
       preheader: "Your tip button can go live once Stripe is set up.",
       heading: "You're approved for tips",
       blocks: [
@@ -590,7 +590,7 @@ export const TEMPLATES: TemplateDef[] = [
     wired: true,
     sample: { username: "maya", display_name: "Maya" },
     build: (d) => ({
-      subject: "Tips on your Yooits page are paused",
+      subject: "Tips on your Yooits.me page are paused",
       preheader: "Supporters can't tip you right now.",
       heading: "Tips are paused",
       blocks: [
@@ -635,7 +635,7 @@ export const TEMPLATES: TemplateDef[] = [
       from_display_name: "Sam",
     },
     build: (d) => ({
-      subject: `${s(d.from_display_name, "Someone")} wants to message you on Yooits`,
+      subject: `${s(d.from_display_name, "Someone")} wants to message you on Yooits.me`,
       preheader: "Accept or decline the request in Messages.",
       heading: "You have a message request",
       blocks: [
@@ -665,7 +665,7 @@ export const TEMPLATES: TemplateDef[] = [
       conversation_id: "00000000-0000-0000-0000-000000000000",
     },
     build: (d) => ({
-      subject: `New message from ${s(d.from_display_name, "someone")} on Yooits`,
+      subject: `New message from ${s(d.from_display_name, "someone")} on Yooits.me`,
       preheader: "Open Messages to read it.",
       heading: `${s(d.from_display_name, "Someone")} sent you a message`,
       blocks: [
@@ -726,7 +726,7 @@ export const TEMPLATES: TemplateDef[] = [
       reward_detail: "for adding 5 links",
     },
     build: (d) => ({
-      subject: `You unlocked ${s(d.reward_name, "a reward")} on Yooits`,
+      subject: `You unlocked ${s(d.reward_name, "a reward")} on Yooits.me`,
       preheader: "It's ready to use on your page.",
       heading: `You unlocked ${s(d.reward_name, "a reward")}`,
       blocks: [
@@ -746,13 +746,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: false,
     sample: { username: "maya", display_name: "Maya", friend_username: "sam" },
     build: (d) => ({
-      subject: `@${s(d.friend_username, "a friend")} joined Yooits with your invite`,
+      subject: `@${s(d.friend_username, "a friend")} joined Yooits.me with your invite`,
       preheader: "Thanks for spreading the word.",
       heading: "Your invite worked",
       blocks: [
         p(hi(d)),
         p(
-          `**@${s(d.friend_username)}** just joined Yooits with your invite. Thanks for spreading the word.`,
+          `**@${s(d.friend_username)}** just joined Yooits.me with your invite. Thanks for spreading the word.`,
         ),
       ],
       button: {
@@ -772,16 +772,16 @@ export const TEMPLATES: TemplateDef[] = [
     sample: {
       username: "maya",
       display_name: "Maya",
-      subject: "New on Yooits: seasonal themes",
+      subject: "New on Yooits.me: seasonal themes",
       heading: "Seasonal themes are here",
       body: "Give your page a winter look with three new seasonal themes, free for everyone this month.\n\nOpen your dashboard and pick one under Themes.",
       button_label: "Pick a theme",
       button_url: "https://yooits.me/dashboard",
     },
     build: (d) => ({
-      subject: s(d.subject, "News from Yooits"),
+      subject: s(d.subject, "News from Yooits.me"),
       preheader: s(d.preheader, s(d.body).split("\n")[0].slice(0, 120)),
-      heading: s(d.heading, s(d.subject, "News from Yooits")),
+      heading: s(d.heading, s(d.subject, "News from Yooits.me")),
       blocks: s(d.body)
         .split(/\n{2,}/)
         .map((t) => t.trim())
@@ -801,13 +801,13 @@ export const TEMPLATES: TemplateDef[] = [
     wired: false,
     sample: { invitee_name: "Maya", code: "FOUNDER-ABCD", expires_at: "2026-12-15T00:00:00Z" },
     build: (d) => ({
-      subject: "You're invited to be a Yooits Founding Member",
-      preheader: "3 months of Yooits Plus free. No card needed.",
+      subject: "You're invited to be a Yooits.me Founding Member",
+      preheader: "3 months of Yooits.me Plus free. No card needed.",
       heading: "Be one of the first 50",
       blocks: [
         p(`Hi ${s(d.invitee_name, "there")},`),
         p(
-          "We're opening Yooits to 50 Founding Members. You'd get 3 months of Yooits Plus free, with no card and no auto-renewal, and a direct line to shape what we build next.",
+          "We're opening Yooits.me to 50 Founding Members. You'd get 3 months of Yooits.me Plus free, with no card and no auto-renewal, and a direct line to shape what we build next.",
         ),
         { kind: "code", text: s(d.code, "YOUR-CODE") },
         ...(day(d.expires_at) ? [small(`This invite works until ${day(d.expires_at)}.`)] : []),

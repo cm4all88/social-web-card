@@ -139,7 +139,7 @@ export const OWNER_SECTIONS: OwnerSection[] = [
     label: "Settings",
     to: "/owner/settings",
     group: "Console",
-    summary: "Site name, tagline, contact email, Yooits social links, email defaults and feature switches.",
+    summary: "Site name, tagline, contact email, Yooits.me social links, email defaults and feature switches.",
   },
   {
     id: "audit",

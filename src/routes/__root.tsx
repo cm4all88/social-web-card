@@ -34,7 +34,7 @@ export const Route = createRootRoute({
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Yoo It's Me" },
       { name: "description", content: "A platform for users to create and share personalized social media link pages." },
-      { name: "author", content: "Yooits" },
+      { name: "author", content: "Yooits.me" },
       { property: "og:title", content: "Yoo It's Me" },
       { property: "og:description", content: "A platform for users to create and share personalized social media link pages." },
       { property: "og:type", content: "website" },

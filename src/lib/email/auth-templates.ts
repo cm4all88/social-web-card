@@ -21,7 +21,7 @@ export type AuthTemplate = {
 
 const FOOTER = {
   reason:
-    "You're getting this because someone used this email address on Yooits. If that wasn't you, you can ignore it.",
+    "You're getting this because someone used this email address on Yooits.me. If that wasn't you, you can ignore it.",
 };
 
 const ignore = {
@@ -33,15 +33,15 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "confirmation",
     label: "Confirm sign-up",
-    subject: "Confirm your Yooits email",
+    subject: "Confirm your Yooits.me email",
     content: {
-      subject: "Confirm your Yooits email",
-      preheader: "One tap to finish setting up your Yooits page.",
+      subject: "Confirm your Yooits.me email",
+      preheader: "One tap to finish setting up your Yooits.me page.",
       heading: "Confirm your email",
       blocks: [
         {
           kind: "p",
-          text: "Welcome to Yooits! Confirm this email address to finish setting up your account.",
+          text: "Welcome to Yooits.me! Confirm this email address to finish setting up your account.",
         },
       ],
       button: { label: "Confirm my email", url: "{{ .ConfirmationURL }}" },
@@ -51,15 +51,15 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "invite",
     label: "Invite",
-    subject: "You're invited to Yooits",
+    subject: "You're invited to Yooits.me",
     content: {
-      subject: "You're invited to Yooits",
+      subject: "You're invited to Yooits.me",
       preheader: "Make one page for all your links and wishlists.",
-      heading: "You're invited to Yooits",
+      heading: "You're invited to Yooits.me",
       blocks: [
         {
           kind: "p",
-          text: "You've been invited to make a Yooits page: one link for everything you share, plus wishlists people can shop from.",
+          text: "You've been invited to make a Yooits.me page: one link for everything you share, plus wishlists people can shop from.",
         },
       ],
       button: { label: "Accept the invite", url: "{{ .ConfirmationURL }}" },
@@ -69,11 +69,11 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "magic_link",
     label: "Magic link",
-    subject: "Your Yooits sign-in link",
+    subject: "Your Yooits.me sign-in link",
     content: {
-      subject: "Your Yooits sign-in link",
-      preheader: "Sign in to Yooits with one tap.",
-      heading: "Sign in to Yooits",
+      subject: "Your Yooits.me sign-in link",
+      preheader: "Sign in to Yooits.me with one tap.",
+      heading: "Sign in to Yooits.me",
       blocks: [
         { kind: "p", text: "Use this button to sign in. The link works once and expires soon." },
       ],
@@ -84,19 +84,19 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "email_change",
     label: "Change email",
-    subject: "Confirm your new Yooits email",
+    subject: "Confirm your new Yooits.me email",
     content: {
-      subject: "Confirm your new Yooits email",
+      subject: "Confirm your new Yooits.me email",
       preheader: "Confirm the change to your sign-in email.",
       heading: "Confirm your new email",
       blocks: [
-        { kind: "p", text: "Confirm that you want to use {{ .NewEmail }} to sign in to Yooits." },
+        { kind: "p", text: "Confirm that you want to use {{ .NewEmail }} to sign in to Yooits.me." },
       ],
       button: { label: "Confirm the change", url: "{{ .ConfirmationURL }}" },
       after: [
         {
           kind: "small",
-          text: "If you didn't ask to change your email, don't use the link, and change your Yooits password.",
+          text: "If you didn't ask to change your email, don't use the link, and change your Yooits.me password.",
         },
       ],
     },
@@ -104,15 +104,15 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "recovery",
     label: "Reset password",
-    subject: "Reset your Yooits password",
+    subject: "Reset your Yooits.me password",
     content: {
-      subject: "Reset your Yooits password",
-      preheader: "Choose a new password for Yooits.",
+      subject: "Reset your Yooits.me password",
+      preheader: "Choose a new password for Yooits.me.",
       heading: "Reset your password",
       blocks: [
         {
           kind: "p",
-          text: "Someone asked to reset the password for your Yooits account. Use this button to choose a new one.",
+          text: "Someone asked to reset the password for your Yooits.me account. Use this button to choose a new one.",
         },
       ],
       button: { label: "Choose a new password", url: "{{ .ConfirmationURL }}" },
@@ -127,17 +127,17 @@ export const AUTH_TEMPLATES: AuthTemplate[] = [
   {
     id: "reauthentication",
     label: "Confirm it's you",
-    subject: "Your Yooits verification code",
+    subject: "Your Yooits.me verification code",
     content: {
-      subject: "Your Yooits verification code",
+      subject: "Your Yooits.me verification code",
       preheader: "Enter this code to confirm it's you.",
       heading: "Confirm it's you",
       blocks: [
-        { kind: "p", text: "Enter this code in Yooits to continue:" },
+        { kind: "p", text: "Enter this code in Yooits.me to continue:" },
         { kind: "code", text: "{{ .Token }}" },
       ],
       after: [
-        { kind: "small", text: "If you didn't ask for this code, change your Yooits password." },
+        { kind: "small", text: "If you didn't ask for this code, change your Yooits.me password." },
       ],
     },
   },

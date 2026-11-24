@@ -1,6 +1,6 @@
 /**
  * Server side of the owner's Payments page: reads the Stripe account behind
- * STRIPE_SECRET_KEY and sets up what Yooits needs in it (the Plus price, the
+ * STRIPE_SECRET_KEY and sets up what Yooits.me needs in it (the Plus price, the
  * billing portal and three webhook endpoints), storing each endpoint's signing
  * secret sealed in stripe_setup_items. Works without any payment switch, so
  * the owner can set Stripe up before anything is sold. It never charges,
@@ -52,7 +52,7 @@ export function keyOnlyStripe(key: string): Stripe {
   const client = new Stripe(key, {
     httpClient: Stripe.createFetchHttpClient(),
     maxNetworkRetries: 2,
-    appInfo: { name: "Yooits" },
+    appInfo: { name: "Yooits.me" },
   });
   cached = { key, client };
   return client;
@@ -197,7 +197,7 @@ function webhookStates(
   });
 }
 
-/** An endpoint already at this address for this plan's events (one Yooits didn't create). */
+/** An endpoint already at this address for this plan's events (one Yooits.me didn't create). */
 function endpointAt(endpoints: Stripe.WebhookEndpoint[], url: string, p: WebhookPlan) {
   return endpoints.find(
     (e) =>
@@ -304,7 +304,7 @@ async function plusLikePrices(stripe: Stripe): Promise<Stripe.Price[]> {
   return out;
 }
 
-/** An existing active Yooits Plus product (ours by metadata, or named Plus). */
+/** An existing active Yooits.me Plus product (ours by metadata, or named Plus). */
 async function existingPlusProduct(stripe: Stripe): Promise<Stripe.Product | null> {
   const all: Stripe.Product[] = [];
   for await (const p of stripe.products.list({ active: true, limit: 100 })) all.push(p);
@@ -321,7 +321,7 @@ export type SelfCheck = { ok: boolean; signedStatus: number | null; badStatus: n
 /**
  * Proves the Plus webhook on this site checks Stripe signatures: a harmless
  * event signed with the stored secret must be accepted (200) and the same
- * event with a wrong signature refused (400). The event type is one Yooits
+ * event with a wrong signature refused (400). The event type is one Yooits.me
  * ignores, so nothing is stored or changed.
  */
 export async function billingWebhookSelfCheck(
@@ -363,9 +363,9 @@ export async function billingWebhookSelfCheck(
 }
 
 /**
- * Makes the Stripe account ready for Yooits Plus, reusing what is already
+ * Makes the Stripe account ready for Yooits.me Plus, reusing what is already
  * there: an existing $4.99 monthly price, the account's own billing portal
- * settings and any webhook already pointing at Yooits. It creates a piece only
+ * settings and any webhook already pointing at Yooits.me. It creates a piece only
  * when the account has none, and never makes a second price, portal or
  * webhook for the same job. Safe to run again. Returns what it did.
  */
@@ -393,8 +393,8 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
         (await existingPlusProduct(stripe)) ??
         (await stripe.products.create(
           {
-            name: "Yooits Plus",
-            description: "Premium customization and no Yooits branding.",
+            name: "Yooits.me Plus",
+            description: "Premium customization and no Yooits.me branding.",
             metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
           },
           { idempotencyKey: `yooits-plus-product-${account.id}` },
@@ -407,7 +407,7 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
           recurring: { interval: PLUS_INTERVAL },
           lookup_key: PLUS_PRICE_LOOKUP_KEY,
           transfer_lookup_key: true,
-          nickname: "Yooits Plus monthly",
+          nickname: "Yooits.me Plus monthly",
           metadata: { [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE },
         },
         { idempotencyKey: `yooits-plus-price-${account.id}-${PLUS_PRICE_CENTS}` },
@@ -489,7 +489,7 @@ export async function runSetup(base: string, actorUserId: string): Promise<strin
       connect: p.connect,
       enabled_events: p.events as Stripe.WebhookEndpointCreateParams.EnabledEvent[],
       api_version: Stripe.API_VERSION as Stripe.WebhookEndpointCreateParams.ApiVersion,
-      description: `Yooits: ${p.label}`,
+      description: `Yooits.me: ${p.label}`,
       metadata: { yooits_setup: p.item },
     });
     if (!created.secret) throw new Error("Stripe didn't return a signing secret.");

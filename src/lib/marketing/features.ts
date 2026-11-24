@@ -1,5 +1,5 @@
 /**
- * The Yooits features marketing may talk about, because they work on
+ * The Yooits.me features marketing may talk about, because they work on
  * yooits.me today for everyone, for free. Every generated post is built only
  * from this list. Anything switched off or not public (tips, creator
  * subscriptions, gift money, Pro, Support Offerings, paid Plus checkout,
@@ -87,7 +87,7 @@ export const FEATURES: Record<FeatureId, Feature> = {
       "Add 5 links",
       "Share your page for the first time",
       "Make your first wishlist",
-      "A week on Yooits",
+      "A week on Yooits.me",
     ],
     demo: "Finish the profile and watch the new theme unlock.",
   },

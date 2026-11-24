@@ -183,7 +183,7 @@ function ConnectCard({ status }: { status: Status }) {
       <p className="text-sm text-muted-foreground">
         {broken
           ? `Google stopped accepting the sign-in for ${status.account?.google_email}. Connect again to keep using Mail here.`
-          : "Sign in with the Google account that receives admin@yooits.me. Yooits keeps the sign-in encrypted on its server and only you can open the mailbox here."}
+          : "Sign in with the Google account that receives admin@yooits.me. Yooits.me keeps the sign-in encrypted on its server and only you can open the mailbox here."}
       </p>
       <Button onClick={connect} disabled={busy}>
         {busy ? (
@@ -290,7 +290,7 @@ function MailApp({ status, onChanged }: { status: Status; onChanged: () => void 
   };
 
   const disconnect = async () => {
-    if (!window.confirm("Disconnect Gmail from Yooits? Your mail stays in Gmail.")) return;
+    if (!window.confirm("Disconnect Gmail from Yooits.me? Your mail stays in Gmail.")) return;
     try {
       await disconnectMail();
       toast.success("Disconnected. Your mail is still in Gmail.");
@@ -1244,7 +1244,7 @@ function SystemEmails() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        Automatic Yooits email sent through Resend (welcome, security, messages, owner alerts), with
+        Automatic Yooits.me email sent through Resend (welcome, security, messages, owner alerts), with
         each one's delivery. These aren't in Gmail.
       </p>
       <div className="flex flex-wrap gap-2">

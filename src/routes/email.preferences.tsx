@@ -15,7 +15,7 @@ export const Route = createFileRoute("/email/preferences")({
   }),
   component: EmailPreferencesPage,
   head: () => ({
-    meta: [{ title: "Email preferences — Yooits" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Email preferences — Yooits.me" }, { name: "robots", content: "noindex" }],
   }),
 });
 
@@ -25,7 +25,7 @@ const LABELS: Record<Exclude<Kind, "all">, { title: string; body: string }> = {
     title: "Page activity",
     body: "Wishlists going live, rewards and other updates about your page.",
   },
-  marketing: { title: "News from Yooits", body: "New features and occasional announcements." },
+  marketing: { title: "News from Yooits.me", body: "New features and occasional announcements." },
 };
 
 const rpc = (fn: string, args: object) =>
@@ -39,7 +39,7 @@ const rpc = (fn: string, args: object) =>
   ).rpc(fn, args);
 
 /**
- * Where the unsubscribe and "Email preferences" links in Yooits email land.
+ * Where the unsubscribe and "Email preferences" links in Yooits.me email land.
  * The link's token identifies the person, so no sign-in is needed. Account,
  * security and billing email can't be turned off here: those are about the
  * account itself.

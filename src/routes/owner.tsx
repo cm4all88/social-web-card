@@ -8,13 +8,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { OWNER_GROUPS, sectionsIn } from "@/lib/owner/nav";
 
 /**
- * Owner console layout (Yooits admins only). This check only decides what the
+ * Owner console layout (Yooits.me admins only). This check only decides what the
  * browser shows; every owner read and write is checked again in the database.
  */
 export const Route = createFileRoute("/owner")({
   component: OwnerLayout,
   head: () => ({
-    meta: [{ title: "Owner console — Yooits" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Owner console — Yooits.me" }, { name: "robots", content: "noindex" }],
   }),
 });
 
@@ -75,7 +75,7 @@ function OwnerLayout() {
   if (state === "denied") {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-        <p className="text-muted-foreground">The owner console is only for Yooits admins.</p>
+        <p className="text-muted-foreground">The owner console is only for Yooits.me admins.</p>
         <Button asChild variant="secondary">
           <Link to="/dashboard">Go to your dashboard</Link>
         </Button>

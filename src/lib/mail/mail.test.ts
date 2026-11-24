@@ -79,7 +79,7 @@ describe("addresses", () => {
 
 describe("building a message", () => {
   const base = {
-    from: { name: "Yooits", email: "admin@yooits.me" },
+    from: { name: "Yooits.me", email: "admin@yooits.me" },
     to: [{ name: "", email: "c88mike@gmail.com" }],
     subject: "Hello",
     text: "Line one\nLine two",
@@ -89,7 +89,7 @@ describe("building a message", () => {
 
   it("plain text with headers", () => {
     const m = buildMessage(base);
-    expect(m).toContain('From: "Yooits" <admin@yooits.me>\r\n');
+    expect(m).toContain('From: "Yooits.me" <admin@yooits.me>\r\n');
     expect(m).toContain("To: c88mike@gmail.com\r\n");
     expect(m).toContain("Subject: Hello\r\n");
     expect(m).toContain("MIME-Version: 1.0");

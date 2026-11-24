@@ -32,7 +32,7 @@ export function UsernameControl({
       { _user_id: userId, _username: next, _reason: reason },
     );
     setBusy(false);
-    if (error) return toast.error(/^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message);
+    if (error) return toast.error(/^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message);
     toast.success(data.changed ? `Username is now @${data.username}` : "That's already the username");
     setValue("");
     setReason("");
@@ -62,7 +62,7 @@ export function UsernameControl({
           <Input
             id="assign-reason"
             maxLength={200}
-            placeholder="Official Yooits account"
+            placeholder="Official Yooits.me account"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />

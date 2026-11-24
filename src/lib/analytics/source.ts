@@ -27,7 +27,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   duckduckgo: "DuckDuckGo",
   yahoo: "Yahoo",
   email: "Email",
-  yooits: "Yooits",
+  yooits: "Yooits.me",
   other: "Other websites",
 };
 

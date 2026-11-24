@@ -1,5 +1,5 @@
 /**
- * Server-only settings for Yooits Plus billing (Stripe Billing on Yooits' own
+ * Server-only settings for Yooits.me Plus billing (Stripe Billing on Yooits.me's own
  * Stripe account). Separate from tipping: turning one on never turns on the
  * other, and the creator tipping settings are not read here except for the
  * shared Stripe key.
@@ -8,7 +8,7 @@
  *  - PLUS_BILLING_ENABLED: webhooks, the billing portal and cancelling work,
  *    so existing subscribers are looked after.
  *  - PLUS_CHECKOUT_ENABLED: "true" lets new people start paying; "owner"
- *    lets only Yooits admins (for a first live purchase). Needs the one above.
+ *    lets only Yooits.me admins (for a first live purchase). Needs the one above.
  *  - PLUS_LIVE_MODE_APPROVED: a LIVE Stripe key is accepted for billing.
  *    Without it only TEST keys work. Deploys never set any of these.
  *  - On a Vercel production deployment (yooits.me) a TEST key also keeps

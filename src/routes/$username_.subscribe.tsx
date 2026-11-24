@@ -29,7 +29,7 @@ export const Route = createFileRoute("/$username_/subscribe")({
   component: SubscribePage,
   head: ({ params }) => ({
     meta: [
-      { title: `Subscribe to @${params.username} — Yooits` },
+      { title: `Subscribe to @${params.username} — Yooits.me` },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -189,7 +189,7 @@ function SubscribePage() {
           <dd>{formatUsd(offer.priceCents)}</dd>
         </div>
         <div className="flex justify-between opacity-80">
-          <dt>Yooits service and processing fee</dt>
+          <dt>Yooits.me service and processing fee</dt>
           <dd>{formatUsd(offer.serviceFeeCents)}</dd>
         </div>
         <div
@@ -201,7 +201,7 @@ function SubscribePage() {
         </div>
       </dl>
       <p className="text-xs opacity-70">
-        {offer.displayName} keeps the full {formatUsd(offer.priceCents)}. The fee covers Yooits and
+        {offer.displayName} keeps the full {formatUsd(offer.priceCents)}. The fee covers Yooits.me and
         card processing. Cancel anytime; you keep access until the end of the month you paid for.
       </p>
       <label className="flex items-start gap-2 text-sm">

@@ -22,7 +22,7 @@ import {
 export const Route = createFileRoute("/messages")({
   component: MessagesPage,
   validateSearch: z.object({ to: z.string().max(30).optional() }),
-  head: () => ({ meta: [{ title: "Messages — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Messages — Yooits.me" }, { name: "robots", content: "noindex" }] }),
 });
 
 const POLL_MS = 15_000;
@@ -143,7 +143,7 @@ function MessagesPage() {
                   ? "No message requests."
                   : settings.mode === "off"
                     ? "Turn on messages above to start talking."
-                    : "No messages yet. Open someone's Yooits page and tap Message."}
+                    : "No messages yet. Open someone's Yooits.me page and tap Message."}
               </p>
             ) : (
               <ul className="mt-4 divide-y divide-border rounded-2xl border border-border">

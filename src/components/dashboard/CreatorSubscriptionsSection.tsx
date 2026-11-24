@@ -2,7 +2,7 @@
  * Creator tab, subscriptions part: apply, set a monthly price for review, and
  * write public or subscriber-only posts. There is no checkout and nothing to
  * buy: subscriptions can't be sold until they're fully built and Stripe has
- * approved Yooits' model. The database checks every step again.
+ * approved Yooits.me's model. The database checks every step again.
  */
 import { useEffect, useState } from "react";
 import { Loader2, Lock, Trash2 } from "lucide-react";
@@ -51,13 +51,13 @@ export function CreatorSubscriptionsSection({
       )}
       <p className="text-sm text-muted-foreground">
         You set a monthly price and keep all of it. Subscribers pay a service and processing fee on
-        top, shown before they pay. Subscriptions can't be bought on Yooits yet.
+        top, shown before they pay. Subscriptions can't be bought on Yooits.me yet.
       </p>
       {data.monetization?.suspended ? (
         <div className={card}>
           <div className="font-medium">Your creator subscriptions are paused</div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {data.monetization.suspended_reason ?? "Contact Yooits for details."}
+            {data.monetization.suspended_reason ?? "Contact Yooits.me for details."}
           </p>
         </div>
       ) : approved ? (
@@ -104,7 +104,7 @@ function Application({ data, onChanged }: { data: Visible; onChanged: () => void
       <div className={card}>
         <div className="font-medium">Your application is waiting for review</div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Yooits reviews every creator before they can offer subscriptions.
+          Yooits.me reviews every creator before they can offer subscriptions.
         </p>
         <Button
           variant="secondary"
@@ -433,7 +433,7 @@ function Posts({
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {p.visibility === "subscribers" ? "Subscribers only" : "Everyone"}
-                    {p.removed ? ` · Removed by Yooits: ${p.removed_reason ?? ""}` : ""}
+                    {p.removed ? ` · Removed by Yooits.me: ${p.removed_reason ?? ""}` : ""}
                   </div>
                 </div>
                 <Button

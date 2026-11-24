@@ -61,7 +61,7 @@ describe("planWishlistGiftCheckout", () => {
     const b = plan.breakdown;
     expect(b.creatorPrice).toBe(2000);
     expect(b.total).toBe(b.creatorPrice + b.serviceFee);
-    // Owner's account pays Stripe's fee on the total; after that and Yooits' fee they keep the gift.
+    // Owner's account pays Stripe's fee on the total; after that and Yooits.me's fee they keep the gift.
     expect(b.total - b.estimatedProcessingFee - plan.applicationFeeCents).toBe(2000);
     expect(plan.applicationFeeCents).toBeGreaterThanOrEqual(50);
   });

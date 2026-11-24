@@ -175,10 +175,10 @@ const FEATURE_COPY: Record<FeatureId, { hooks: string[]; steps: string[]; tag: s
   page: {
     hooks: [
       "Your bio gets one link. Make it the one that has everything.",
-      "Your own Yooits page is free, and it takes about a minute.",
+      "Your own Yooits.me page is free, and it takes about a minute.",
       'If people keep asking "where else are you?", send them here.',
     ],
-    steps: ["Pick a username", "Add your links", "Put your Yooits link in your bio"],
+    steps: ["Pick a username", "Add your links", "Put your Yooits.me link in your bio"],
     tag: "linkinbio",
   },
   links: {
@@ -218,7 +218,7 @@ const FEATURE_COPY: Record<FeatureId, { hooks: string[]; steps: string[]; tag: s
   rewards: {
     hooks: [
       "Finish setting up your page and it pays you back in themes.",
-      "Five small things to do on Yooits, five themes you unlock.",
+      "Five small things to do on Yooits.me, five themes you unlock.",
     ],
     steps: ["Complete your profile", "Add five links", "Share your page"],
     tag: "unlocked",
@@ -226,7 +226,7 @@ const FEATURE_COPY: Record<FeatureId, { hooks: string[]; steps: string[]; tag: s
   background: {
     hooks: [
       "Hit 1,000 visitors and your page can wear your own background.",
-      "Here's what 1,000 visitors unlocks on Yooits.",
+      "Here's what 1,000 visitors unlocks on Yooits.me.",
     ],
     steps: ["Share your page", "Watch the visitor count", "Upload your background at 1,000"],
     tag: "milestone",
@@ -250,7 +250,7 @@ const FEATURE_COPY: Record<FeatureId, { hooks: string[]; steps: string[]; tag: s
   },
   messages: {
     hooks: [
-      "Messages on Yooits are off until you turn them on.",
+      "Messages on Yooits.me are off until you turn them on.",
       "Let people reach you without handing out your number.",
     ],
     steps: ["Turn messages on in settings", "Reply when you want", "Block or report in a tap"],

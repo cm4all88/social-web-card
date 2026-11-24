@@ -15,7 +15,7 @@ export type FeatureInputs = {
   env: {
     PLUS_BILLING_ENABLED: boolean;
     PLUS_CHECKOUT_ENABLED: boolean;
-    /** PLUS_CHECKOUT_ENABLED=owner: only Yooits admins can buy. */
+    /** PLUS_CHECKOUT_ENABLED=owner: only Yooits.me admins can buy. */
     PLUS_CHECKOUT_OWNER_ONLY?: boolean;
     PLUS_LIVE_MODE_APPROVED: boolean;
     TIPPING_ENABLED: boolean;
@@ -74,7 +74,7 @@ export function featureReadiness(i: FeatureInputs): FeatureState[] {
   return [
     {
       id: "plus",
-      label: "Yooits Plus ($4.99 a month)",
+      label: "Yooits.me Plus ($4.99 a month)",
       on: plusOn,
       ready: plusMissing.length === 0,
       missing: plusMissing,

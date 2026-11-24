@@ -1,5 +1,5 @@
 /**
- * Share graphics for a person's own Yooits page: a 1080x1920 story and a
+ * Share graphics for a person's own Yooits.me page: a 1080x1920 story and a
  * 1080x1350 post. The phone shows their real page (their theme, photo, name,
  * bio and first links, as yooits.me draws them), drawn with the same pieces
  * as the Marketing Center graphics, and the address printed is their own.
@@ -175,7 +175,7 @@ function MyPage({
       })}
       {profile.showBranding && (
         <text x={SCREEN_W / 2} y={y + 28} textAnchor="middle" fill={fg} opacity={0.6} fontSize={12}>
-          Get your own Yooits
+          Create your free profile on Yooits.me
         </text>
       )}
     </g>
@@ -244,7 +244,7 @@ export function ProfileShareGraphic({
   const { w, h } = SHARE_SIZES[format];
   const uid = (id ?? `share-${format}`).replace(/[^a-zA-Z0-9_-]/g, "");
   const t = theme;
-  const label = `${profile.name} on Yooits: ${address}`;
+  const label = `${profile.name} on Yooits.me: ${address}`;
 
   if (format === "story") {
     const phoneW = 560;

@@ -81,7 +81,7 @@ describe("removing a custom background", () => {
   it("passes on the database's refusal for non-admins", async () => {
     const f = fakes({ rpcError: { code: "42501", message: "Not authorized" } });
     await expect(removeBackground(f.asAdmin, f.service, U, "Reported")).rejects.toThrow(
-      "Only Yooits admins can do this.",
+      "Only Yooits.me admins can do this.",
     );
     expect(f.removed).toEqual([]);
   });

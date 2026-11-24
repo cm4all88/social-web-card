@@ -54,7 +54,7 @@ export function SupportOfferingsAdmin() {
     <section className="mt-12">
       <h2 className="text-2xl font-bold">Support Offerings</h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Creators keep the whole price; supporters pay the {formatCents(PLATFORM_FEE_CENTS)} Yooits
+        Creators keep the whole price; supporters pay the {formatCents(PLATFORM_FEE_CENTS)} Yooits.me
         service fee on top. Approve only real deliverables, never a disguised money transfer.
         There's no checkout yet, so nothing can be bought.
       </p>

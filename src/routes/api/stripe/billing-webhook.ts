@@ -7,7 +7,7 @@ import { verifyStripeWebhook } from "@/lib/tipping/verify-webhook";
 import { keyOnlyStripe, storedWebhookSecrets, stripeKey } from "@/lib/payments/setup.server";
 
 /**
- * Stripe webhook for Yooits Plus (Stripe Billing on Yooits' own account).
+ * Stripe webhook for Yooits.me Plus (Stripe Billing on Yooits.me's own account).
  * Its own endpoint and signing secret (STRIPE_BILLING_WEBHOOK_SECRET, or the one
  * Owner > Payments stored), apart
  * from the tipping webhook, so neither can affect the other.

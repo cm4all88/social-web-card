@@ -9,7 +9,7 @@ import { SETUP_WEBHOOKS } from "@/lib/payments/stripe-setup";
 /** Owner > Payments: the Stripe account, setting it up, and what's ready to switch on. */
 export const Route = createFileRoute("/owner/payments")({
   component: PaymentsPage,
-  head: () => ({ meta: [{ title: "Payments — Yooits" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Payments — Yooits.me" }, { name: "robots", content: "noindex" }] }),
 });
 
 type Status = Awaited<ReturnType<typeof getPaymentsSetup>>;
@@ -53,7 +53,7 @@ function PaymentsPage() {
       const r = await runPaymentsSetup();
       setSteps(r.steps);
       setStatus(r.status);
-      toast.success("Stripe is set up for Yooits. Nothing was switched on.");
+      toast.success("Stripe is set up for Yooits.me. Nothing was switched on.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -122,7 +122,7 @@ function PaymentsPage() {
                 <h2 className="font-semibold">Set up</h2>
                 <Button onClick={setUp} disabled={busy || !status.base}>
                   {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Set up Stripe for Yooits
+                  Set up Stripe for Yooits.me
                 </Button>
               </div>
               {!status.base && (

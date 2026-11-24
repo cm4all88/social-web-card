@@ -116,7 +116,7 @@ export async function betaRpc<K extends keyof BetaFunctions>(
   if (error) {
     if (error.code === "42501") {
       throw new OwnerAccessError(
-        /^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message,
+        /^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message,
       );
     }
     throw new Error(error.message);

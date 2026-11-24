@@ -10,7 +10,7 @@
  *    with no account attached (their user_id is cleared by foreign key);
  *  - admin_audit_log: append-only by design.
  * Admin accounts and suspended accounts can't delete themselves here: an admin
- * must hand over admin first, and a suspension is resolved with Yooits.
+ * must hand over admin first, and a suspension is resolved with Yooits.me.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -75,7 +75,7 @@ export async function deleteAccount(
     );
   }
   if ((status as { suspended_at?: string | null } | null)?.suspended_at) {
-    throw new AccountDeletionRefused("This account is suspended. Contact Yooits to close it.");
+    throw new AccountDeletionRefused("This account is suspended. Contact Yooits.me to close it.");
   }
 
   if ((subs as { status: string }[] | null)?.some((x) => RUNNING.includes(x.status))) {

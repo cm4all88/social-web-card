@@ -15,7 +15,7 @@ describe("invite codes", () => {
 
   it("build links and plain messages", () => {
     expect(codeLink("abcd2345", "https://yooits.me/")).toBe("https://yooits.me/auth?invite=abcd2345");
-    expect(codeStateMessage({ kind: "promotion", state: "ok", plus_months: 2 })).toMatch(/2 months of Yooits Plus, free/);
+    expect(codeStateMessage({ kind: "promotion", state: "ok", plus_months: 2 })).toMatch(/2 months of Yooits.me Plus, free/);
     expect(codeStateMessage({ kind: "invite", state: "ok", plus_months: 0 })).toMatch(/applied when you create/);
     expect(codeStateMessage(asCodeInfo({ state: "weird" }))).toMatch(/isn't valid/);
     expect(usesLine({ use_count: 0, max_uses: 1 })).toBe("Unused");
@@ -29,7 +29,7 @@ describe("site settings", () => {
   it("fall back to today's site and keep only https social links", () => {
     expect(asSiteSettings(null)).toEqual(DEFAULT_SITE_SETTINGS);
     const s = asSiteSettings({
-      site_name: "Yooits",
+      site_name: "Yooits.me",
       theme_color: "red",
       socials: { tiktok: "https://tiktok.com/@yooits", instagram: "javascript:alert(1)", x: "https://x.com/yooits" },
     });

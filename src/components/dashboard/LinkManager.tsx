@@ -74,7 +74,7 @@ function friendly(message: string): string {
   if (/up to 20 sections/i.test(message)) return "You can have up to 20 sections.";
   if (/link_sections_title|check constraint/i.test(message))
     return "Section names need 1 to 40 characters.";
-  if (/blocked/i.test(message)) return "Links to that site aren't allowed on Yooits.";
+  if (/blocked/i.test(message)) return "Links to that site aren't allowed on Yooits.me.";
   return message;
 }
 

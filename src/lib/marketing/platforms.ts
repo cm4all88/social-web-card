@@ -92,7 +92,7 @@ export const PLATFORMS: Record<PlatformId, PlatformSpec> = {
       "Film the video from the script (the graphic works as the cover or first frame).",
       "Open TikTok, tap +, add the video and paste the caption.",
       "Your bio link is where people tap through; captions don't link.",
-      "Post it, tap Share > Copy link, and paste that link here. Yooits checks it with TikTok.",
+      "Post it, tap Share > Copy link, and paste that link here. Yooits.me checks it with TikTok.",
     ],
     api: {
       status: "restricted",
@@ -120,7 +120,7 @@ export const PLATFORMS: Record<PlatformId, PlatformSpec> = {
     manualSteps: [
       "Download the graphic if the post has one.",
       "Open X, start a post, paste the text (the campaign link is already in it).",
-      "Post it, tap Share > Copy link, and paste that link here. Yooits checks it with X.",
+      "Post it, tap Share > Copy link, and paste that link here. Yooits.me checks it with X.",
     ],
     api: {
       status: "possible",
@@ -146,7 +146,7 @@ export const PLATFORMS: Record<PlatformId, PlatformSpec> = {
     oembed: null,
     manualSteps: [
       "Download the graphic.",
-      "Open your Yooits Facebook Page, create a post, add the graphic and paste the text.",
+      "Open your Yooits.me Facebook Page, create a post, add the graphic and paste the text.",
       "Post it, open the post, copy its link from the time stamp or Share > Copy link, and paste it here.",
     ],
     api: {
@@ -154,7 +154,7 @@ export const PLATFORMS: Record<PlatformId, PlatformSpec> = {
       summary:
         "Facebook's API can post to a Page you manage, with scheduling up to 30 days ahead. An app used only for your own Page needs no app review.",
       needs: [
-        "A Facebook Page for Yooits where you can create content",
+        "A Facebook Page for Yooits.me where you can create content",
         "The same Meta developer app as Instagram, with Page permissions",
       ],
       cost: "No fee listed by Meta.",
@@ -174,7 +174,7 @@ export const PLATFORMS: Record<PlatformId, PlatformSpec> = {
     manualSteps: [
       "Film the vertical video from the script (under 3 minutes makes it a Short).",
       "Upload it in YouTube Studio or the app; use the title line as the title and paste the rest as the description.",
-      "Set it to Public, then copy the Short's link and paste it here. Yooits checks it with YouTube.",
+      "Set it to Public, then copy the Short's link and paste it here. Yooits.me checks it with YouTube.",
     ],
     api: {
       status: "possible",

@@ -356,7 +356,7 @@ export async function ownerRpc<K extends keyof OwnerFunctions>(
     if (error.code === "42501") {
       // The database says why (e.g. "You can't suspend your own account.").
       throw new OwnerAccessError(
-        /^Not authorized/.test(error.message) ? "Only Yooits admins can do this." : error.message,
+        /^Not authorized/.test(error.message) ? "Only Yooits.me admins can do this." : error.message,
       );
     }
     throw new Error(error.message);

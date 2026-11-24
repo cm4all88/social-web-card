@@ -139,7 +139,7 @@ describe("routing", () => {
         ev("checkout.session.completed", { metadata: { yooits_tip_id: "t" } }),
       ),
     ).toBe(false);
-    // Platform events (Yooits Plus) are never ours, so they're never claimed here.
+    // Platform events (Yooits.me Plus) are never ours, so they're never claimed here.
     expect(
       isCreatorSubscriptionEvent(
         ev("customer.subscription.updated", subscription(), { account: null }),
@@ -237,11 +237,11 @@ describe("subscription events", () => {
     expect(row().status).toBe("past_due");
   });
 
-  it("leaves subscriptions that aren't Yooits' alone", async () => {
+  it("leaves subscriptions that aren't Yooits.me's alone", async () => {
     const r = await run(
       ev("customer.subscription.updated", subscription({ id: "sub_x", metadata: {} })),
     );
-    expect(r.detail).toBe("not a Yooits creator subscription");
+    expect(r.detail).toBe("not a Yooits.me creator subscription");
   });
 
   it("doesn't let an older event delivered late undo a newer one", async () => {

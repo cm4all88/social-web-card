@@ -21,7 +21,7 @@ describe("claim checks", () => {
       "Send gift money to your friends",
       "Upgrade to Plus for $4.99",
       "Join as a Founding Member",
-      "Yooits Pro is here",
+      "Yooits.me Pro is here",
       "Get paid by your fans",
     ]) {
       expect(hasBlockedClaim(t), t).toBe(true);
@@ -310,7 +310,7 @@ describe("verifying a live post", () => {
       "p1",
       "https://x.com/yooits/status/123",
       json(200, {
-        author_name: "Yooits",
+        author_name: "Yooits.me",
         author_url: "https://twitter.com/yooits",
         html: "<blockquote>",
       }),

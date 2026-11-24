@@ -69,7 +69,7 @@ import { tabForHash, DASHBOARD_TABS, type TabId } from "@/lib/links/tabs";
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
   head: () => ({
-    meta: [{ title: "Your dashboard — Yooits" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Your dashboard — Yooits.me" }, { name: "robots", content: "noindex" }],
   }),
 });
 
@@ -229,7 +229,7 @@ function DashboardPage() {
       setSections(secs);
       loadLinkClicks().then(setClicks);
 
-      // Set by Yooits admins from the owner console; readable only by this user.
+      // Set by Yooits.me admins from the owner console; readable only by this user.
       // (Not in the generated types yet; called as a method so the client keeps its `this`.)
       const { data: st } = await (
         supabase as unknown as { from: (t: string) => ReturnType<typeof supabase.from> }
@@ -589,8 +589,8 @@ function DashboardPage() {
             className="mt-6 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-sm"
           >
             {restriction === "suspended"
-              ? "Your account is suspended by Yooits. Your page is hidden and changes are turned off. Your information hasn't been deleted."
-              : "Your page is unpublished by Yooits, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
+              ? "Your account is suspended by Yooits.me. Your page is hidden and changes are turned off. Your information hasn't been deleted."
+              : "Your page is unpublished by Yooits.me, so visitors can't see it right now. You can still edit it, and nothing has been deleted."}
           </div>
         )}
 
@@ -732,7 +732,7 @@ function DashboardPage() {
               <MyAnalytics />
               {!clicks.enabled && (
                 <p className="mt-4 text-sm text-muted-foreground">
-                  Stats show here once analytics is switched on for Yooits.
+                  Stats show here once analytics is switched on for Yooits.me.
                 </p>
               )}
             </div>

@@ -1,7 +1,7 @@
 /**
  * Creator subscription fee math. Creators keep 100% of the price they set;
  * the buyer pays the price plus a service and processing fee that covers
- * Yooits' share and the card processor's fee.
+ * Yooits.me's share and the card processor's fee.
  *
  * Rates come from the owner console (creator_subscription_settings). They are
  * unset until the owner chooses them, and with no rates there is no fee to
@@ -25,7 +25,7 @@ export type FeeBreakdown = {
   total: number;
   /** The processor's estimated cut of the total. */
   estimatedProcessingFee: number;
-  /** What's left for Yooits after the processor's fee. */
+  /** What's left for Yooits.me after the processor's fee. */
   yooitsNet: number;
 };
 
@@ -55,7 +55,7 @@ export function parseFeeRates(raw: unknown): FeeRates | null {
 }
 
 /**
- * The smallest total for which the creator gets their whole price and Yooits
+ * The smallest total for which the creator gets their whole price and Yooits.me
  * gets its share after the processor's fee. Returns null for a bad price or
  * missing rates.
  */

@@ -1,5 +1,5 @@
 /**
- * What Yooits needs in a Stripe account, worked out without any network so it
+ * What Yooits.me needs in a Stripe account, worked out without any network so it
  * can be tested on its own. The owner's Payments page (Owner > Payments) uses
  * this to set up a Stripe account from its secret key: the webhook endpoints
  * and the Plus billing portal. Setting up turns nothing on: every payment
@@ -17,7 +17,7 @@ export const WEBHOOK_HOSTS = ["yooits.me", "test.yooits.me"] as const;
 export type WebhookPlan = {
   item: WebhookItem;
   label: string;
-  /** Events on connected accounts (creators' Stripe accounts) rather than Yooits' own. */
+  /** Events on connected accounts (creators' Stripe accounts) rather than Yooits.me's own. */
   connect: boolean;
   path: string;
   events: string[];
@@ -25,10 +25,10 @@ export type WebhookPlan = {
   envSecret: string;
 };
 
-/** Yooits Plus: subscriptions on Yooits' own Stripe account. */
+/** Yooits.me Plus: subscriptions on Yooits.me's own Stripe account. */
 export const BILLING_WEBHOOK_EVENTS: string[] = [...SUBSCRIPTION_EVENTS];
 
-/** Tips: Yooits' fee on each tip, which Stripe reports on Yooits' own account. */
+/** Tips: Yooits.me's fee on each tip, which Stripe reports on Yooits.me's own account. */
 export const PAYMENTS_WEBHOOK_EVENTS: string[] = [
   "application_fee.created",
   "application_fee.refunded",
@@ -59,7 +59,7 @@ export const CONNECT_WEBHOOK_EVENTS: string[] = [
 export const WEBHOOK_PLANS: WebhookPlan[] = [
   {
     item: "billing_webhook",
-    label: "Yooits Plus billing",
+    label: "Yooits.me Plus billing",
     connect: false,
     path: "/api/stripe/billing-webhook",
     events: BILLING_WEBHOOK_EVENTS,
@@ -86,7 +86,7 @@ export const WEBHOOK_PLANS: WebhookPlan[] = [
 /** Webhooks Set up handles now. Tips and Connect wait until those features are switched on. */
 export const SETUP_WEBHOOKS: WebhookItem[] = ["billing_webhook"];
 
-/** The site the endpoints point at, or null when the address isn't one of Yooits' own. */
+/** The site the endpoints point at, or null when the address isn't one of Yooits.me's own. */
 export function webhookBase(siteUrl: string | null | undefined): string | null {
   if (!siteUrl) return null;
   let u: URL;
@@ -110,7 +110,7 @@ export function missingEvents(have: string[], want: string[]): string[] {
 export function portalConfigurationParams(base: string) {
   return {
     business_profile: {
-      headline: "Manage your Yooits Plus subscription",
+      headline: "Manage your Yooits.me Plus subscription",
       privacy_policy_url: `${base}/privacy`,
       terms_of_service_url: `${base}/terms`,
     },
@@ -163,7 +163,7 @@ type PriceCandidate = {
 
 /**
  * Of the account's active $4.99-a-month USD prices (already checked by the
- * caller), the one that is Yooits Plus: marked as ours first, then one whose
+ * caller), the one that is Yooits.me Plus: marked as ours first, then one whose
  * product is called Plus. Oldest wins, so running again picks the same one.
  * Null when none of them is plainly Plus.
  */
@@ -187,7 +187,7 @@ type EndpointLike = {
   metadata?: Record<string, string> | null;
 };
 
-/** An endpoint already pointing at this plan's address on any Yooits host. */
+/** An endpoint already pointing at this plan's address on any Yooits.me host. */
 export function endpointsForPlan<T extends EndpointLike>(
   endpoints: T[],
   plan: Pick<WebhookPlan, "path">,
@@ -204,7 +204,7 @@ export function endpointsForPlan<T extends EndpointLike>(
 
 /**
  * Who may start a Plus checkout. PLUS_CHECKOUT_ENABLED "true" opens it to
- * everyone; "owner" only to Yooits admins, for a first live purchase.
+ * everyone; "owner" only to Yooits.me admins, for a first live purchase.
  */
 export type PlusCheckoutMode = "everyone" | "owner" | "off";
 export function plusCheckoutMode(value: string | null | undefined): PlusCheckoutMode {

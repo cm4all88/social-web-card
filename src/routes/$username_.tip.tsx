@@ -19,13 +19,13 @@ export const Route = createFileRoute("/$username_/tip")({
   component: TipPage,
   head: ({ params }) => ({
     meta: [
-      { title: `Tip @${params.username} — Yooits` },
+      { title: `Tip @${params.username} — Yooits.me` },
       {
         name: "description",
         content: `Send @${params.username} a tip. Secure checkout by Stripe.`,
       },
       { property: "og:title", content: `Tip @${params.username}` },
-      { property: "og:description", content: `Send @${params.username} a tip on Yooits.` },
+      { property: "og:description", content: `Send @${params.username} a tip on Yooits.me.` },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -109,7 +109,7 @@ function TipPage() {
           <p className="mt-4 text-xl font-semibold">Thank you!</p>
           <p className="mt-2 opacity-80">
             Your {formatUsd(result.tipCents)} tip to {name} went through. You paid{" "}
-            {formatUsd(result.totalCents)} including the Yooits service fee.
+            {formatUsd(result.totalCents)} including the Yooits.me service fee.
           </p>
         </div>,
       );

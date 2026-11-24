@@ -1,10 +1,10 @@
 /**
- * Server functions for Yooits Plus. Handlers run only on the server; the
+ * Server functions for Yooits.me Plus. Handlers run only on the server; the
  * browser gets RPC stubs. The price, the customer and the plan are decided
  * here from the database and Stripe, never from browser input.
  *
  * Paid checkout opens only when PLUS_BILLING_ENABLED is "true" and
- * PLUS_CHECKOUT_ENABLED is "true" (everyone) or "owner" (Yooits admins only),
+ * PLUS_CHECKOUT_ENABLED is "true" (everyone) or "owner" (Yooits.me admins only),
  * see config.server.ts. Without them, Founding Members keep
  * their free Plus and nobody is offered a way to pay.
  */
@@ -42,9 +42,9 @@ function publicError(e: unknown): never {
   throw new Error(GENERIC);
 }
 
-/** Yooits colours and logo on the Plus checkout page (the site's own tokens). */
+/** Yooits.me colours and logo on the Plus checkout page (the site's own tokens). */
 export const PLUS_CHECKOUT_BRANDING: Stripe.Checkout.SessionCreateParams.BrandingSettings = {
-  display_name: "Yooits",
+  display_name: "Yooits.me",
   background_color: "#ffffff",
   button_color: "#df6df8",
   border_style: "rounded",
@@ -115,7 +115,7 @@ async function customerFor(
   if (existing && existing.livemode === livemode) return existing.stripe_customer_id;
   if (existing) {
     // A test-mode customer from sandbox testing; live payments get a new one.
-    throw new UserFacingError("Your billing is set up in test mode. Contact Yooits to switch it.");
+    throw new UserFacingError("Your billing is set up in test mode. Contact Yooits.me to switch it.");
   }
   const customer = await stripe.customers.create(
     { email, metadata: { user_id: userId, [PLUS_METADATA_KEY]: PLUS_METADATA_VALUE } },
@@ -223,7 +223,7 @@ export const startPlusCheckout = createServerFn({ method: "POST" })
         subscription_data: {
           metadata,
           ...(trialEnd ? { trial_end: trialEnd } : {}),
-          description: "Yooits Plus",
+          description: "Yooits.me Plus",
         },
         allow_promotion_codes: false,
         branding_settings: PLUS_CHECKOUT_BRANDING,

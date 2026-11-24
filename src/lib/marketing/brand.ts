@@ -1,12 +1,12 @@
 /**
- * The Yooits brand for marketing graphics: the message, the logo's colors and
+ * The Yooits.me brand for marketing graphics: the message, the logo's colors and
  * the "Yo" mark as vector shapes (measured from the logo file), plus the color
  * helpers that turn a page theme's CSS into SVG paint, so a phone in an ad
  * looks like the real page in that theme.
  */
 
 export const BRAND = {
-  name: "Yooits",
+  name: "Yooits.me",
   site: "yooits.me",
   url: "https://yooits.me",
   message: "Yo, it's me.",
