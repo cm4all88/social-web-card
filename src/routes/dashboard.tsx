@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { usernameError, normalizeUsername, USERNAME_HELP } from "@/lib/username";
+import {
+  bioLength,
+  limitBio,
+  MAX_EXTRA_AVATARS,
+  PROFILE_BIO_LIMIT,
+} from "@/lib/profile-presentation";
 import { getTheme, type ThemeTokens } from "@/lib/themes";
 import { ShareSheet } from "@/components/share/ShareSheet";
 import { recordShare } from "@/lib/share/track";
@@ -68,7 +74,6 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 const AVATAR_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const BIO_MAX = 300;
 
 type Profile = {
   id: string;
@@ -77,6 +82,10 @@ type Profile = {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  avatar_gallery?: string[] | null;
+  avatar_size?: number;
+  skin_intensity?: string;
+  bio_alignment?: string;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
@@ -98,6 +107,7 @@ function DashboardPage() {
   // The username as saved, so an unchanged name isn't re-checked: the official
   // account keeps a protected name the owner assigned.
   const [savedUsername, setSavedUsername] = useState<string | null>(null);
+  const [savingPresentation, setSavingPresentation] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [links, setLinks] = useState<ManagedLink[]>([]);
@@ -241,6 +251,27 @@ function DashboardPage() {
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
 
+  // The live schema is applied separately from Vercel's app deployment.
+  const presentationReady = typeof profile?.avatar_size === "number";
+  const bioLimit = presentationReady ? PROFILE_BIO_LIMIT : 300;
+
+  const savePresentation = async (
+    settings: { avatar_size: number } | { bio_alignment: string } | { skin_intensity: string },
+  ) => {
+    if (!profile) return;
+    setSavingPresentation(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update(settings)
+        .eq("user_id", profile.user_id);
+      if (error) toast.error(error.message);
+      else setProfile((current) => (current ? { ...current, ...settings } : current));
+    } finally {
+      setSavingPresentation(false);
+    }
+  };
+
   const saveProfile = async () => {
     if (!profile) return;
     const username = normalizeUsername(profile.username ?? "");
@@ -248,6 +279,10 @@ function DashboardPage() {
     const problem = changed ? usernameError(username) : null;
     if (problem) {
       toast.error(problem);
+      return;
+    }
+    if (bioLength(profile.bio ?? "") > bioLimit) {
+      toast.error(`Bio must be at most ${bioLimit} characters`);
       return;
     }
     setSavingProfile(true);
@@ -272,13 +307,29 @@ function DashboardPage() {
       }
       return;
     }
-    setProfile({ ...profile, username });
+    setProfile((current) => (current ? { ...current, username } : current));
     setSavedUsername(username);
     toast.success("Profile saved");
     rewards.refresh();
   };
 
-  const uploadAvatar = async (file: File) => {
+  const saveAvatarGallery = async (previous: string[], next: string[]) => {
+    if (!userId) throw new Error("Sign in to update your photos.");
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ avatar_gallery: next })
+      .eq("user_id", userId)
+      .filter("avatar_gallery", "eq", `{${previous.join(",")}}`)
+      .select("avatar_gallery")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new Error("The photo carousel changed. Refresh the page and try again.");
+    setProfile((current) =>
+      current ? { ...current, avatar_gallery: data.avatar_gallery } : current,
+    );
+  };
+
+  const uploadAvatar = async (file: File, forGallery = false) => {
     if (!profile || !userId) return;
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image must be under 5MB");
@@ -293,29 +344,50 @@ function DashboardPage() {
       { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/gif": "gif" }[
         file.type
       ] ?? "jpg";
-    const path = `${userId}/avatar-${Date.now()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
-      cacheControl: "3600",
-      upsert: true,
-      contentType: file.type,
-    });
-    if (upErr) {
+    const path = `${userId}/avatar-${crypto.randomUUID()}.${ext}`;
+    const bucket = supabase.storage.from("avatars");
+    const photos = profile.avatar_gallery ?? [];
+    try {
+      if (forGallery && photos.length >= MAX_EXTRA_AVATARS)
+        throw new Error("Your photo carousel is full.");
+      const { error: uploadError } = await bucket.upload(path, file, {
+        cacheControl: "3600",
+        contentType: file.type,
+      });
+      if (uploadError) throw new Error(uploadError.message);
+      const url = bucket.getPublicUrl(path).data.publicUrl;
+      if (forGallery) {
+        await saveAvatarGallery(photos, [...photos, url]);
+      } else {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ avatar_url: url })
+          .eq("user_id", userId);
+        if (error) throw new Error(error.message);
+        setProfile((current) => (current ? { ...current, avatar_url: url } : current));
+        rewards.refresh();
+      }
+      toast.success(forGallery ? "Photo added to the carousel" : "Profile picture updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload the photo.");
+    } finally {
       setUploadingAvatar(false);
-      toast.error(upErr.message);
-      return;
     }
-    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-    const url = pub.publicUrl;
-    const { error: updErr } = await supabase
-      .from("profiles")
-      .update({ avatar_url: url })
-      .eq("user_id", userId);
-    setUploadingAvatar(false);
-    if (updErr) toast.error(updErr.message);
-    else {
-      setProfile({ ...profile, avatar_url: url });
-      toast.success("Profile picture updated");
-      rewards.refresh();
+  };
+
+  const removeGalleryPhoto = async (url: string) => {
+    const photos = profile?.avatar_gallery ?? [];
+    setUploadingAvatar(true);
+    try {
+      await saveAvatarGallery(
+        photos,
+        photos.filter((photo) => photo !== url),
+      );
+      toast.success("Photo removed from the carousel");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not remove the photo.");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -327,7 +399,7 @@ function DashboardPage() {
       .eq("user_id", userId);
     if (error) toast.error(error.message);
     else {
-      setProfile({ ...profile, avatar_url: null });
+      setProfile((current) => (current ? { ...current, avatar_url: null } : current));
       toast.success("Profile picture removed");
     }
   };
@@ -466,7 +538,7 @@ function DashboardPage() {
                 links={links}
                 sections={sections}
                 isPlus={isPlus}
-                background={isPlus || rewards.popular ? profile.background_url : null}
+                rewards={rewards.unlocked}
               />
             </div>
           </div>
@@ -591,6 +663,56 @@ function DashboardPage() {
                   setProfile((p) => (p ? { ...p, hide_branding: v } : p))
                 }
               />
+              {presentationReady && (
+                <div className={card}>
+                  <div className="flex flex-wrap gap-4">
+                    <label className="grid gap-1 text-sm font-medium">
+                      Avatar size
+                      <select
+                        className="rounded-md border bg-background p-2"
+                        value={profile.avatar_size ?? 144}
+                        disabled={savingPresentation}
+                        onChange={(event) =>
+                          void savePresentation({ avatar_size: Number(event.target.value) })
+                        }
+                      >
+                        <option value={112}>Small · 112 px</option>
+                        <option value={144}>Medium · 144 px</option>
+                        <option value={176}>Large · 176 px</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium">
+                      Bio alignment
+                      <select
+                        className="rounded-md border bg-background p-2"
+                        value={profile.bio_alignment ?? "center"}
+                        disabled={savingPresentation}
+                        onChange={(event) =>
+                          void savePresentation({ bio_alignment: event.target.value })
+                        }
+                      >
+                        <option value="center">Center</option>
+                        <option value="left">Left</option>
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-sm font-medium">
+                      Animation intensity
+                      <select
+                        className="rounded-md border bg-background p-2"
+                        value={profile.skin_intensity ?? "standard"}
+                        disabled={savingPresentation}
+                        onChange={(event) =>
+                          void savePresentation({ skin_intensity: event.target.value })
+                        }
+                      >
+                        <option value="subtle">Subtle</option>
+                        <option value="standard">Standard</option>
+                        <option value="full">Full</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              )}
               <AppearanceSection
                 profile={profile}
                 setProfile={
@@ -618,21 +740,21 @@ function DashboardPage() {
 
           {activeTab === "creator" &&
             (creator.visible || creatorSubs.visible || supportOfferings.visible) && (
-            <div id="creator">
-              <h2 className="text-xl font-bold">Creator earnings</h2>
-              <CreatorEarningsSection data={creator} />
-              <CreatorSubscriptionsSection
-                data={creatorSubs}
-                userId={userId}
-                onChanged={reloadCreatorSubs}
-              />
-              <SupportOfferingsSection
-                data={supportOfferings}
-                userId={userId}
-                onChanged={reloadSupportOfferings}
-              />
-            </div>
-          )}
+              <div id="creator">
+                <h2 className="text-xl font-bold">Creator earnings</h2>
+                <CreatorEarningsSection data={creator} />
+                <CreatorSubscriptionsSection
+                  data={creatorSubs}
+                  userId={userId}
+                  onChanged={reloadCreatorSubs}
+                />
+                <SupportOfferingsSection
+                  data={supportOfferings}
+                  userId={userId}
+                  onChanged={reloadSupportOfferings}
+                />
+              </div>
+            )}
 
           {activeTab === "profile" && profile && (
             <div id="profile">
@@ -676,12 +798,61 @@ function DashboardPage() {
                       </label>
                     </Button>
                     {profile.avatar_url && (
-                      <Button size="sm" variant="ghost" onClick={removeAvatar}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={uploadingAvatar}
+                        onClick={removeAvatar}
+                      >
                         <X className="mr-2 h-4 w-4" /> Remove
                       </Button>
                     )}
                   </div>
                 </div>
+
+                {profile.avatar_gallery && (
+                  <fieldset className="mb-6 space-y-3 border-t pt-4" disabled={uploadingAvatar}>
+                    <p className="font-semibold">Avatar carousel</p>
+                    <p className="text-sm text-muted-foreground">
+                      Add up to three public photos after your main photo.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      {profile.avatar_gallery.map((url, index) => (
+                        <div className="relative" key={url}>
+                          <img
+                            src={url}
+                            alt={`Carousel photo ${index + 1}`}
+                            className="size-14 rounded-full border object-cover"
+                          />
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="icon"
+                            className="absolute -right-1 -top-1 size-6 rounded-full"
+                            aria-label={`Remove carousel photo ${index + 1}`}
+                            onClick={() => void removeGalleryPhoto(url)}
+                          >
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                    {profile.avatar_gallery.length < MAX_EXTRA_AVATARS && (
+                      <label className="inline-grid gap-1 text-sm">
+                        Add carousel photo
+                        <Input
+                          type="file"
+                          accept={AVATAR_TYPES.join(",")}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (file) void uploadAvatar(file, true);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </fieldset>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -725,13 +896,14 @@ function DashboardPage() {
                   <Textarea
                     id="bio"
                     value={profile.bio ?? ""}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    placeholder="A short line about you"
+                    onChange={(e) =>
+                      setProfile({ ...profile, bio: limitBio(e.target.value, bioLimit) })
+                    }
+                    placeholder="Tell visitors a little about you"
                     rows={2}
-                    maxLength={BIO_MAX}
                   />
                   <p className="text-right text-xs text-muted-foreground">
-                    {(profile.bio ?? "").length}/{BIO_MAX}
+                    {bioLength(profile.bio ?? "")}/{bioLimit}
                   </p>
                 </div>
                 <div className="mt-4">

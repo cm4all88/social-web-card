@@ -119,6 +119,24 @@ describe("upgrading a live database (owner already admin)", () => {
     expect(await rolesOf(db, ALICE)).toEqual(["user"]);
   });
 
+  it("gives existing profiles the presentation defaults", async () => {
+    const { rows } = await db.query(
+      `SELECT avatar_size, avatar_gallery, bio_alignment, skin_intensity FROM public.profiles WHERE user_id = $1`, [ALICE],
+    );
+    expect(rows).toEqual([{ avatar_size: 144, avatar_gallery: [], bio_alignment: "center", skin_intensity: "standard" }]);
+  });
+
+  it("stores demo profiles outside the public directory and limits access to admins", async () => {
+    await asUser(db, OWNER, `INSERT INTO public.marketing_demo_profiles (profile) VALUES ('{"name":"Julie Hope"}')`);
+    expect(await asUser(db, OWNER, `SELECT profile FROM public.marketing_demo_profiles`))
+      .toEqual([{ profile: { name: "Julie Hope" } }]);
+    expect(await asUser(db, ALICE, `SELECT profile FROM public.marketing_demo_profiles`)).toEqual([]);
+    expect(await fails(asUser(db, ALICE, `INSERT INTO public.marketing_demo_profiles (profile) VALUES ('{}')`)))
+      .toMatch(/row-level security/);
+    const publicDemo = await db.query(`SELECT username FROM public.profiles WHERE display_name = 'Julie Hope'`);
+    expect(publicDemo.rows).toEqual([]);
+  });
+
   it("removes both automatic admin triggers", async () => {
     const { rows } = await db.query<{ tgname: string }>(
       `SELECT tgname FROM pg_trigger WHERE tgrelid = 'auth.users'::regclass AND NOT tgisinternal`,
@@ -260,9 +278,27 @@ describe("input rules for signed-in users", () => {
     asUser(db, ALICE, `UPDATE profiles SET ${patch} WHERE user_id = '${ALICE}'`, params);
 
   it("limits bio and display name length", async () => {
-    expect(await fails(updateProfile(`bio = $1`, ["x".repeat(301)]))).toMatch(/profiles_bio_length/);
+    expect(await fails(updateProfile(`bio = $1`, ["x".repeat(1001)]))).toMatch(/profiles_bio_length/);
     expect(await fails(updateProfile(`display_name = $1`, ["x".repeat(51)]))).toMatch(/profiles_display_name_length/);
-    expect(await fails(updateProfile(`bio = $1`, ["x".repeat(300)]))).toBeNull();
+    expect(await fails(updateProfile(`bio = $1`, ["📚".repeat(1000)]))).toBeNull();
+  });
+
+  it("validates avatar sizes, bio alignment and animation intensity", async () => {
+    expect(await fails(updateProfile(`avatar_size = 176, bio_alignment = 'left', skin_intensity = 'subtle'`))).toBeNull();
+    expect(await fails(updateProfile(`avatar_size = 1000`))).toMatch(/avatar_size_check/);
+    expect(await fails(updateProfile(`bio_alignment = 'right'`))).toMatch(/bio_alignment_check/);
+    expect(await fails(updateProfile(`skin_intensity = 'fast'`))).toMatch(/skin_intensity_check/);
+  });
+
+  it("accepts up to three additional photos from the profile owner's avatar folder", async () => {
+    const own = (file: string) => `${PROJECT}/storage/v1/object/public/avatars/${ALICE}/${file}`;
+    const update = (photos: (string | null)[]) => updateProfile("avatar_gallery = $1", [photos]);
+    expect(await fails(update([own("one.jpg"), own("two.png"), own("three.webp")]))).toBeNull();
+    for (const photos of [
+      [own("one.jpg"), own("two.png"), own("three.webp"), own("four.gif")],
+      [`${PROJECT}/storage/v1/object/public/avatars/${OWNER}/portrait.png`],
+      ["https://outside.example/avatar.webp"], [null],
+    ]) expect(await fails(update(photos))).toMatch(/avatar_gallery_check/);
   });
 
   it("only accepts hex colors and listed styles in a custom theme", async () => {

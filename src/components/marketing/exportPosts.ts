@@ -1,3 +1,4 @@
+import { studioGraphic } from "@/lib/marketing/studio";
 import { createElement } from "react";
 import { PostGraphic, saveBlob, sizedSvg, svgToPng } from "@/lib/marketing/graphics";
 import {
@@ -29,6 +30,7 @@ export async function exportForReview(
   );
   const files: ZipFile[] = [];
   const rows: ExportPost[] = [];
+  const manifest: { post: ExportPost; assets: string[] }[] = [];
   for (const [i, p] of sorted.entries()) {
     const slug = slugOf(p.campaign_id);
     const row: ExportPost = {
@@ -43,7 +45,29 @@ export async function exportForReview(
       scheduled_at: p.scheduled_at,
       image: null,
     };
-    if (hasGraphic(p.graphic)) {
+    const assets: string[] = [];
+    const studio = studioGraphic(p.graphic.studio);
+    if (studio) {
+      const { captureStudio, captureStudioVideo } = await import("./captureStudio");
+      for (const [slide] of studio.profiles.entries()) {
+        const png = await captureStudio(studio, slide, p.graphic.headline, p.graphic.cta);
+        const filename = imageName(i, p);
+        const image =
+          studio.profiles.length === 1
+            ? filename
+            : filename.replace(/\.png$/, `/slide-${String(slide + 1).padStart(2, "0")}.png`);
+        if (!row.image) row.image = image;
+        const path = `images/${image}`;
+        files.push({ name: path, data: new Uint8Array(await png.arrayBuffer()) });
+        assets.push(path);
+        if (studio.video) {
+          const video = await captureStudioVideo(studio, slide, p.graphic.headline, p.graphic.cta);
+          const videoPath = `videos/${image.replace(/\.png$/, ".mp4")}`;
+          files.push({ name: videoPath, data: new Uint8Array(await video.arrayBuffer()) });
+          assets.push(videoPath);
+        }
+      }
+    } else if (hasGraphic(p.graphic)) {
       const size = graphicSize(p.platform, p.format);
       const markup = renderToStaticMarkup(
         createElement(PostGraphic, { spec: p.graphic, size, id: `export${i}` }),
@@ -51,8 +75,10 @@ export async function exportForReview(
       const png = await svgToPng(sizedSvg(markup, size), size);
       row.image = imageName(i, p);
       files.push({ name: `images/${row.image}`, data: new Uint8Array(await png.arrayBuffer()) });
+      assets.push(`images/${row.image}`);
     }
     rows.push(row);
+    manifest.push({ post: row, assets });
     onProgress?.(i + 1, sorted.length);
   }
   const enc = new TextEncoder();
@@ -60,6 +86,7 @@ export async function exportForReview(
   files.unshift(
     { name: "review.html", data: enc.encode(reviewHtml(rows, { title })) },
     { name: "posts.csv", data: enc.encode(postsCsv(rows)) },
+    { name: "manifest.json", data: enc.encode(JSON.stringify(manifest, null, 2)) },
   );
   const day = new Date().toISOString().slice(0, 10);
   saveBlob(

@@ -152,7 +152,7 @@ export function PlusPanel({
       {isPlus && (
         <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
           <div>
-            <Label htmlFor="hide-branding" className="font-medium">Hide "Get your own Yooits"</Label>
+            <Label htmlFor="hide-branding" className="font-medium">Hide "Create your free Yooits."</Label>
             <p className="text-xs text-muted-foreground">Removes the Yooits line at the bottom of your page while you're on Plus.</p>
           </div>
           <Switch id="hide-branding" checked={hideBranding} onCheckedChange={toggleBranding} />

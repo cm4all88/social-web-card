@@ -6,7 +6,10 @@
  */
 import { AUDIENCES, FEATURES, type Audience, type FeatureId } from "./features";
 import { LINK_TOKEN, countedLength } from "./links";
-import { PLATFORMS, type PlatformId, type PostFormat } from "./platforms";
+import { PLATFORMS, graphicSize, type PlatformId, type PostFormat } from "./platforms";
+import { DEMO_PROFILES, type StudioGraphicSpec } from "./studio";
+import { findSkin, THEME_DEFAULT_SKIN } from "@/lib/skins";
+import { findThemePreset } from "@/lib/themes";
 import type { Concept, DraftPost, GraphicLayout, GraphicTheme, PostKind } from "./types";
 
 const VIDEO_FORMAT: Partial<Record<PlatformId, PostFormat>> = {
@@ -22,7 +25,9 @@ export function formatFor(c: Concept, platform: PlatformId): PostFormat {
   if (c.script && (platform === "instagram" || platform === "snapchat"))
     return VIDEO_FORMAT[platform]!;
   if (platform === "instagram")
-    return c.graphic.items && c.graphic.items.length >= 3 ? "carousel" : "post";
+    return (c.graphic.items?.length ?? 0) >= 3 || (c.graphic.looks?.length ?? 0) >= 2
+      ? "carousel"
+      : "post";
   if (platform === "snapchat") return "story";
   if (platform === "x") return "post";
   return c.script ? "reel" : "post";
@@ -45,6 +50,59 @@ function clip(s: string, max: number): string {
   if ([...s].length <= max) return s;
   const cut = [...s].slice(0, max - 1).join("");
   return `${cut.replace(/\s+\S*$/, "")}…`;
+}
+
+function profileGraphic(
+  c: Concept,
+  platform: PlatformId,
+  format: PostFormat,
+): StudioGraphicSpec | undefined {
+  if (!["hero", "profile", "themes", "compare"].includes(c.graphic.layout ?? "")) return;
+  if (
+    !c.features.some((feature) =>
+      ["page", "links", "themes", "seasonal", "effects"].includes(feature),
+    )
+  )
+    return;
+
+  const demoName = {
+    everyone: "Personal",
+    creators: "BookTok",
+    streamers: "Gaming",
+    artists: "Art",
+    small_business: "Small business",
+  }[c.audience];
+  const demo =
+    DEMO_PROFILES.find(({ audience }) => audience === demoName)?.profile ??
+    DEMO_PROFILES[0].profile;
+  const looks = c.graphic.looks?.length
+    ? c.graphic.looks
+    : [c.graphic.look ?? (c.features.includes("seasonal") ? "snowfall" : "midnight")];
+  const profiles = (format === "carousel" ? looks.slice(0, 4) : looks.slice(0, 1)).map((key) => {
+    const theme = findThemePreset(key)?.key ?? "midnight";
+    return {
+      ...demo,
+      theme,
+      skin: c.graphic.effect ?? THEME_DEFAULT_SKIN[theme] ?? "none",
+      bio: c.graphic.bio ?? demo.bio,
+      links: c.graphic.links?.length
+        ? c.graphic.links.slice(0, 6).map((link, index) => ({
+            title: link.label,
+            platform: link.icon,
+            icon: link.icon,
+            featured: link.featured,
+            url: `https://${link.icon.toLowerCase().replace(/[^a-z0-9-]/g, "") || "creator"}.example/${demo.username}/${index + 1}`,
+          }))
+        : demo.links,
+    };
+  });
+  const size = graphicSize(platform, format);
+  return {
+    profiles,
+    canvas: size.h > 1500 ? "vertical" : size.h > size.w ? "portrait" : "square",
+    presentation: "device",
+    video: ["reel", "video", "short", "story"].includes(format) && !!findSkin(profiles[0].skin),
+  };
 }
 
 export function renderConcept(
@@ -88,6 +146,7 @@ export function renderConcept(
       format === "short" ||
       format === "reel" ||
       (platform === "snapchat" && !!c.script));
+  const studio = profileGraphic(c, platform, format);
   return {
     platform,
     format,
@@ -96,7 +155,11 @@ export function renderConcept(
     caption: clip(caption, spec.captionMax),
     hashtags,
     script: usesScript ? scriptText(c.script!) : null,
-    graphic: { ...c.graphic, theme: c.graphic.theme ?? campaignTheme ?? "brand" },
+    graphic: {
+      ...c.graphic,
+      theme: c.graphic.theme ?? campaignTheme ?? "brand",
+      ...(studio ? { studio, headline: c.graphic.headline.replaceAll("*", "") } : {}),
+    },
     features: c.features,
     landing_path: c.landing ?? "/",
     source: "launch_plan",
@@ -322,8 +385,7 @@ function graphicFor(
   i: number,
   theme?: GraphicTheme,
 ): Concept["graphic"] {
-  const backdrop =
-    theme ?? (fid === "seasonal" ? "snow" : BACKDROPS[i % BACKDROPS.length]);
+  const backdrop = theme ?? (fid === "seasonal" ? "snow" : BACKDROPS[i % BACKDROPS.length]);
   if (kind === "tutorial" || kind === "tip")
     return { layout: "steps", theme: backdrop, headline: headlineFrom(hook), items: steps };
   const layout = FEATURE_LAYOUT[fid];

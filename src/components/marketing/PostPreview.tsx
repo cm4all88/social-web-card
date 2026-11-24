@@ -1,3 +1,5 @@
+import { StudioGraphic } from "./StudioGraphic";
+import { studioGraphic } from "@/lib/marketing/studio";
 import { PLATFORMS, FORMAT_LABELS, graphicSize } from "@/lib/marketing/platforms";
 import { PostGraphic } from "@/lib/marketing/graphics";
 import { campaignLink, countedLength, displayLink, fillCaption } from "@/lib/marketing/links";
@@ -31,7 +33,9 @@ export function finalCaption(
 
 export function hasGraphic(g: Post["graphic"]): g is GraphicSpec {
   return (
-    !!g && typeof (g as GraphicSpec).headline === "string" && (g as GraphicSpec).headline.length > 0
+    !!g &&
+    typeof (g as GraphicSpec).headline === "string" &&
+    ((g as GraphicSpec).headline.length > 0 || !!studioGraphic(g.studio))
   );
 }
 
@@ -49,23 +53,42 @@ export function PostPreview({
 }) {
   const spec = PLATFORMS[post.platform];
   const size = graphicSize(post.platform, post.format);
+  const studio = studioGraphic(post.graphic.studio);
   const text = finalCaption(post, slug);
   const used = countedLength(post.platform, text);
   const over = used > spec.captionMax;
   const above = [...text].slice(0, spec.foldAt).join("");
   const below = [...text].slice(spec.foldAt).join("");
   return (
-    <div className={`mx-auto w-full ${className} overflow-hidden rounded-2xl border border-border bg-card`}>
+    <div
+      className={`mx-auto w-full ${className} overflow-hidden rounded-2xl border border-border bg-card`}
+    >
       <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs">
         <span className="font-semibold">{spec.label}</span>
         <span className="text-muted-foreground">
           {FORMAT_LABELS[post.format]} · {size.label}
         </span>
       </div>
-      {hasGraphic(post.graphic) && (
-        <div className="bg-black/20">
-          <PostGraphic spec={post.graphic} size={size} id={graphicId} />
+      {studio ? (
+        <div className="max-h-80 overflow-auto">
+          {studio.profiles.map((profile, i) => (
+            <div key={i} style={{ zoom: 0.53 }}>
+              <StudioGraphic
+                profile={profile}
+                canvas={studio.canvas}
+                presentation={studio.presentation}
+                headline={post.graphic.headline}
+                cta={post.graphic.cta}
+              />
+            </div>
+          ))}
         </div>
+      ) : (
+        hasGraphic(post.graphic) && (
+          <div className="bg-black/20">
+            <PostGraphic spec={post.graphic} size={size} id={graphicId} />
+          </div>
+        )
       )}
       <div className="space-y-2 p-3 text-sm">
         <p className="whitespace-pre-wrap break-words">

@@ -1,3 +1,4 @@
+import { studioGraphic } from "@/lib/marketing/studio";
 import { useEffect, useState } from "react";
 import { Copy, Download, ExternalLink, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
@@ -235,7 +236,19 @@ export function PostEditor({
               </div>
             </TabsContent>
 
-            <TabsContent value="graphic" className="space-y-4">
+            {g.studio && (
+              <TabsContent value="graphic" className="space-y-4">
+                <label className="block">Headline
+                  <Input value={g.headline} disabled={locked} maxLength={80}
+                    onChange={(event) => setG({ headline: event.target.value })} />
+                </label>
+                <label className="block">Call to action
+                  <Input value={g.cta ?? ""} disabled={locked} maxLength={70}
+                    onChange={(event) => setG({ cta: event.target.value })} />
+                </label>
+              </TabsContent>
+            )}
+            {g.studio ? null : <TabsContent value="graphic" className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label className="text-sm">Layout</Label>
@@ -453,7 +466,7 @@ export function PostEditor({
                   </div>
                 </>
               )}
-            </TabsContent>
+            </TabsContent>}
 
             <TabsContent value="video" className="space-y-1.5">
               <Label className="text-sm">Video script</Label>
@@ -633,7 +646,15 @@ export function PublishDialog({
                   <Copy className="h-3 w-3" /> Copy script
                 </Button>
               )}
-              {hasGraphic(post.graphic) && (
+              {studioGraphic(post.graphic.studio) ? (
+                <Button size="sm" variant="secondary" onClick={() =>
+                  import("./exportPosts").then(({ exportForReview }) =>
+                    exportForReview([post], () => slug ?? undefined),
+                  ).catch((e) => toast.error(e.message))
+                }>
+                  <Download className="h-3 w-3" /> Download post ZIP
+                </Button>
+              ) : hasGraphic(post.graphic) && (
                 <Button
                   size="sm"
                   variant="secondary"

@@ -1,3 +1,4 @@
+import type { StudioGraphicSpec } from "./studio";
 import type { Audience, FeatureId } from "./features";
 import type { PlatformId, PostFormat } from "./platforms";
 
@@ -9,14 +10,7 @@ export type PostStatus =
 /** Older posts name a template; newer ones a layout. Both still draw. */
 export type GraphicTemplate = "headline" | "list" | "steps" | "wishlist" | "profile";
 export type GraphicLayout =
-  | "hero"
-  | "profile"
-  | "themes"
-  | "wishlist"
-  | "analytics"
-  | "steps"
-  | "statement"
-  | "compare";
+  "hero" | "profile" | "themes" | "wishlist" | "analytics" | "steps" | "statement" | "compare";
 /** The backdrop behind the layout. */
 export type GraphicTheme = "brand" | "night" | "snow" | "warm" | "light";
 
@@ -25,6 +19,7 @@ export type MockLink = { label: string; icon: string; host?: string; featured?: 
 export type MockItem = { name: string; price?: string; host?: string; taken?: boolean };
 
 export type GraphicSpec = {
+  studio?: StudioGraphicSpec;
   layout?: GraphicLayout;
   template?: GraphicTemplate;
   theme: GraphicTheme;

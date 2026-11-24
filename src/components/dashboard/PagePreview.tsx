@@ -1,116 +1,83 @@
-/** A small live preview of the public page, drawn from what's on the dashboard right now. */
-import { Star } from "lucide-react";
-import { buttonRadiusFor, fontFamilyFor, getTheme, type ThemeTokens } from "@/lib/themes";
-import { linkDisplay } from "@/lib/platforms";
-import { backgroundScrim, safeBackgroundUrl } from "@/lib/backgrounds";
-import { groupLinks, type LinkSection } from "@/lib/links/groups";
-import type { ManagedLink } from "@/lib/links/api";
-
-const MAX_ROWS = 6;
+import {
+  ProfileBody,
+  ProfileCards,
+  ProfileIdentity,
+  ProfileSurface,
+  type ProfileLink,
+} from "@/components/profile/ProfilePresentation";
+import { getTheme, type ThemeTokens } from "@/lib/themes";
+import { safeBackgroundUrl } from "@/lib/backgrounds";
+import { useSkinState } from "@/components/skins/SkinPicker";
+import { resolveSkin } from "@/lib/skins";
+import { themeForReward, type RewardKey } from "@/lib/rewards";
+import type { LinkSection } from "@/lib/links/groups";
 
 export function PagePreview({
   profile,
   links,
   sections,
   isPlus,
-  background,
+  rewards,
 }: {
   profile: {
+    user_id: string;
     username: string;
     display_name: string | null;
     avatar_url: string | null;
+    avatar_gallery?: string[] | null;
+    avatar_size?: number | null;
+    skin_intensity?: string;
+    bio_alignment?: string | null;
+    bio?: string | null;
     theme: string | null;
     custom_theme: Partial<ThemeTokens> | null;
+    skin?: string | null;
+    background_url?: string | null;
   };
-  links: ManagedLink[];
+  links: ProfileLink[];
   sections: LinkSection[];
   isPlus: boolean;
-  /** The creator's custom background, when it may show. */
-  background?: string | null;
+  rewards: RewardKey[];
 }) {
-  const bg = safeBackgroundUrl(background);
-  // Reward themes are checked on the server; the preview just shows the chosen look.
-  const theme = getTheme(profile.theme, profile.custom_theme, { plus: isPlus, unlocked: true });
-  const radius = buttonRadiusFor(theme.buttonStyle);
-  const name = profile.display_name || profile.username;
-  const visible = links.filter((l) => l.enabled && l.url.trim().length > 0);
-  const groups = groupLinks(visible, sections);
-  let shown = 0;
-  const total = visible.length;
-
+  const state = useSkinState(profile.user_id);
+  const unlocked = rewards.some((key) => themeForReward(key).key === profile.theme);
+  const theme = getTheme(profile.theme, profile.custom_theme, { plus: isPlus, unlocked });
+  const skin = resolveSkin({
+    enabled: state.enabled,
+    skin: profile.skin,
+    theme: profile.theme,
+    plus: isPlus,
+    themeUnlocked: unlocked,
+    skinUnlocked: state.unlocked,
+  });
   return (
     <div
       aria-label="Preview of your page"
-      role="img"
-      className="relative w-full overflow-hidden rounded-3xl border-4 border-black/70 shadow-xl"
-      style={{
-        background: bg
-          ? `${backgroundScrim(theme.foreground)}, url("${bg}") center / cover no-repeat`
-          : theme.background,
-        color: theme.foreground,
-        fontFamily: fontFamilyFor(theme.font),
-      }}
+      className="w-44 overflow-hidden rounded-3xl border-4 border-black/70 shadow-xl"
     >
-      <div className="flex max-h-80 flex-col items-center gap-1 overflow-hidden px-3 py-4">
-        <div className="h-12 w-12 rounded-full p-0.5" style={{ background: theme.accent }}>
-          <div
-            className="flex h-full w-full items-center justify-center overflow-hidden rounded-full text-sm font-bold"
-            style={{ background: theme.card, color: theme.cardForeground }}
+      <div className="max-h-80 overflow-auto">
+        <div style={{ zoom: 0.42, width: 400 }}>
+          <ProfileSurface
+            theme={theme}
+            skin={skin}
+            motion={profile.skin_intensity}
+            background={state.background ? safeBackgroundUrl(profile.background_url) : null}
+            contained
           >
-            {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
-            ) : (
-              name.slice(0, 1).toUpperCase()
-            )}
-          </div>
-        </div>
-        <div className="max-w-full truncate text-sm font-bold">{name}</div>
-        <div className="mb-1 text-[10px] opacity-70">@{profile.username}</div>
-        <div className="w-full space-y-1">
-          {groups.map((g) => {
-            if (shown >= MAX_ROWS) return null;
-            const rows = g.links.slice(0, MAX_ROWS - shown);
-            shown += rows.length;
-            return (
-              <div key={g.key} className="space-y-1">
-                {g.section && (
-                  <div className="pt-1 text-[9px] font-semibold uppercase tracking-wide opacity-70">
-                    {g.section.title}
-                  </div>
-                )}
-                {rows.map((l) => {
-                  const d = linkDisplay(l);
-                  return (
-                    <div
-                      key={l.id}
-                      className="flex items-center gap-1.5 border px-2 py-1.5 text-[11px] font-medium"
-                      style={{
-                        background: theme.buttonStyle === "outline" ? "transparent" : theme.card,
-                        color: theme.cardForeground,
-                        borderColor: l.featured ? theme.accent : theme.border,
-                        borderRadius: radius,
-                      }}
-                    >
-                      <d.icon className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{d.label}</span>
-                      {l.featured && (
-                        <Star
-                          className="ml-auto h-2.5 w-2.5 shrink-0"
-                          style={{ color: theme.accent }}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
-          {total === 0 && (
-            <div className="py-3 text-center text-[10px] opacity-60">Your links show here</div>
-          )}
-          {total > MAX_ROWS && (
-            <div className="text-center text-[10px] opacity-60">+{total - MAX_ROWS} more</div>
-          )}
+            <ProfileBody contained>
+              <ProfileIdentity
+                name={profile.display_name || profile.username}
+                username={profile.username}
+                avatar={profile.avatar_url}
+                avatarGallery={profile.avatar_gallery}
+                avatarSize={profile.avatar_size}
+                bio={profile.bio}
+                bioAlignment={profile.bio_alignment}
+                theme={theme}
+              />
+              <ProfileCards links={links} sections={sections} theme={theme} skin={skin} preview />
+            </ProfileBody>
+          </ProfileSurface>
         </div>
       </div>
     </div>

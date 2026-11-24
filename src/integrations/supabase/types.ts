@@ -116,9 +116,19 @@ export type Database = {
         }
         Relationships: []
       }
+      marketing_demo_profiles: {
+        Row: { id: string; profile: Json; updated_at: string }
+        Insert: { id?: string; profile: Json; updated_at?: string }
+        Update: { id?: string; profile?: Json; updated_at?: string }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          avatar_size: number
+          avatar_gallery: string[]
+          bio_alignment: string
+          skin_intensity: string
           bio: string | null
           created_at: string
           custom_theme: Json | null
@@ -131,6 +141,10 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          avatar_size?: number
+          avatar_gallery?: string[]
+          bio_alignment?: string
+          skin_intensity?: string
           bio?: string | null
           created_at?: string
           custom_theme?: Json | null
@@ -143,6 +157,10 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          avatar_size?: number
+          avatar_gallery?: string[]
+          bio_alignment?: string
+          skin_intensity?: string
           bio?: string | null
           created_at?: string
           custom_theme?: Json | null

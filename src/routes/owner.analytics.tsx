@@ -180,7 +180,7 @@ function OwnerAnalyticsPage() {
                 <Stat
                   label="Referred sign-ups"
                   value={shares.referred_signups}
-                  note={'From "Get your own Yooits" on a page'}
+                  note={'From "Create your free Yooits." on a page'}
                 />
               </div>
               <div className="mt-4 grid gap-6 rounded-2xl border border-border bg-card p-4 md:grid-cols-2">

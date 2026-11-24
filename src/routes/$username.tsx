@@ -3,16 +3,15 @@ import { captureReferrer } from "@/lib/marketing/attribution";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { lazy, Suspense, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { linkDisplay } from "@/lib/platforms";
-import { groupLinks, type LinkSection } from "@/lib/links/groups";
-import { linkDisplayHost, safeLinkHref } from "@/lib/safe-url";
 import {
-  getTheme,
-  isRewardTheme,
-  fontFamilyFor,
-  buttonRadiusFor,
-  type ThemeTokens,
-} from "@/lib/themes";
+  ProfileBody,
+  ProfileCards,
+  ProfileIdentity,
+  ProfileSurface,
+  type ProfileLink,
+} from "@/components/profile/ProfilePresentation";
+import { type LinkSection } from "@/lib/links/groups";
+import { getTheme, isRewardTheme, buttonRadiusFor, type ThemeTokens } from "@/lib/themes";
 import { Gift, Heart, Share2, UserPlus } from "lucide-react";
 import { trackedProfileUrl } from "@/lib/share/links";
 import { recordShare } from "@/lib/share/track";
@@ -25,9 +24,8 @@ import { getPublicTipConfig } from "@/lib/tipping/functions";
 import { getPublicCreatorSubscription } from "@/lib/creator/subscription-functions";
 import { formatUsd } from "@/lib/tipping/money";
 import { loadPublicPlus, loadPublicSkinState, loadPublicThemeUnlocked } from "@/lib/billing/public";
-import { SkinLayer } from "@/components/skins/SkinLayer";
 import { findSkin, parseSkinState, resolveSkin, THEME_DEFAULT_SKIN } from "@/lib/skins";
-import { backgroundScrim, safeBackgroundUrl } from "@/lib/backgrounds";
+import { safeBackgroundUrl } from "@/lib/backgrounds";
 import { trackVisit } from "@/lib/analytics/track";
 
 // The share sheet loads only when someone opens it, so the page stays light.
@@ -84,6 +82,7 @@ type Preview = {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  avatar_gallery?: string[] | null;
 };
 
 /** The public name, bio and photo for link previews; null when missing, slow or failing. */
@@ -111,29 +110,22 @@ type Profile = {
   display_name: string | null;
   bio: string | null;
   avatar_url: string | null;
+  avatar_gallery?: string[] | null;
   theme: string | null;
   custom_theme: Partial<ThemeTokens> | null;
   hide_branding?: boolean | null;
   skin?: string | null;
   background_url?: string | null;
-};
-type SocialLink = {
-  id: string;
-  platform: string;
-  url: string;
-  display_order: number;
-  enabled: boolean;
-  title?: string | null;
-  icon?: string | null;
-  featured?: boolean | null;
-  section_id?: string | null;
+  avatar_size?: number | null;
+  skin_intensity?: string;
+  bio_alignment?: string | null;
 };
 type WishlistSummary = { id: string; slug: string; title: string; occasion: string | null };
 
 function ProfilePage() {
   const { username } = Route.useParams();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [links, setLinks] = useState<SocialLink[]>([]);
+  const [links, setLinks] = useState<ProfileLink[]>([]);
   const [sections, setSections] = useState<LinkSection[]>([]);
   const [loading, setLoading] = useState(true);
   const [missing, setMissing] = useState(false);
@@ -191,7 +183,7 @@ function ProfilePage() {
       setPlus(isPlus);
       setUnlocked(isUnlocked);
       setProfile(prof as Profile);
-      setLinks((l ?? []) as SocialLink[]);
+      setLinks((l ?? []) as ProfileLink[]);
       setSections((secs ?? []) as LinkSection[]);
       setLoading(false);
       trackVisit("profile_view", prof.user_id, { username: prof.username });
@@ -220,14 +212,10 @@ function ProfilePage() {
     throw notFound();
   }
 
-  const visible = links.filter((l) => l.url.trim().length > 0);
-  // Featured first, then unsectioned links, then each section: the creator's saved order.
-  const groups = groupLinks(visible, sections);
   const name = profile?.display_name || profile?.username || username;
   const theme = getTheme(profile?.theme, profile?.custom_theme, { plus, unlocked });
   const showBranding = !(plus && profile?.hide_branding);
   const radius = buttonRadiusFor(theme.buttonStyle);
-  const font = fontFamilyFor(theme.font);
   const preview = findSkin(previewSkin);
   const resolvedSkin = resolveSkin({
     enabled: skinState.enabled,
@@ -238,7 +226,6 @@ function ProfilePage() {
     skinUnlocked: skinState.unlocked,
   });
   const skin = preview ?? resolvedSkin;
-  const frame = skin?.frame;
   // The creator's own photo, while they have Plus or the popular reward.
   const bg = skinState.background ? safeBackgroundUrl(profile?.background_url) : null;
 
@@ -264,26 +251,7 @@ function ProfilePage() {
   };
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ background: theme.background, color: theme.foreground, fontFamily: font }}
-    >
-      {bg && (
-        <>
-          <div
-            aria-hidden="true"
-            data-background
-            className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("${bg}")` }}
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none fixed inset-0 z-0"
-            style={{ background: backgroundScrim(theme.foreground) }}
-          />
-        </>
-      )}
-      <SkinLayer skin={skin} />
+    <ProfileSurface theme={theme} skin={skin} background={bg} motion={profile?.skin_intensity}>
       {preview && (
         <div
           className="fixed left-1/2 top-3 z-30 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-xs font-medium text-white"
@@ -317,25 +285,18 @@ function ProfilePage() {
           />
         </Suspense>
       )}
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-xl flex-col items-center px-6 py-16">
-        <div
-          className="mb-5 h-28 w-28 rounded-full p-1"
-          style={{ background: theme.accent, boxShadow: `0 10px 40px -10px ${theme.accent}` }}
-        >
-          <div
-            className="flex h-full w-full items-center justify-center overflow-hidden rounded-full text-3xl font-bold"
-            style={{ background: theme.card, color: theme.cardForeground }}
-          >
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt={name} className="h-full w-full object-cover" />
-            ) : (
-              name.slice(0, 1).toUpperCase()
-            )}
-          </div>
-        </div>
-        <h1 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">{name}</h1>
-        <p className="mt-1 text-sm opacity-70">@{profile?.username ?? username}</p>
-        {profile?.bio && <p className="mt-4 max-w-md text-center opacity-80">{profile.bio}</p>}
+      <ProfileBody>
+        <ProfileIdentity
+          name={name}
+          username={profile?.username ?? username}
+          avatar={profile?.avatar_url}
+          avatarGallery={profile?.avatar_gallery}
+          bio={profile?.bio}
+          avatarSize={profile?.avatar_size}
+          bioAlignment={profile?.bio_alignment}
+          theme={theme}
+          interactive
+        />
         {profile && (
           <MessageButton
             username={profile.username}
@@ -344,95 +305,16 @@ function ProfilePage() {
           />
         )}
 
-        <section className="mt-10 w-full space-y-3">
-          {loading ? (
-            <div className="space-y-3">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="h-16 animate-pulse rounded-2xl opacity-30"
-                  style={{ background: theme.card }}
-                />
-              ))}
-            </div>
-          ) : visible.length === 0 ? (
-            <div
-              className="rounded-2xl border border-dashed p-8 text-center opacity-70"
-              style={{ borderColor: theme.border }}
-            >
-              No links added yet.
-            </div>
-          ) : (
-            groups.map((g) => (
-              <div key={g.key} className="space-y-3">
-                {g.section && (
-                  <h2 className="pt-3 text-center text-xs font-semibold uppercase tracking-widest opacity-70">
-                    {g.section.title}
-                  </h2>
-                )}
-                {g.links.map((link) => {
-                  const meta = linkDisplay(link);
-                  const Icon = meta.icon;
-                  const isOutline = theme.buttonStyle === "outline";
-                  const href = safeLinkHref(link.url);
-                  const host = linkDisplayHost(href);
-                  const featured = g.kind === "featured";
-                  return (
-                    <a
-                      key={link.id}
-                      href={href}
-                      target={href ? "_blank" : undefined}
-                      rel="noopener noreferrer nofollow ugc"
-                      onClick={
-                        href
-                          ? () =>
-                              trackVisit("link_click", profile?.user_id, {
-                                username: profile?.username,
-                                linkId: link.id,
-                              })
-                          : undefined
-                      }
-                      data-featured={featured || undefined}
-                      className={`group relative flex items-center gap-4 overflow-hidden border transition-all hover:-translate-y-0.5 ${
-                        featured ? "border-2 p-5" : "p-4"
-                      }`}
-                      style={{
-                        background: isOutline ? "transparent" : theme.card,
-                        color: theme.cardForeground,
-                        borderColor: featured ? theme.accent : (frame?.cardBorder ?? theme.border),
-                        borderRadius: radius,
-                        boxShadow: featured
-                          ? `0 10px 30px -12px ${theme.accent}`
-                          : isOutline
-                            ? "none"
-                            : (frame?.cardShadow ?? "0 8px 24px -12px rgba(0,0,0,0.3)"),
-                        backdropFilter: isOutline ? undefined : frame?.cardBackdrop,
-                        WebkitBackdropFilter: isOutline ? undefined : frame?.cardBackdrop,
-                      }}
-                    >
-                      <div
-                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg`}
-                      >
-                        <Icon className="h-6 w-6" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="truncate font-semibold">{meta.label}</div>
-                        {!href && <div className="truncate text-xs opacity-70">{link.url}</div>}
-                        {host && <div className="truncate text-xs opacity-70">{host}</div>}
-                      </div>
-                      <div
-                        className="rounded-full px-3 py-1 text-xs font-medium opacity-70 transition group-hover:opacity-100"
-                        style={{ background: `${theme.accent}22`, color: theme.accent }}
-                      >
-                        {featured ? "Open →" : "Connect →"}
-                      </div>
-                    </a>
-                  );
-                })}
-              </div>
-            ))
-          )}
-        </section>
+        <ProfileCards
+          links={links}
+          sections={sections}
+          loading={loading}
+          theme={theme}
+          skin={skin}
+          onLinkClick={(linkId) =>
+            trackVisit("link_click", profile?.user_id, { username: profile?.username, linkId })
+          }
+        />
 
         {tipConfig && (
           <section className="mt-6 w-full">
@@ -514,7 +396,7 @@ function ProfilePage() {
             className="mt-10 inline-flex items-center gap-2 text-xs opacity-60 hover:opacity-100"
             style={{ color: theme.foreground }}
           >
-            <UserPlus className="h-3 w-3" /> Get your own Yooits
+            <UserPlus className="h-3 w-3" /> Create your free Yooits.
           </Link>
         )}
         {profile && (
@@ -523,7 +405,7 @@ function ProfilePage() {
           </div>
         )}
         <Toaster />
-      </main>
-    </div>
+      </ProfileBody>
+    </ProfileSurface>
   );
 }

@@ -1,3 +1,4 @@
+import { ContentStudio } from "@/components/marketing/ContentStudio";
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, ExternalLink, Loader2 } from "lucide-react";
@@ -186,6 +187,7 @@ function MarketingPage() {
         <TabsList className="flex h-auto flex-wrap">
           <TabsTrigger value="queue">Queue</TabsTrigger>
           <TabsTrigger value="calendar">Calendar</TabsTrigger>
+          <TabsTrigger value="studio">Content studio</TabsTrigger>
           <TabsTrigger value="generate">Generate</TabsTrigger>
           <TabsTrigger value="accounts">Accounts</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -203,6 +205,9 @@ function MarketingPage() {
         </TabsContent>
         <TabsContent value="calendar">
           <CalendarView posts={state.posts} onOpen={setEditing} onPublish={setPublishing} />
+        </TabsContent>
+        <TabsContent value="studio">
+          <ContentStudio campaigns={campaigns} onAdded={load} />
         </TabsContent>
         <TabsContent value="generate">
           <Generate
