@@ -22,6 +22,7 @@ import { Route as UsernameSubscribeRouteImport } from './routes/$username_.subsc
 import { Route as UsernameTipRouteImport } from './routes/$username_.tip'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
+import { Route as DashboardPurchasesRouteImport } from './routes/dashboard_.purchases'
 import { Route as DashboardWishlistsRouteImport } from './routes/dashboard_.wishlists'
 import { Route as EmailPreferencesRouteImport } from './routes/email.preferences'
 import { Route as LegalIndexRouteImport } from './routes/legal.index'
@@ -119,6 +120,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const AdminSplatRoute = AdminSplatRouteImport.update({
   id: '/admin/$',
   path: '/admin/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardPurchasesRoute = DashboardPurchasesRouteImport.update({
+  id: '/dashboard_/purchases',
+  path: '/dashboard/purchases',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardWishlistsRoute = DashboardWishlistsRouteImport.update({
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/$username/subscribe': typeof UsernameSubscribeRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
+  '/dashboard/purchases': typeof DashboardPurchasesRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
@@ -347,6 +354,7 @@ export interface FileRoutesByTo {
   '/$username/subscribe': typeof UsernameSubscribeRoute
   '/$username/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
+  '/dashboard/purchases': typeof DashboardPurchasesRoute
   '/dashboard/wishlists': typeof DashboardWishlistsRoute
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
@@ -396,6 +404,7 @@ export interface FileRoutesById {
   '/$username_/subscribe': typeof UsernameSubscribeRoute
   '/$username_/tip': typeof UsernameTipRoute
   '/admin/$': typeof AdminSplatRoute
+  '/dashboard_/purchases': typeof DashboardPurchasesRoute
   '/dashboard_/wishlists': typeof DashboardWishlistsRoute
   '/email/preferences': typeof EmailPreferencesRoute
   '/legal/$doc': typeof LegalDocRoute
@@ -446,6 +455,7 @@ export interface FileRouteTypes {
     | '/$username/subscribe'
     | '/$username/tip'
     | '/admin/$'
+    | '/dashboard/purchases'
     | '/dashboard/wishlists'
     | '/email/preferences'
     | '/legal/$doc'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/$username/subscribe'
     | '/$username/tip'
     | '/admin/$'
+    | '/dashboard/purchases'
     | '/dashboard/wishlists'
     | '/email/preferences'
     | '/legal/$doc'
@@ -541,6 +552,7 @@ export interface FileRouteTypes {
     | '/$username_/subscribe'
     | '/$username_/tip'
     | '/admin/$'
+    | '/dashboard_/purchases'
     | '/dashboard_/wishlists'
     | '/email/preferences'
     | '/legal/$doc'
@@ -590,6 +602,7 @@ export interface RootRouteChildren {
   UsernameSubscribeRoute: typeof UsernameSubscribeRoute
   UsernameTipRoute: typeof UsernameTipRoute
   AdminSplatRoute: typeof AdminSplatRoute
+  DashboardPurchasesRoute: typeof DashboardPurchasesRoute
   DashboardWishlistsRoute: typeof DashboardWishlistsRoute
   EmailPreferencesRoute: typeof EmailPreferencesRoute
   LegalDocRoute: typeof LegalDocRoute
@@ -697,6 +710,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/$'
       fullPath: '/admin/$'
       preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard_/purchases': {
+      id: '/dashboard_/purchases'
+      path: '/dashboard/purchases'
+      fullPath: '/dashboard/purchases'
+      preLoaderRoute: typeof DashboardPurchasesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard_/wishlists': {
@@ -994,6 +1014,7 @@ const rootRouteChildren: RootRouteChildren = {
   UsernameSubscribeRoute: UsernameSubscribeRoute,
   UsernameTipRoute: UsernameTipRoute,
   AdminSplatRoute: AdminSplatRoute,
+  DashboardPurchasesRoute: DashboardPurchasesRoute,
   DashboardWishlistsRoute: DashboardWishlistsRoute,
   EmailPreferencesRoute: EmailPreferencesRoute,
   LegalDocRoute: LegalDocRoute,

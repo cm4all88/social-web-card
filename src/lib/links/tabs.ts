@@ -8,13 +8,15 @@ export type TabId =
   | "wishlists"
   | "messages"
   | "support"
-  | "account";
+  | "account"
+  | "products";
 
 export const DASHBOARD_TABS: { id: TabId; label: string }[] = [
   { id: "links", label: "Links" },
   { id: "appearance", label: "Appearance" },
   { id: "analytics", label: "Analytics" },
   { id: "creator", label: "Creator" },
+  { id: "products", label: "Products" },
   { id: "profile", label: "Profile" },
   { id: "wishlists", label: "Wishlists" },
   { id: "messages", label: "Messages" },

@@ -1,3 +1,5 @@
+import { ProductEditor } from "@/components/creator/DigitalProducts";
+import { listSellerProducts } from "@/lib/digital-products/functions";
 import { PageSections } from "@/components/dashboard/PageSections";
 import { profileBlocks, type ProfileBlock } from "@/lib/profile-blocks";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -163,8 +165,17 @@ function DashboardPage() {
     );
   }, [reloadCreatorSubs, reloadSupportOfferings]);
 
+  const [productStore, setProductStore] = useState<Awaited<ReturnType<typeof listSellerProducts>>>();
+  const reloadProducts = useCallback(() => {
+    void listSellerProducts().then(setProductStore, () => setProductStore(undefined));
+  }, []);
+  useEffect(() => {
+    if (userId) reloadProducts();
+  }, [userId, reloadProducts]);
+
   const tabs = DASHBOARD_TABS.filter(
     (t) =>
+      (t.id !== "products" || productStore?.eligible) &&
       (t.id !== "support" || tippingOn) &&
       (t.id !== "messages" || messagesOn) &&
       (t.id !== "creator" || creator.visible || creatorSubs.visible || supportOfferings.visible),
@@ -677,6 +688,7 @@ function DashboardPage() {
             blocks={blocks}
             busy={savingBlocks}
             postsAvailable={postsAvailable}
+            productsAvailable={productStore?.eligible}
             onChange={(next, added) => void saveBlocks(next, added)}
             onEdit={editBlock}
           />
@@ -716,6 +728,9 @@ function DashboardPage() {
           aria-labelledby={`tab-${activeTab}`}
           className="mt-2"
         >
+          {activeTab === "products" && productStore?.eligible && (
+            <ProductEditor items={productStore.items} reload={reloadProducts} />
+          )}
           {activeTab === "links" && userId && (
             <div id="links">
               <div className="flex items-baseline justify-between gap-2">
@@ -1053,6 +1068,7 @@ function DashboardPage() {
             <div id="account">
               <h2 className="text-xl font-bold">Account</h2>
               {userId && <BetaPanel userId={userId} />}
+              <Link to="/dashboard/purchases" className="text-sm text-primary">Purchases</Link>
               <div className="mt-4 space-y-4">
                 <ChangePassword />
                 <EmailPreferences />
