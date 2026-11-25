@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "@tanstack/react-router";
-import { Upload } from "tus-js-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +58,7 @@ export function ProductEditor({
         },
       });
       if (upload.kind === "video") {
+        const { Upload } = await import("tus-js-client");
         await new Promise<void>((resolve, reject) =>
           new Upload(file, {
             endpoint: "https://video.bunnycdn.com/tusupload",
