@@ -166,8 +166,13 @@ and Stripe test accounts for the pilot.
 
 1. Apply `20261125120000_digital_products.sql` to the preview database. It creates
    the private `digital-products` bucket and enables the Products section.
-2. In a Yooits.me Bunny Stream library, enable Embed View Token Authentication
-   and disable direct play. Keep originals and public MP4 downloads disabled.
+2. In a Yooits.me Bunny Stream library, enable **Embed View Token
+   Authentication** and **Block Direct URL File Access**. Add the exact preview
+   hostname to **Allowed Domains**. Keep originals and public MP4 downloads
+   disabled. Test unauthenticated CDN playlist and segment URLs with no referrer
+   and with the preview origin as referrer. If either works, enable Bunny's
+   MediaCage protection or protect the linked CDN pull zone with token
+   authentication and retest before listing a paid video.
    Set `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_KEY` (library API key), and
    `BUNNY_STREAM_EMBED_TOKEN_KEY` (the separate embed token key) as preview-only
    server environment variables.
