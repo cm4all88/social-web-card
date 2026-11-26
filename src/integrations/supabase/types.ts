@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      digital_products: {
+        Row: {
+          id: string
+          seller_id: string
+          title: string
+          description: string
+          price_cents: number
+          kind: "file" | "video"
+          asset_id: string | null
+          published: boolean
+          created_at: string
+        }
+        Insert: Pick<Database["public"]["Tables"]["digital_products"]["Row"],
+          "seller_id" | "title" | "price_cents" | "kind"> &
+          Partial<Database["public"]["Tables"]["digital_products"]["Row"]>
+        Update: Partial<Database["public"]["Tables"]["digital_products"]["Row"]>
+        Relationships: []
+      }
+      digital_orders: {
+        Row: {
+          id: string
+          product_id: string
+          buyer_id: string
+          stripe_account_id: string
+          livemode: boolean
+          amount_cents: number
+          status: "pending" | "paid" | "revoked"
+          created_at: string
+        }
+        Insert: Pick<Database["public"]["Tables"]["digital_orders"]["Row"],
+          "product_id" | "buyer_id" | "stripe_account_id" | "livemode" | "amount_cents"> &
+          Partial<Database["public"]["Tables"]["digital_orders"]["Row"]>
+        Update: Partial<Database["public"]["Tables"]["digital_orders"]["Row"]>
+        Relationships: [{
+          foreignKeyName: "digital_orders_product_id_fkey"
+          columns: ["product_id"]
+          isOneToOne: false
+          referencedRelation: "digital_products"
+          referencedColumns: ["id"]
+        }]
+      }
       checkout_attempts: {
         Row: {
           created_at: string
@@ -522,6 +563,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      creator_is_monetized: { Args: { _user_id: string }; Returns: boolean };
+      profile_is_public: { Args: { _user_id: string }; Returns: boolean };
       admin_tip_report: { Args: { _since?: string }; Returns: Json }
       admin_set_tip_suspension: {
         Args: { _username: string; _suspended: boolean; _reason?: string }

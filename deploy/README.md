@@ -157,3 +157,41 @@ Put the same values in `deploy/environments/preview.secrets.local` (ignored
 by git) as `NAME=value` lines, then run `npm install --legacy-peer-deps` and
 `bash deploy/deploy.sh preview`. Add `DRY_RUN=1` in front to check the
 settings and build without changing anything.
+
+## Digital product pilot
+
+The implementation follows the direct Bunny upload and private Supabase download
+patterns from Spotlightly's IFYKYK repository. Use separate Yooits.me libraries
+and Stripe test accounts for the pilot.
+
+1. Apply `20261125120000_digital_products.sql` to the preview database. It creates
+   the private `digital-products` bucket and enables the Products section.
+2. In a Yooits.me Bunny Stream library, enable **Embed View Token
+   Authentication** and **Block Direct URL File Access**. Add the exact preview
+   hostname to **Allowed Domains**. Keep originals and public MP4 downloads
+   disabled. Test unauthenticated CDN playlist and segment URLs with no referrer
+   and with the preview origin as referrer. If either works, enable Bunny's
+   MediaCage protection or protect the linked CDN pull zone with token
+   authentication and retest before listing a paid video.
+   Set `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_KEY` (library API key), and
+   `BUNNY_STREAM_EMBED_TOKEN_KEY` (the separate embed token key) as preview-only
+   server environment variables.
+3. Configure Stripe Connect test payments and the existing connected-account
+   signing secret. Include `checkout.session.completed`,
+   `checkout.session.expired`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `charge.refunded`, and
+   `charge.dispute.created` on the connected-account endpoint. Set
+   `PUBLIC_SITE_URL` to the preview origin. Approve the pilot creator and connect
+   their test payout account before setting `DIGITAL_PRODUCTS_ENABLED=true` and
+   `DIGITAL_PRODUCTS_SELLER_IDS` to the creator's Supabase user UUID.
+4. Add Digital products with Add Something. Upload a test video and a file,
+   publish both, and buy both from a separate signed-in test user. Confirm brand
+   new browsers cannot play the unsigned embed or direct video URL. Check signed
+   playback and download on iPhone and Android. Refund the test payment in Stripe
+   and verify the buyer cannot request a new link from Purchases.
+
+Pilot prices are in USD. Direct charges send the sale to the creator's connected
+account, which pays Stripe processing. There is no Yooits.me application fee.
+Live sales require both existing Stripe live approval and
+`DIGITAL_PRODUCTS_LIVE_APPROVED=true`. Keep live sales disabled until test
+checkout, refunds, and mobile playback have been verified.

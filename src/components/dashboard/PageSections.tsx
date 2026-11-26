@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, EyeOff, Gift, Link2, Newspaper, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, EyeOff, Gift, Link2, Newspaper, Package, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -8,22 +8,26 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PROFILE_BLOCKS, PROFILE_BLOCK_LABELS, type ProfileBlock } from "@/lib/profile-blocks";
 
-const icons = { links: Link2, wishlists: Gift, posts: Newspaper };
+const icons = { links: Link2, wishlists: Gift, posts: Newspaper, products: Package };
 
 export function PageSections({
   blocks,
   busy,
   postsAvailable,
+  productsAvailable = false,
   onChange,
   onEdit,
 }: {
   blocks: ProfileBlock[];
   busy: boolean;
   postsAvailable: boolean;
+  productsAvailable?: boolean;
   onChange: (next: ProfileBlock[], added?: ProfileBlock) => void;
   onEdit: (block: ProfileBlock) => void;
 }) {
-  const available = PROFILE_BLOCKS.filter((key) => !blocks.includes(key));
+  const available = PROFILE_BLOCKS.filter(
+    (key) => !blocks.includes(key) && (key !== "products" || productsAvailable),
+  );
   const move = (index: number, by: number) => {
     const next = [...blocks];
     [next[index], next[index + by]] = [next[index + by], next[index]];
@@ -80,16 +84,17 @@ export function PageSections({
               >
                 <Icon aria-hidden="true" className="ml-1 size-4 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 flex-1 pl-1.5 text-sm font-medium">{label}</span>
-                {(key !== "posts" || postsAvailable) && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    aria-label={`Edit ${label}`}
-                    onClick={() => onEdit(key)}
-                  >
-                    Edit
-                  </Button>
-                )}
+                {(key !== "posts" || postsAvailable) &&
+                  (key !== "products" || productsAvailable) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Edit ${label}`}
+                      onClick={() => onEdit(key)}
+                    >
+                      Edit
+                    </Button>
+                  )}
                 <Button
                   variant="ghost"
                   size="icon"

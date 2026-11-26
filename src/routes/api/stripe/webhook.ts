@@ -1,3 +1,4 @@
+import { applyProductEvent } from "@/lib/digital-products/store.server";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   envWebhookSecrets,
@@ -70,6 +71,9 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         const log = (msg: string, extra?: Record<string, unknown>) =>
           console.log(`[stripe-webhook] ${msg}`, extra ?? {});
         try {
+          if (await applyProductEvent(event)) {
+            return Response.json({ received: true, outcome: "digital_product" });
+          }
           const giftEvent = event as unknown as GiftEventLike;
           if (isWishlistGiftEvent(giftEvent)) {
             const claim = await supabaseTippingStore.claimEvent({

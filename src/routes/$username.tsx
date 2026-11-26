@@ -1,3 +1,4 @@
+import { PublicProducts } from "@/components/creator/DigitalProducts";
 import { profileBlocks } from "@/lib/profile-blocks";
 import { ProfileWishlists, type WishlistSummary } from "@/components/profile/ProfileWishlists";
 import { MessageButton } from "@/components/messages/MessageButton";
@@ -384,6 +385,9 @@ function ProfilePage() {
                 radius={radius}
                 outline={theme.buttonStyle === "outline"}
               />
+            )}
+            {block === "products" && profile && (
+              <PublicProducts key={profile.user_id} sellerId={profile.user_id} username={profile.username} theme={theme} />
             )}
             {index === 0 && supportActions}
           </Fragment>

@@ -47,7 +47,6 @@ beforeAll(async () => {
   db = new PGlite();
   await db.exec(SUPABASE_STUBS);
   await db.exec(`ALTER TABLE auth.users ADD COLUMN last_sign_in_at timestamptz, ADD COLUMN email_confirmed_at timestamptz`);
-  await db.exec(`ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint, ADD COLUMN allowed_mime_types text[]`);
   await db.exec(`INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)`);
 
   // Today's production schema, with today's behaviour: first signup became admin.
