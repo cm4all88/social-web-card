@@ -210,6 +210,7 @@ export const listDigitalPurchases = createServerFn({ method: "GET" })
       .eq("livemode", live)
       .eq("status", "paid")
       .order("created_at", { ascending: false });
+    if (error?.code === "PGRST205" && process.env.DIGITAL_PRODUCTS_ENABLED !== "true") return [];
     if (error) throw new Error("Could not load purchases.");
     return data ?? [];
   });
